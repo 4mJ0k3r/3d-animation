@@ -10,7 +10,8 @@
     "render:production": "node scripts/render.cjs",
     "render:cli": "node scripts/render.cjs --mode=cli",
     "benchmark:software": "node scripts/render.cjs --mode=benchmark",
-    "audit:phase1": "node scripts/render.cjs --mode=audit"
+    "audit:phase1": "node scripts/render.cjs --mode=audit",
+    "test:memory": "node --test scripts/tests/memory.test.cjs"
   },
   "keywords": [],
   "author": "",

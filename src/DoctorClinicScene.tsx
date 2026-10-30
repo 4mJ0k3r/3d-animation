@@ -77,12 +77,10 @@ export const DoctorClinicScene: React.FC = () => {
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <ThreeCanvas
         engineOptions={{
-          supersample: 2,
+          quality: 'software-safe',
           outlineThickness: 2.8,
           depthThreshold: 0.015,
           normalThreshold: 0.46,
-          bokehAperture: 0.00002,
-          bokehMaxBlur: 0.002,
           saturation: 1.14,
           warmth: 0.04,
         }}

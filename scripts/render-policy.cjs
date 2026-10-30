@@ -7,4 +7,8 @@ module.exports.productionPolicy = Object.freeze({
   maxProcessBytes: 5.5 * 1024 ** 3,
   maxTemporaryBytes: 8 * 1024 ** 3,
   nodeHeapMB: 1536,
+  minAvailableMemoryBytes: 2.5 * 1024 ** 3,
+  lowAvailableMemoryBytes: 1 * 1024 ** 3,
+  lowMemoryConsecutiveSamples: 3,
+  memoryTelemetryFailureSamples: 2,
 });

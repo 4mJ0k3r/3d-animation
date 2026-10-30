@@ -8,12 +8,21 @@ const crypto = require('node:crypto');
 const {spawn,execFile} = require('node:child_process');
 const {productionPolicy: policy} = require('./render-policy.cjs');
 const {monitor,processes} = require('./render-monitor.cjs');
+const {createMemoryGuard} = require('./linux-memory.cjs');
 
 async function runProductionRender(job = {}) {
   const allowed = new Set(['mode','entry','composition','output','width','height','frames','quality','backend','inputProps','report']);
   for (const key of Object.keys(job)) if (!allowed.has(key)) throw new Error(`Unsupported production override: ${key}`);
   if(job.mode && !['render','cli','audit','benchmark'].includes(job.mode)) throw new Error('Invalid render mode');
   const root = path.resolve(__dirname, '..');
+  const memoryGuard = createMemoryGuard(policy);
+  const admission = memoryGuard.admission();
+  if (!admission.admitted) {
+    const report = path.resolve(root, job.report || `out/phase1.3/admission-${crypto.randomUUID()}.json`);
+    fs.mkdirSync(path.dirname(report), {recursive:true});
+    fs.writeFileSync(report, JSON.stringify({job, policy, admission, failure:admission.reason, launched:false}, null, 2));
+    throw new Error(admission.reason + ' Report: ' + report);
+  }
   const base = path.join(root, '.remotion-tmp'); fs.mkdirSync(base, {recursive: true});
   if (fs.realpathSync(base) !== path.resolve(base)) throw new Error('Scratch root must not be a symlink/junction');
   const backend = job.backend || policy.backend;
@@ -38,7 +47,7 @@ async function runProductionRender(job = {}) {
     child = spawn(process.execPath, [path.join(__dirname, 'render-worker.cjs'), path.join(scratch, 'job.json')], {cwd: root, env, stdio: 'inherit', windowsHide: true, detached: process.platform !== 'win32'});
     const stop = () => terminate(child);
     process.once('SIGINT', stop); process.once('SIGTERM', stop);
-    const watcher = monitor(child.pid, scratch, policy, stop);
+    const watcher = monitor(child.pid, scratch, policy, stop, memoryGuard);
     try {
       await new Promise((resolve, reject) => {child.once('error', reject); child.once('exit', (code, signal) => code === 0 ? resolve() : reject(new Error(`Render worker exited ${code ?? signal}`)));});
     } catch (error) {failure = String(error);} finally {
@@ -48,9 +57,9 @@ async function runProductionRender(job = {}) {
     const workerReport = path.join(scratch, 'worker-report.json');
     const worker = fs.existsSync(workerReport) ? JSON.parse(fs.readFileSync(workerReport)) : null;
     fs.mkdirSync(path.dirname(report), {recursive: true});
-    fs.writeFileSync(report, JSON.stringify({job, backend, policy, host: {platform: process.platform, node: process.version, cpus: os.availableParallelism(), totalRAM: os.totalmem(), originalTemp: os.tmpdir()}, scratch, stats, worker, failure}, null, 2));
+    fs.writeFileSync(report, JSON.stringify({job, backend, policy, admission, host: {platform: process.platform, node: process.version, cpus: os.availableParallelism(), totalRAM: os.totalmem(), originalTemp: os.tmpdir()}, scratch, stats, worker, failure}, null, 2));
     console.log('PRODUCTION_REPORT ' + report);
-    if (failure || stats.limitExceeded) throw new Error(failure || stats.limitExceeded);
+    if (failure || stats.limitExceeded) throw new Error(stats.limitExceeded || failure);
     return report;
   } finally {
     if (child && child.exitCode === null && !child.signalCode) terminate(child);

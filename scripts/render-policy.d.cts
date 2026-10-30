@@ -3,4 +3,6 @@ export const productionPolicy: Readonly<{
   disallowParallelEncoding: boolean; hardwareAcceleration: 'disable';
   mediaCacheSizeInBytes: number; offthreadVideoCacheSizeInBytes: number;
   maxProcessBytes: number; maxTemporaryBytes: number; nodeHeapMB: number;
+  minAvailableMemoryBytes: number; lowAvailableMemoryBytes: number;
+  lowMemoryConsecutiveSamples: number; memoryTelemetryFailureSamples: number;
 }>;

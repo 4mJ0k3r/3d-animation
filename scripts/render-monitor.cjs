@@ -2,6 +2,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const {execFile} = require('node:child_process');
+const {createMemoryGuard} = require('./linux-memory.cjs');
 function bytes(root, errors = []) {
   let total = 0;
   try {for (const item of fs.readdirSync(root, {withFileTypes: true})) {
@@ -33,13 +34,24 @@ function cgroup() {
     const dir = fs.existsSync(path.join(candidate,'memory.current')) ? candidate : '/sys/fs/cgroup';
     if (!fs.existsSync(path.join(dir,'memory.current'))) return null;
     const read = (name) => {try {return fs.readFileSync(path.join(dir,name),'utf8').trim();} catch {return null;}};
-    return {current:Number(read('memory.current')),peak:Number(read('memory.peak')),swapCurrent:Number(read('memory.swap.current')),limit:read('memory.max')};
+    const number = (name) => {const value = read(name); return value !== null && /^\d+$/.test(value) ? Number(value) : null;};
+    const current = number('memory.current');
+    if (current === null) return null;
+    return {current,peak:number('memory.peak'),swapCurrent:number('memory.swap.current'),limit:read('memory.max')};
   } catch {return null;}
 }
-function monitor(pid, scratch, policy, kill) {
-  const stats = {intervalMs:1000,samples:[],peakProcessTreeRSS:0,peakWorkspaceTemporaryBytes:0,peakSystemTmpBytes:process.platform === 'linux' ? 0 : null,peakCgroupBytes:null,commands:[],childTempEnvironments:[],limitExceeded:null};
+function monitor(pid, scratch, policy, kill, memoryGuard = createMemoryGuard(policy)) {
+  const stats = {intervalMs:1000,samples:[],peakProcessTreeRSS:0,peakWorkspaceTemporaryBytes:0,peakSystemTmpBytes:process.platform === 'linux' ? 0 : null,peakCgroupBytes:null,cgroupTelemetry:'unavailable',minimumAvailableMemoryBytes:null,commands:[],childTempEnvironments:[],limitExceeded:null};
   const commands = new Set(); let stopped = false; let active = null;
   async function sample() {
+    if (stats.limitExceeded) return;
+    // Check the host balloon signal before the more expensive process/disk walk.
+    const memory = memoryGuard.observe();
+    if (memory.available) stats.minimumAvailableMemoryBytes = Math.min(stats.minimumAvailableMemoryBytes ?? Infinity, memory.availableBytes);
+    if (memory.abort) {
+      stats.samples.push({at:Date.now(),memory});
+      stats.limitExceeded = memory.reason; kill(); return;
+    }
     const all = await processes(); const ids = new Set([pid]);
     for (let i = 0; i < all.length; i++) for (const p of all) if (ids.has(p.ppid)) ids.add(p.pid);
     const tree = all.filter((p) => ids.has(p.pid)); const rss = tree.reduce((sum,p) => sum+p.rss,0);
@@ -56,7 +68,8 @@ function monitor(pid, scratch, policy, kill) {
     stats.peakWorkspaceTemporaryBytes = Math.max(stats.peakWorkspaceTemporaryBytes,workspace);
     if (tmp !== null) stats.peakSystemTmpBytes = Math.max(stats.peakSystemTmpBytes,tmp);
     if (cg) stats.peakCgroupBytes = Math.max(stats.peakCgroupBytes || 0,cg.current);
-    stats.samples.push({at:Date.now(),processes:tree.length,rss,workspace,tmp,cgroup:cg,workspaceErrors,tmpErrors});
+    stats.cgroupTelemetry = cg ? 'available' : 'unavailable';
+    stats.samples.push({at:Date.now(),processes:tree.length,rss,workspace,tmp,cgroup:cg,memory,workspaceErrors,tmpErrors});
     if (rss > policy.maxProcessBytes || workspace > policy.maxTemporaryBytes || (cg && cg.current > policy.maxProcessBytes) || (tmp !== null && tmp > 440*1024**2)) {
       stats.limitExceeded = 'Conservative process/cgroup/temp budget exceeded; job terminated'; kill();
     }

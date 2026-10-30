@@ -25,3 +25,12 @@
 - `gtaoPass` / `bokehPass` access throws when that effect was not enabled. `gradePass` aliases outlinePass because grading is fused. Do not enable effects merely to access their internals.
 - Each production job has an exclusive active.lock and private UUID directory in `<project>/.remotion-tmp`. Never remove another job's directory, user assets, or a live lock. A stale lock after SIGKILL requires operator inspection; no automatic unsafe stale-lock deletion.
 - Monitor results are sampled, not hard allocation limits or proof of zero OOM risk. No freeze for the VM until Muse runs the supplied validation commands and reviews cgroup, process RSS, `/tmp`, and workspace temp results.
+
+## Phase 1.3 memory admission — mandatory
+
+- Linux launch requires at least 2.5 GiB `/proc/meminfo` MemAvailable. Do not substitute MemFree, RSS, total RAM or fabricated cgroup values. Failure to read MemAvailable refuses admission.
+- During rendering, three consecutive readings below 1 GiB abort the owned process tree; a recovered sample resets the count. Two consecutive unavailable memory readings also abort. Thresholds/counts are centralized in scripts/render-policy.cjs; never lower them to force a render on a ballooned VM.
+- Cgroup telemetry is optional: unavailable current/peak/swap fields are null, not zero. Continue with MemAvailable and process RSS when cgroups are unavailable. Existing RSS, workspace, `/tmp`, concurrency and encoding limits still apply.
+- These sampled safeguards cannot guarantee survival of abrupt host reclamation between readings. Wait for memory recovery after an admission rejection, and review the report after any controlled abort.
+- Run `npm run test:memory` for non-destructive, simulated low-memory rejection/tree-cleanup tests. The production job API has no fake-memory flag. Run `npm run audit:phase1` to preserve deterministic/outline/readiness/lifecycle coverage.
+- `src/toon-kit-tests/software.tsx` is the tracked representative fixture available in this checkout. `src/toon-kit-tests/clinic.tsx` wraps the original clinic component for 300-frame certification; it does not rewrite a rig or change the production Root's 150-frame duration.
