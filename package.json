@@ -1,0 +1,30 @@
+{
+  "name": "3d-animation",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "node scripts/render.cjs --mode=cli",
+    "typecheck": "tsc --noEmit",
+    "render:production": "node scripts/render.cjs",
+    "render:cli": "node scripts/render.cjs --mode=cli",
+    "benchmark:software": "node scripts/render.cjs --mode=benchmark",
+    "audit:phase1": "node scripts/render.cjs --mode=audit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@types/three": "0.186.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.539",
+    "three": "0.187.0",
+    "typescript": "7.0.2"
+  }
+}
