@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "strict": true,
+    "skipLibCheck": true,
+    "rootDir": "../src",
+    "outDir": "../out/character-tests",
+    "lib": ["DOM", "DOM.Iterable", "ES2022"],
+    "types": [],
+    "noEmitOnError": true
+  },
+  "include": ["../src/toon-kit/characters/**/*.ts", "../src/toon-kit-tests/character-fixture.ts"]
+}

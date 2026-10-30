@@ -11,7 +11,9 @@
     "render:cli": "node scripts/render.cjs --mode=cli",
     "benchmark:software": "node scripts/render.cjs --mode=benchmark",
     "audit:phase1": "node scripts/render.cjs --mode=audit",
-    "test:memory": "node --test scripts/tests/memory.test.cjs"
+    "test:memory": "node --test scripts/tests/memory.test.cjs",
+    "test:characters": "node scripts/test-characters.cjs",
+    "verify:characters": "node scripts/verify-characters.cjs"
   },
   "keywords": [],
   "author": "",
