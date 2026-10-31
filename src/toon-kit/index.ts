@@ -5,3 +5,5 @@ export * from './ThreeCanvas';
 export * from './captions';
 export * from './quality';
 export * from './characters';
+export * from './direction';
+export * from './staging';

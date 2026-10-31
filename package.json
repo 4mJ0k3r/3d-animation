@@ -21,7 +21,8 @@
     "verify:appearance": "node scripts/verify-appearance.cjs",
     "verify:walking": "node scripts/verify-walking.cjs",
     "verify:acting": "node scripts/verify-acting.cjs",
-    "verify:clinic": "node scripts/verify-clinic.cjs"
+    "verify:clinic": "node scripts/verify-clinic.cjs",
+    "verify:direction": "node scripts/verify-direction.cjs"
   },
   "keywords": [],
   "author": "",

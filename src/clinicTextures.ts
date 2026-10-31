@@ -2,6 +2,8 @@ import * as THREE from 'three';
 
 /** Shared canvas UV landmarks: origin top-left, normalized independently of resolution. */
 export const MEDICAL_CHART_POINTS=Object.freeze({head:Object.freeze([.76,.28] as const),node:Object.freeze([.38,.68] as const)});
+/** Pixel drawing metrics shared with semantic content-region bounds. */
+export const MEDICAL_CHART_ART=Object.freeze({headRadius:36,lineWidth:14,spineBottom:.82,shoulderDrop:95,armLeft:85,armRight:35,glowRadius:38});
 
 /**
  * Generates the blue medical chart whiteboard texture with the stick figure diagram
@@ -25,30 +27,30 @@ export function createMedicalChartTexture(width = 1024, height = 640): THREE.Can
   // 2. White Stick Figure Diagram (right side of chart)
   const figX = width * MEDICAL_CHART_POINTS.head[0];
   const figHeadY = height * MEDICAL_CHART_POINTS.head[1];
-  const figSpineBottom = height * 0.82;
+  const figSpineBottom = height * MEDICAL_CHART_ART.spineBottom;
 
   ctx.strokeStyle = '#ffffff';
   ctx.fillStyle = '#ffffff';
-  ctx.lineWidth = 14;
+  ctx.lineWidth = MEDICAL_CHART_ART.lineWidth;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
   // Head circle
   ctx.beginPath();
-  ctx.arc(figX, figHeadY, 36, 0, Math.PI * 2);
+  ctx.arc(figX, figHeadY, MEDICAL_CHART_ART.headRadius, 0, Math.PI * 2);
   ctx.stroke();
 
   // Spine
   ctx.beginPath();
-  ctx.moveTo(figX, figHeadY + 36);
+  ctx.moveTo(figX, figHeadY + MEDICAL_CHART_ART.headRadius);
   ctx.lineTo(figX, figSpineBottom);
   ctx.stroke();
 
   // Shoulder / arm horizontal bar
-  const shoulderY = figHeadY + 95;
+  const shoulderY = figHeadY + MEDICAL_CHART_ART.shoulderDrop;
   ctx.beginPath();
-  ctx.moveTo(figX - 85, shoulderY);
-  ctx.lineTo(figX + 35, shoulderY);
+  ctx.moveTo(figX - MEDICAL_CHART_ART.armLeft, shoulderY);
+  ctx.lineTo(figX + MEDICAL_CHART_ART.armRight, shoulderY);
   ctx.stroke();
 
   // 3. Dashed Trajectory Arc (connecting spine to target node)
@@ -63,20 +65,20 @@ export function createMedicalChartTexture(width = 1024, height = 640): THREE.Can
   const cpY = height * 0.32;
 
   ctx.beginPath();
-  ctx.moveTo(figX - 85, shoulderY);
+  ctx.moveTo(figX - MEDICAL_CHART_ART.armLeft, shoulderY);
   ctx.quadraticCurveTo(cpX, cpY, targetX, targetY);
   ctx.stroke();
   ctx.restore();
 
   // 4. Glowing Yellow Target Node (circle at end of trajectory arc)
   // Outer soft glow
-  const glowGrad = ctx.createRadialGradient(targetX, targetY, 4, targetX, targetY, 38);
+  const glowGrad = ctx.createRadialGradient(targetX, targetY, 4, targetX, targetY, MEDICAL_CHART_ART.glowRadius);
   glowGrad.addColorStop(0, '#fffbeb');
   glowGrad.addColorStop(0.4, '#fef08a');
   glowGrad.addColorStop(1, 'rgba(254, 240, 138, 0)');
   ctx.fillStyle = glowGrad;
   ctx.beginPath();
-  ctx.arc(targetX, targetY, 38, 0, Math.PI * 2);
+  ctx.arc(targetX, targetY, MEDICAL_CHART_ART.glowRadius, 0, Math.PI * 2);
   ctx.fill();
 
   // Solid yellow node

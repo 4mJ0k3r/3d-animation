@@ -86,3 +86,11 @@
 - Keep the ThreeCanvas cancellation latch: in pinned Remotion 4.0.539, completing readiness after an error can mask cancellation. Failed captures must reject, and unmount must release owned gates/resources. Run audit:phase1, test:characters, verify:clinic and earlier GPU suites serially before changing this behavior.
 - Preserve swangle/SwiftShader, software-safe, concurrency 1, disabled heavy AO/Bokeh/parallel encoding, workspace scratch and every production admission/abort/memory limit. Windows validation does not certify Muse/Linux or protect against sudden host ballooning. Never bypass the Linux memory guard to complete this scene.
 - Stop after Stage 2F review. No camera automation, voice/lip-sync, general timelines or script-to-video orchestration.
+
+## Phase 3B static direction
+
+- Phase 3B now approves a separate DoctorClinicCinematic validation composition. Read direction/README.md. Use createClinicStage + createDirector, named actors/prop regions and static shot presets; do not calculate author-facing camera coordinates or modify rigs/renderer internals.
+- Bind one cast to the stage. Contacts and framing must use the same environment/target library. Assign complete prop state, evaluate the cast once, create the snapshot, apply the director, then render through ThreeCanvas with autoFrame=false.
+- Prepare all explicit frames synchronously in initScene; restore frame 0. Do not lazily derive a camera from Remotion's first request, keep previous-camera state, or build scenes/render targets per cut. Initial limits: 600 frames/32 shots, 601 samples maximum, constant-size prepared bounds per shot.
+- Framing guarantees apply to selected geometric regions, not arbitrary visibility. Non-subject foreground crops can occur. Do not claim occlusion, caption-safe positioning or screen-direction enforcement; these belong to 3C. No over-shoulder, pan/push-in, crossfade, other layouts, action timeline or automatic acting changes in 3B.
+- Run verify:direction, test:characters, test:memory and earlier suites serially. Keep all swangle/software-safe, concurrency-1, workspace temp, GPU ownership, memory admission/abort and encoding safeguards unchanged. Windows measurements do not certify Muse/Linux.
