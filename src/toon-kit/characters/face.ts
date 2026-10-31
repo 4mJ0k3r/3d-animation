@@ -8,6 +8,7 @@ export interface Expression {readonly name:ExpressionName;readonly intensity?:nu
 export interface BlinkConfig {readonly period?:number;readonly duration?:number;readonly phase?:number;readonly enabled?:boolean}
 export interface FaceConfig {readonly textureSize?:256|512;readonly defaultExpression?:ExpressionName;readonly blink?:BlinkConfig}
 export interface ResolvedFace {
+  readonly transition?:{readonly from:ResolvedFace;readonly weight:number};
   readonly expression:ExpressionName;readonly intensity:number;readonly mouth:MouthShape;readonly blush:number;
   readonly blink:number;readonly pupil:readonly [number,number];
 }

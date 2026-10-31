@@ -19,7 +19,8 @@
     "verify:cast-portrait": "node scripts/verify-characters.cjs cast-portrait",
     "verify:faces": "node scripts/verify-faces.cjs",
     "verify:appearance": "node scripts/verify-appearance.cjs",
-    "verify:walking": "node scripts/verify-walking.cjs"
+    "verify:walking": "node scripts/verify-walking.cjs",
+    "verify:acting": "node scripts/verify-acting.cjs"
   },
   "keywords": [],
   "author": "",

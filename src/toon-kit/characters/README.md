@@ -1,4 +1,4 @@
-# Universal characters — Stages 2A–2E-A
+# Universal characters — Stages 2A–2E-B
 
 **Use `createCast` for scene authoring.** It resolves contacts, walking, pointing,
 gaze, expressions and complete poses without scene-specific joint mathematics.
@@ -27,10 +27,11 @@ cast.evaluate({frame, fps, poses: {
 
 [CAST.md](CAST.md): evaluator, targets and precedence.
 [WALKING.md](WALKING.md): paths, root motion and planted contacts.
+[ACTING.md](ACTING.md): timed gestures, compatible target blending and expressive posture.
 [FACES.md](FACES.md): expressions, gaze and blinking.
 [APPEARANCE.md](APPEARANCE.md): hair, garments and four appearance presets.
 [CONTACTS.md](CONTACTS.md): advanced pure IK/contact API.
-No general gesture blending, timeline/camera automation or legacy migration.
+No general story timelines, cinematic automation, lip-sync or legacy migration.
 
 ## Coordinates and anatomy
 

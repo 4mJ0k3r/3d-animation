@@ -1,12 +1,22 @@
 import type {ResolvedFace} from './face';
 
 /** Canvas coordinates are internal to the SDK. No fonts, images or asynchronous assets. */
-export function paintFace(ctx:CanvasRenderingContext2D,state:ResolvedFace,size:number):void {
-  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,size,size);ctx.save();ctx.scale(size/256,size/256);
+export function paintFace(ctx:CanvasRenderingContext2D,state:ResolvedFace,size:number,blend?:CanvasRenderingContext2D):void {
+  ctx.setTransform(1,0,0,1,0,0);ctx.clearRect(0,0,size,size);
+  if(state.transition){
+    if(!blend)throw new Error('Expression blending requires its owned scratch canvas');
+    paintSingle(ctx,state,size,1);ctx.save();ctx.globalCompositeOperation='destination-in';ctx.globalAlpha=state.transition.weight;ctx.fillRect(0,0,size,size);ctx.restore();
+    blend.setTransform(1,0,0,1,0,0);blend.clearRect(0,0,size,size);paintSingle(blend,state.transition.from,size,1);
+    ctx.save();ctx.globalCompositeOperation='lighter';ctx.globalAlpha=1-state.transition.weight;ctx.drawImage(blend.canvas,0,0);ctx.restore();
+  }
+  else paintSingle(ctx,state,size,1);
+}
+function paintSingle(ctx:CanvasRenderingContext2D,state:ResolvedFace,size:number,alpha:number):void {
+  ctx.save();ctx.globalAlpha=alpha;ctx.scale(size/256,size/256);
   ctx.lineCap='round';ctx.lineJoin='round';ctx.strokeStyle='#17121b';ctx.lineWidth=4.5;
   const a=state.intensity,e=a===0?'neutral':state.expression,blink=state.blink;
   const ellipse=(x:number,y:number,rx:number,ry:number,fill:string,stroke=true)=>{ctx.beginPath();ctx.ellipse(x,y,rx,Math.max(.01,ry),0,0,Math.PI*2);ctx.fillStyle=fill;ctx.fill();if(stroke)ctx.stroke();};
-  if(state.blush>0){ctx.globalAlpha=state.blush*.65;ellipse(66,143,19,9,'#ef8e91',false);ellipse(190,143,19,9,'#ef8e91',false);ctx.globalAlpha=1;}
+  if(state.blush>0){ctx.globalAlpha=alpha*state.blush*.65;ellipse(66,143,19,9,'#ef8e91',false);ellipse(190,143,19,9,'#ef8e91',false);ctx.globalAlpha=alpha;}
   // Eyes retain expressive proportions underneath an independently resolved blink.
   const open=e==='surprised'?1+.22*a:e==='happy'?1-.24*a:e==='angry'?1-.32*a:e==='sad'?1-.15*a:1;
   for(const sign of [-1,1]) {

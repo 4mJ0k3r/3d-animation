@@ -10,6 +10,8 @@ export {levelFloor,levelFrame,seatTarget,worldPoint,standOn,sitOn,reachTo} from 
 export type {Side,DiagnosticCode,ConstraintDiagnostic,TwoBoneInput,TwoBoneResult,LevelFrame,FloorTarget,
   SeatTarget,PointTarget,StandingContact,SittingContact,ArmReach,ContactRequest,ContactResult,ContactState} from './constraint-types';
 export {createCast} from './cast';
+export {wave,nod,shakeHead,shrug,explain,surprise,sad,worried,excited,gestureDuring,turnTo,blendExpression,GESTURES} from './acting';
+export type {ActionTiming,GestureOptions,GestureName,ActingGesture,TimedPoint,GazeTransition,ExpressionTransition,ActingSample} from './acting';
 export {CastEvaluationError} from './cast-error';
 export {createTargets,worldMark,scenePoint,sceneMark,sceneSeat,aliasTarget,frameTarget,markFrom,characterTarget,standAt,sitAt,lookAt,pointAt,reachFor} from './semantic-targets';
 export {GAZE_LIMITS} from './gaze';

@@ -112,7 +112,7 @@ therefore resolve consistently without reading previously applied joint matrices
 
 ## Arm priority, diagnostics and resources
 
-Order: support contacts → explicit reaches → pointing → free arm swing → gaze
+Order: support contacts → explicit reaches → pointing/intentional gestures → free arm swing → gaze
 and face. Reaches reserve their arms; pointing reserves its selected free arm.
 Only remaining arms counter-swing. Candidate targets pass through the **same**
 IK/clearance pipeline, retaining the solved pointing elbow/hand. If full swing
@@ -121,6 +121,10 @@ actions never move to accommodate decorative swing. `WALK_ARM_YIELD` is
 informational; `WalkState.arms/swingWeight` report the result. This bounded fallback
 is not general smooth gesture blending; amplitude can change discretely at a
 clearance boundary in adversarial action combinations.
+
+[Stage 2E-B acting](ACTING.md) now blends deliberate gesture targets from/to
+the current frame's walking baseline, reserving gesture arms before publication.
+The legacy bounded swing fallback remains conservative at tight clearances.
 
 Failures use `CastEvaluationError.diagnostics`: `PATH_INVALID`, `WALK_INVALID`,
 `WALK_SPEED`, or `WALK_UNREACHABLE` with underlying contact diagnostics such as
@@ -135,7 +139,7 @@ retain their existing disposal behavior. Complete poses still reset all controll
 transforms/visibility; appearances remain attached to the existing hierarchy.
 
 Limits: static level paths, no obstacles/inter-character avoidance, stairs,
-backward/strafe locomotion, foot roll, general timeline/blending, cinematic
+backward/strafe locomotion, foot roll, general story timelines, cinematic
 automation or legacy clinic migration. Sharp turns may reject even on a valid
 path; use gentler routes/shorter strides instead of bypassing diagnostics.
 
@@ -172,4 +176,4 @@ parent transforms, all looks, fixed bone lengths, rejected requests, resource
 stability and cleanup. Review the MP4 at normal speed as well as screenshots.
 Windows SwiftShader results do not certify Muse's 2-vCPU Linux VM. Preserve every
 production safety limit; no sampled monitor guarantees survival of sudden host
-memory reclamation. Stop after Stage 2E-A.
+memory reclamation. Compatible acting is approved through Stage 2E-B; stop before Stage 2F.

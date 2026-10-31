@@ -7,10 +7,11 @@ import {castFail} from './cast-error';
 import type {CharacterDefinition,Vec3} from './types';
 import type {ContactRequest,ContactResult,Side} from './constraint-types';
 import type {ResolvedPointing} from './cast-types';
+import type {UpperBodyMotion} from './acting';
 
 /** Bounded candidate construction; every limb solve and clearance check stays in Stage 2B. */
 export function solvePointing(definition:CharacterDefinition,base:Extract<ContactResult,{ok:true}>,request:ContactRequest,
-  target:Vec3,hand:Side|'auto'):{result:Extract<ContactResult,{ok:true}>;pointing:ResolvedPointing} {
+  target:Vec3,hand:Side|'auto',motion?:UpperBodyMotion):{result:Extract<ContactResult,{ok:true}>;pointing:ResolvedPointing} {
   const parent=request.parent??{position:[0,0,0] as Vec3,yaw:0,scale:1},pose=base.pose;
   const local=worldToRoot(pose,parent,target),occupied=new Set((request.reaches??[]).map(r=>r.hand));
   const rootCenter=poseAnchorPosition(pose,definition.anchors.torso),offset=sub(local,rootCenter);
@@ -35,7 +36,7 @@ export function solvePointing(definition:CharacterDefinition,base:Extract<Contac
         if(length(aim)<=p.lowerArmLength+p.handRadius)continue;
         const goal=add(elbow,mul(unit(aim),p.lowerArmLength));
         const candidate=solveContactPoseWithPoles(definition,{...request,reaches:[...(request.reaches??[]),reachTo(side,worldPoint(rootToWorld(pose,parent,goal)))]},
-          {[side]:sub(elbow,shoulder)});
+          {[side]:sub(elbow,shoulder)},motion);
         if(!candidate.ok)continue;
         const actualElbow=poseAnchorPosition(candidate.pose,definition.anchors[`${side}Elbow`]);
         const actualHand=poseAnchorPosition(candidate.pose,definition.anchors[`${side}Wrist`]);

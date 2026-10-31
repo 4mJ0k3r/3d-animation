@@ -21,6 +21,7 @@ export function createFacePool(owner:CharacterResourceOwner) {
     if(typeof document==='undefined')return {prepare:(_state:ResolvedFace)=>(()=>{})};
     const size=config.textureSize??256;
     const front=document.createElement('canvas'),back=document.createElement('canvas');front.width=front.height=back.width=back.height=size;
+    const blend=document.createElement('canvas');blend.width=blend.height=size;const blendContext=blend.getContext('2d');if(!blendContext)throw new Error('Facial blending Canvas2D unavailable');
     const context=back.getContext('2d');if(!context)throw new Error('Facial Canvas2D unavailable');
     const texture=new THREE.CanvasTexture(front);texture.colorSpace=THREE.SRGBColorSpace;texture.generateMipmaps=false;
     texture.minFilter=texture.magFilter=THREE.LinearFilter;
@@ -31,11 +32,11 @@ export function createFacePool(owner:CharacterResourceOwner) {
     mesh.userData.outlineMode='none';mesh.castShadow=false;mesh.receiveShadow=false;head.add(mesh);owner.track(mesh);
     let current=front,staging=back,key='',dead=false;
     const reset=()=>{mesh.position.set(0,0,0);mesh.quaternion.identity();mesh.scale.setScalar(radius*1.012);mesh.visible=true;mesh.matrixAutoUpdate=mesh.matrixWorldAutoUpdate=true;};
-    owner.registerCleanup(()=>{dead=true;front.width=front.height=back.width=back.height=1;});
+    owner.registerCleanup(()=>{dead=true;front.width=front.height=back.width=back.height=blend.width=blend.height=1;});
     return {prepare(state:ResolvedFace):()=>void {
       if(dead||owner.signal.aborted)throw new Error('Facial owner disposed');
       const next=JSON.stringify(state);if(next===key)return reset;
-      const ctx=staging.getContext('2d');if(!ctx)throw new Error('Facial Canvas2D unavailable');paintFace(ctx,state,size);
+      const ctx=staging.getContext('2d');if(!ctx)throw new Error('Facial Canvas2D unavailable');paintFace(ctx,state,size,blendContext);
       // Publish only after every cast actor has passed validation/raster preparation.
       return ()=>{reset();const old=current;current=staging;staging=old;texture.image=current;texture.needsUpdate=true;key=next;};
     }};

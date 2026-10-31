@@ -4,7 +4,8 @@ import {torsoDistance} from './proportions';
 import {NODE_PARENTS} from './types';
 import type {CharacterDefinition,CharacterPose,JointName,NodeName,NodeTransform,Quat,Vec3} from './types';
 import type {ArmReach,ContactRequest,ContactResult,ConstraintDiagnostic,DiagnosticCode,LevelFrame,Side} from './constraint-types';
-import {add,sub,mul,dot,length,distance,finiteVector,inverseQ,multiplyQ,yawPoint,segmentDistance,segmentBox,cylinderMinY} from './math';
+import {add,sub,mul,dot,length,distance,finiteVector,inverseQ,multiplyQ,rotateQ,yawPoint,segmentDistance,segmentBox,cylinderMinY} from './math';
+import type {UpperBodyMotion} from './acting';
 
 class RejectedContact extends Error {
   constructor(readonly diagnostic:ConstraintDiagnostic){super(diagnostic.message);}
@@ -24,7 +25,7 @@ export function solveContactPose(definition:CharacterDefinition,request:ContactR
 }
 
 /** Internal extension: directional pointing supplies bend hints to the SAME IK/clearance pipeline. */
-export function solveContactPoseWithPoles(definition:CharacterDefinition,request:ContactRequest,armPoles:Partial<Record<Side,Vec3>>):ContactResult {
+export function solveContactPoseWithPoles(definition:CharacterDefinition,request:ContactRequest,armPoles:Partial<Record<Side,Vec3>>,motion?:UpperBodyMotion):ContactResult {
   const diagnostics:ConstraintDiagnostic[]=[];
   try {
     if(!request||!request.support||!onlyKeys(request,['support','parent','scale','visible','reaches']))fail('INVALID_REQUEST','A standing or sitting support descriptor is required; unknown request fields are not supported.');
@@ -115,6 +116,15 @@ export function solveContactPoseWithPoles(definition:CharacterDefinition,request
       set(names[2],{quaternion:inverseQ(ik.lowerOrientation)});
     }
     set('pelvis',{position:[0,support.kind==='walk'?support.pelvisHeight:seated?seatedPelvisY:ankleHeight+(p.upperLegLength+p.lowerLegLength)*(1-.35*(support.kind==='stand'?support.crouch:0)),0]});
+    if(motion?.lean){
+      if(!Number.isFinite(motion.lean)||Math.abs(motion.lean)>.15)fail('INVALID_REQUEST','Upper-body motion exceeds its supported lean bound.');
+      // Pitch about the pelvis X axis leaves both hip sockets fixed. The seat
+      // correction keeps the rounded capsule's lowest surface on its support.
+      const q:Quat=[Math.sin(motion.lean/2),0,0,Math.cos(motion.lean/2)],rest=definition.restPose.torso.position;
+      const position=rotateQ(q,rest),axis=rotateQ(q,[0,p.torsoLength/2,0]);
+      const correction=seated?rest[1]-p.torsoLength/2-(position[1]-Math.abs(axis[1])):0;
+      set('torso',{quaternion:q,position:[position[0],position[1]+correction,position[2]]});
+    }
     for(const side of ['left','right'] as const) {
       const hip=anchor(`${side}Hip`);
       let goal:Vec3=[hip[0],ankleHeight,0];
@@ -147,8 +157,10 @@ export function solveContactPoseWithPoles(definition:CharacterDefinition,request
     }
 
     const torso=anchor('torso'),head=anchor('head');
-    const bodyA=add(torso,[0,-p.torsoLength/2,0]),bodyB=add(torso,[0,p.torsoLength/2,0]);
-    if(torso[1]-p.torsoLength/2-p.torsoRadius < -epsilon)fail('FLOOR_CLEARANCE','Body would penetrate the floor.');
+    const bodyAxis=rotateQ(pose.torso.quaternion,[0,p.torsoLength/2,0]),bodyA=sub(torso,bodyAxis),bodyB=add(torso,bodyAxis);
+    const torsoLocal=(point:Vec3)=>rotateQ(inverseQ(pose.torso.quaternion),sub(point,torso));
+    if(Math.min(bodyA[1],bodyB[1])-p.torsoRadius < -epsilon)fail('FLOOR_CLEARANCE','Body would penetrate the floor.');
+    if(motion?.lean)for(const side of ['left','right'] as const)if(torsoDistance(torsoLocal(anchor(`${side}Hip`)),p)>-p.legRadius*.5)fail('BODY_CLEARANCE','Upper-body lean would expose a hip socket.');
     const armSegments:Array<readonly[Vec3,Vec3]>=[],legSegments:Array<readonly[Vec3,Vec3]>=[];
     for(const side of ['left','right'] as const) {
       const shoulder=anchor(`${side}Shoulder`),elbow=anchor(`${side}Elbow`),hand=anchor(`${side}Wrist`);
@@ -156,15 +168,15 @@ export function solveContactPoseWithPoles(definition:CharacterDefinition,request
       const armLimb=`${side}Arm` as const,legLimb=`${side}Leg` as const;
       const upper=sub(elbow,shoulder),lower=sub(hand,elbow),sign=side==='left'?1:-1;
       const flex=Math.acos(Math.max(-1,Math.min(1,dot(upper,lower)/(p.upperArmLength*p.lowerArmLength))));
-      if(sign*upper[0]<-epsilon || flex>Math.PI*5/6+epsilon)fail('JOINT_LIMIT','Arm must exit its shoulder outward and elbow flexion cannot exceed 150 degrees.',armLimb);
-      if(torsoDistance(sub(elbow,torso),p)<p.armRadius-epsilon || torsoDistance(sub(hand,torso),p)<p.handRadius-epsilon ||
+      if(sign*rotateQ(inverseQ(pose.torso.quaternion),upper)[0]<-epsilon || flex>Math.PI*5/6+epsilon)fail('JOINT_LIMIT','Arm must exit its shoulder outward and elbow flexion cannot exceed 150 degrees.',armLimb);
+      if(torsoDistance(torsoLocal(elbow),p)<p.armRadius-epsilon || torsoDistance(torsoLocal(hand),p)<p.handRadius-epsilon ||
         segmentDistance(elbow,hand,bodyA,bodyB)<p.torsoRadius+p.armRadius-epsilon ||
         segmentDistance(shoulder,elbow,head,head)<p.headRadius+p.armRadius-epsilon ||
         segmentDistance(elbow,hand,head,head)<p.headRadius+p.armRadius-epsilon || distance(hand,head)<p.headRadius+p.handRadius-epsilon) {
         fail('BODY_CLEARANCE','Reach intersects the torso or head outside its intended shoulder socket.',armLimb);
       }
       if(segmentDistance(hand,hand,shoulder,elbow)<p.handRadius+p.armRadius-epsilon)fail('LIMB_CLEARANCE','Hand intersects its own upper arm.',armLimb);
-      if(torsoDistance(sub(knee,torso),p)<p.legRadius-epsilon || segmentDistance(knee,ankle,bodyA,bodyB)<p.torsoRadius+p.legRadius-epsilon) {
+      if(torsoDistance(torsoLocal(knee),p)<p.legRadius-epsilon || segmentDistance(knee,ankle,bodyA,bodyB)<p.torsoRadius+p.legRadius-epsilon) {
         fail('BODY_CLEARANCE','Leg cannot clear the body with this contact.',legLimb);
       }
       const sole=poseAnchorPosition(pose,definition.anchors[`${side}Sole`]);

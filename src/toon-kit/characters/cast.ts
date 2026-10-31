@@ -3,14 +3,18 @@ import type {CartoonEngine} from '../engine';
 import {createCharacterFactory} from './rig';
 import type {CharacterRig} from './rig';
 import {freezeData,poseAnchorPosition,validateCompletePose} from './pose';
-import {solveContactPose} from './constraints';
+import {solveContactPoseWithPoles} from './constraints';
 import {levelFloor,standOn,sitOn,worldPoint,reachTo} from './targets';
 import {characterTarget,standAt,worldMark} from './semantic-targets';
 import {TargetResolver,targetPosition,readLevelFrame} from './target-resolver';
 import {rootToWorld} from './pose-space';
 import {worldToRoot} from './pose-space';
 import {inverseQ,rotateQ,sub} from './math';
-import {resolveFace,validateFaceConfig} from './face';
+import {validateFaceConfig} from './face';
+import {sampleActing} from './acting';
+import type {ActingSample} from './acting';
+import {solveActingArms,resolveTurn} from './acting-solver';
+import {resolveActingFace} from './acting-face';
 import type {ResolvedFace} from './face';
 import {resolveAppearance} from './appearance';
 import {planWalk} from './walking';
@@ -64,6 +68,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
     const finals=new Map<string,CharacterPose>(),gazes=new Map<string,ResolvedGaze>(),points=new Map<string,ResolvedPointing|null>();
     const faces=new Map<string,ResolvedFace|null>();
     const locomotion=new Map<string,WalkState|null>(names.map(n=>[n,null]));
+    const acting=new Map<string,ActingSample|null>(names.map(n=>[n,null]));
     const supportActive=new Set<string>(),intentActive=new Set<string>(),diagnostics:CastSnapshot['diagnostics'][number][]=[];
     const identify=(name:string,error:unknown):never=>{
       if(error instanceof CastEvaluationError)throw new CastEvaluationError(error.diagnostics.map(d=>({...d,actor:d.actor??name})));
@@ -76,6 +81,12 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
         (intent.scale!==undefined&&(typeof intent.scale!=='number'||!Number.isFinite(intent.scale)))||
         (intent.visible!==undefined&&typeof intent.visible!=='boolean'))castFail('INVALID_CAST_REQUEST','Invalid stance, scale or visibility.',name);
       intents.set(name,intent);
+      if(intent.gesture?.kind==='acting'||intent.gesture?.kind==='timed-point'){
+        try{const sample=sampleActing(intent.gesture,frame.frame,frame.fps);
+          if(intent.reaches?.length&&sample.lean!==0){acting.set(name,freezeData({...sample,lean:0}));diagnostics.push({code:'ACTION_SECONDARY_YIELD',severity:'info',actor:name,message:'Secondary torso lean yielded to physical reaches; head/arm acting remains constrained.'});}
+          else acting.set(name,sample);
+        }catch(error){identify(name,error);}
+      }
       const parent=rigs.get(name)!.root.parent;
       if(!parent)castFail('INVALID_PARENT','Cast actor was detached from its declared scene parent.',name);
       let attached=false;
@@ -112,7 +123,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
         }else if(stance.kind==='stand'||stance.kind==='sit')support=stance;
         else castFail('INVALID_CAST_REQUEST','Unknown stance.',name);
         const contact:ContactRequest={support,parent:parents.get(name),scale:intent.scale??config.scale??1,visible:intent.visible??true};
-        const result=solveContactPose(rigs.get(name)!.definition,contact);
+        const result=solveContactPoseWithPoles(rigs.get(name)!.definition,contact,{},acting.get(name)??undefined);
         if(!result.ok)castFail(support.kind==='walk'?'WALK_UNREACHABLE':'CONTACT_FAILED','Support constraints failed.',name,result.diagnostics);
         contactRequests.set(name,contact);supports.set(name,result);return result;
       }catch(error){return identify(name,error);}finally{supportActive.delete(name);}
@@ -123,6 +134,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
       intentActive.add(name);
       try {
         const intent=intents.get(name)!,rig=rigs.get(name)!;resolveSupport(name);
+        const action=acting.get(name),motion=action??undefined;
         if(intent.reaches!==undefined&&!Array.isArray(intent.reaches))castFail('INVALID_CAST_REQUEST','Reaches must be an array.',name);
         const reaches=(intent.reaches??[]).map(reach=>{
           if(!reach||!['left','right'].includes(reach.hand))castFail('INVALID_CAST_REQUEST','Invalid hand selection.',name);
@@ -131,29 +143,37 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
         const contact={...contactRequests.get(name)!,reaches};
         // Reuse this frame's immutable support solve when no physical reaches
         // were requested. Pointing still validates candidates in the same solver.
-        let result=reaches.length?solveContactPose(rig.definition,contact):supports.get(name)!,point:ResolvedPointing|null=null;
+        let result=reaches.length?solveContactPoseWithPoles(rig.definition,contact,{},motion):supports.get(name)!,point:ResolvedPointing|null=null;
         if(!result.ok)castFail('CONTACT_FAILED','Reach constraints failed.',name,result.diagnostics);
-        if(intent.gesture!==undefined) {
+        if(intent.gesture!==undefined&&!action) {
           if(!intent.gesture||intent.gesture.kind!=='point'||!['left','right','auto'].includes(intent.gesture.hand))castFail('INVALID_CAST_REQUEST','Only a valid pointAt intention is supported.',name);
           const solved=solvePointing(rig.definition,result,contact,targetPosition(resolver.resolve(intent.gesture.target)),intent.gesture.hand);
           result=solved.result;point=solved.pointing;
         }
         const walking=locomotion.get(name);
-        if(walking){const swung=applyWalkArms(rig.definition,result,contact,walking,point);result=swung.result;locomotion.set(name,swung.state);
+        if(walking){const swung=applyWalkArms(rig.definition,result,contact,walking,point,motion);result=swung.result;locomotion.set(name,swung.state);
           if(walking.activity>1e-12&&swung.state.swingWeight!==1)diagnostics.push({code:'WALK_ARM_YIELD',severity:'info',actor:name,message:'Walking arm swing yielded to higher-priority actions or clearance.'});}
-        if(intent.gaze!==undefined&&(!intent.gaze||intent.gaze.kind!=='look'))castFail('INVALID_CAST_REQUEST','Invalid gaze intention.',name);
-        const gaze=solveHeadGaze(rig.definition,result.pose,parents.get(name)!,intent.gaze?targetPosition(resolver.resolve(intent.gaze.target)):null);
+        if(action){
+          const timed=intent.gesture?.kind==='timed-point'?intent.gesture:null;
+          const solved=solveActingArms(rig.definition,result,contact,action,timed,timed&&action.weight>0?targetPosition(resolver.resolve(timed.point.target)):null,action);
+          result=solved.result;point=solved.pointing;acting.set(name,freezeData({...action,hands:solved.hands}));
+          const gait=locomotion.get(name);if(gait&&gait.arms){const arms={...gait.arms};solved.hands.forEach(s=>arms[s]=timed?'point':'gesture');locomotion.set(name,freezeData({...gait,arms}));}
+        }
+        if(intent.gaze!==undefined&&(!intent.gaze||!['look','turn-to'].includes(intent.gaze.kind)))castFail('INVALID_CAST_REQUEST','Invalid gaze intention.',name);
+        let headTarget=intent.gaze?targetPosition(resolver.resolve(intent.gaze.target)):null;
+        if(intent.gaze?.kind==='turn-to')headTarget=resolveTurn(rig.definition,result.pose,parents.get(name)!,intent.gaze,frame.frame,frame.fps,headTarget!,intent.gaze.from?targetPosition(resolver.resolve(intent.gaze.from)):null);
+        const gaze=solveHeadGaze(rig.definition,result.pose,parents.get(name)!,headTarget,action??undefined);
         let direction=gaze.gaze.eyeLocalDirection;
         if(intent.eyeGaze!==undefined){
           if(!intent.eyeGaze||intent.eyeGaze.kind!=='look')castFail('FACE_INVALID','Invalid eyes-only gaze intention.',name);
           const target=worldToRoot(gaze.pose,parents.get(name)!,targetPosition(resolver.resolve(intent.eyeGaze.target)));
-          direction=rotateQ(inverseQ(gaze.pose.head.quaternion),sub(target,poseAnchorPosition(gaze.pose,rig.definition.anchors.head)));
+          direction=rotateQ(inverseQ(gaze.pose.head.quaternion),rotateQ(inverseQ(gaze.pose.torso.quaternion),sub(target,poseAnchorPosition(gaze.pose,rig.definition.anchors.head))));
         }
         const faceConfig=configs.get(name)!.face;
         if(faceConfig===false){
           if(intent.expression!==undefined||intent.blink!==undefined||intent.eyeGaze!==undefined)castFail('FACE_INVALID','Facial intentions require an enabled face.',name);
           faces.set(name,null);
-        }else try{faces.set(name,resolveFace(faceConfig??{},name,frame.time,intent.expression,intent.blink,direction));}
+        }else try{faces.set(name,resolveActingFace(faceConfig??{},name,frame.time,frame.frame,frame.fps,intent.expression,intent.blink,direction,action??undefined));}
         catch(error){castFail('FACE_INVALID',String(error),name);}
         validateCompletePose(gaze.pose);
         diagnostics.push(...result.diagnostics,...gaze.diagnostics.map(d=>({...d,actor:name})));
@@ -171,7 +191,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
     }
     const data=<V>(map:Map<string,V>)=>Object.fromEntries(names.map(name=>[name,map.get(name)!]));
     const commits=names.map(name=>faces.get(name)?rigs.get(name)!.prepareFace(faces.get(name)!):()=>{});
-    const snapshot:CastSnapshot=freezeData({...frame,locomotion:data(locomotion),faces:data(faces),poses:data(finals),gaze:data(gazes),pointing:data(points),contacts:Object.fromEntries(names.map(name=>[name,supports.get(name)!.contacts])),diagnostics});
+    const snapshot:CastSnapshot=freezeData({...frame,acting:data(acting),locomotion:data(locomotion),faces:data(faces),poses:data(finals),gaze:data(gazes),pointing:data(points),contacts:Object.fromEntries(names.map(name=>[name,supports.get(name)!.contacts])),diagnostics});
     names.forEach(name=>rigs.get(name)!.applyPose(snapshot.poses[name]));
     commits.forEach(commit=>commit());
     return snapshot;

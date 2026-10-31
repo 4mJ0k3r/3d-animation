@@ -30,13 +30,13 @@ export interface LookIntent {readonly kind:'look';readonly target:TargetReferenc
 export interface PointIntent {readonly kind:'point';readonly target:TargetReference;readonly hand:Side|'auto'}
 export interface SemanticReach {readonly hand:Side;readonly target:TargetReference}
 export interface ActorIntent {
-  readonly expression?:ExpressionName|Expression;
+  readonly expression?:ExpressionName|Expression|import('./acting').ExpressionTransition;
   readonly blink?:number;
   /** Optional eyes-only target; omission follows residual head gaze. */
   readonly eyeGaze?:LookIntent;
   readonly stance?:CastStance;
-  readonly gaze?:LookIntent;
-  readonly gesture?:PointIntent;
+  readonly gaze?:LookIntent|import('./acting').GazeTransition;
+  readonly gesture?:PointIntent|import('./acting').ActingGesture|import('./acting').TimedPoint;
   readonly reaches?:readonly (SemanticReach|ArmReach)[];
   readonly scale?:number;
   readonly visible?:boolean;
@@ -60,7 +60,7 @@ export type CastCode='INVALID_CAST_REQUEST'|'UNKNOWN_ACTOR'|'TARGET_MISSING'|'TA
   'TARGET_DEPTH'|'TARGET_CALLBACK_FAILED'|'TARGET_PHASE'|'ACTOR_SCENE_TARGET'|'INVALID_PARENT'|
   'CONTACT_FAILED'|'INTENT_CONFLICT'|'POINTING_UNREACHABLE'|'POINTING_COINCIDENT'|'GAZE_LIMITED'|
   'GAZE_COINCIDENT'|'CAST_DISPOSED'|'POSE_PREFLIGHT'|'FACE_INVALID'|'APPEARANCE_INVALID'|
-  'PATH_INVALID'|'WALK_INVALID'|'WALK_SPEED'|'WALK_UNREACHABLE'|'WALK_ARM_YIELD';
+  'PATH_INVALID'|'WALK_INVALID'|'WALK_SPEED'|'WALK_UNREACHABLE'|'WALK_ARM_YIELD'|'ACTION_INVALID'|'ACTION_UNREACHABLE'|'ACTION_SECONDARY_YIELD';
 export interface CastDiagnostic {readonly code:CastCode;readonly severity:'info'|'error';readonly message:string;readonly actor?:string;readonly details?:unknown}
 export interface ResolvedGaze {
   readonly targetWorld:Vec3|null;
@@ -70,11 +70,13 @@ export interface ResolvedGaze {
   readonly yaw:number;readonly pitch:number;readonly limited:boolean;
 }
 export interface ResolvedPointing {
+  readonly weight?:number;readonly aligned?:boolean;
   readonly hand:Side;readonly targetWorld:Vec3;readonly elbowWorld:Vec3;readonly handWorld:Vec3;
   readonly directionWorld:Vec3;readonly bend:number;readonly attempts:number;
 }
 export interface CastFrameRequest {readonly frame:number;readonly fps:number;readonly poses?:Readonly<Record<string,ActorIntent>>}
 export interface CastSnapshot extends FrameInput {
+  readonly acting:Readonly<Record<string,import('./acting').ActingSample|null>>;
   readonly locomotion:Readonly<Record<string,import('./walking').WalkState|null>>;
   readonly faces:Readonly<Record<string,ResolvedFace|null>>;
   readonly poses:Readonly<Record<string,CharacterPose>>;

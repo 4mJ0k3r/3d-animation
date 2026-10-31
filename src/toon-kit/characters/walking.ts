@@ -13,7 +13,7 @@ export interface WalkState {
   readonly startFrame:number;readonly endFrame:number;readonly swing:number;
   readonly activity:number;
   readonly feet:WalkingContact['feet'];
-  readonly arms?:Readonly<Record<Side,'reach'|'point'|'swing'|'rest'>>;readonly swingWeight?:number;
+  readonly arms?:Readonly<Record<Side,'reach'|'point'|'gesture'|'swing'|'rest'>>;readonly swingWeight?:number;
 }
 const ease=(t:number)=>{const x=Math.max(0,Math.min(1,t));return x*x*x*(10+x*(-15+6*x));};
 export function walkAlong(path:WalkingPathReference,options:WalkOptions={}):WalkAlong {

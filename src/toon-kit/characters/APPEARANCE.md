@@ -170,5 +170,5 @@ Decorative hair/glasses are not new general collision volumes; arbitrary contact
 with them is outside Stage 2B's body-only collision model. True side views naturally
 foreshorten the face. Local Windows SwiftShader results do not certify the
 ballooned Muse Linux VM. Appearance is preserved during the approved
-[Stage 2E-A walking](WALKING.md). Stage 2E-B/2F and legacy migration remain out
-of scope.
+[Stage 2E-A walking](WALKING.md) and [Stage 2E-B acting](ACTING.md). Stage 2F and
+legacy migration remain out of scope.

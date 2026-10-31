@@ -153,8 +153,9 @@ At a true side angle features foreshorten and the far eye is occluded by the hea
 faces do not turn toward the camera independently. Frontal/oblique shots are the
 readability reference. The fixed head tessellation still has a mild polygonal
 outer contour at large magnification. Eye gaze cannot exceed anatomical limits;
-mouth shapes and expression changes are discrete. No nose, facial animation
-blending or audio lip-sync is implemented here. Hair, clothing and appearance
+Mouth shape selection remains discrete; [ACTING.md](ACTING.md) adds deterministic
+raster crossfades, coordinated emotion and head motion. No nose or audio lip-sync
+is implemented. Hair, clothing and appearance
 presets are provided through [APPEARANCE.md](APPEARANCE.md), and deterministic
 walking through [WALKING.md](WALKING.md). Legacy clinic migration remains out of
 scope. Camera architecture and production memory limits

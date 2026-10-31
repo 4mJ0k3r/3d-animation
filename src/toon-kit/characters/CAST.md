@@ -60,7 +60,8 @@ Omitted actors and fields resolve each frame to:
 - Scale: construction-time scale, otherwise 1. Visibility: true.
 - Reaches/pointing: none; walking swings free arms, other stances reset them to
   rest. Gaze: neutral forward, head yaw and
-  pitch zero. Expressions reset to the configured default, normally neutral;
+  pitch zero. Expressions follow active gesture emotion when omitted, otherwise
+  reset to the configured default, normally neutral;
   blinking is evaluated from absolute time and eye gaze uses residual head gaze.
 
 The fixed evaluation order is:
@@ -69,8 +70,8 @@ The fixed evaluation order is:
 2. Resolve supports, including absolute-time walking root/foot targets, through
    the existing Stage 2B contact/IK solver.
 3. Resolve stable current-frame character and prop targets.
-4. Resolve intention dependencies, explicit reaches and directional pointing;
-   swing only unreserved walking arms, then resolve gaze and facial state.
+4. Resolve explicit reaches and intentional actions; blend acting targets with
+   the current walking/rest baseline, solve constraints, then resolve gaze/face.
 5. Validate every complete pose, stage facial rasters and preflight every rig/parent.
 6. Apply all poses synchronously. Return an immutable snapshot.
 
@@ -79,13 +80,14 @@ fails. Ordinary validation failures therefore cannot leave a partially updated
 cast. Arbitrary user hooks or external mutation during commit are unsupported;
 the API does not attempt a history-based rollback of external code.
 
-Precedence is **support contacts → explicit reaches → pointing → free walking
-arm swing → gaze/face**. Reaches
+Precedence is **support contacts → explicit reaches → pointing/intentional
+gestures → free walking arm swing → secondary motion/gaze/face**. Reaches
 reserve their selected arms. An explicit pointing/reach collision rejects the
 frame; auto pointing may select the other free arm. Gaze changes only the head's
 orientation about its sphere center, preserving the head/neck overlap, limb
-clearance volumes and all support contacts. There is no interpolation, event
-queue, clock, accumulated delta or animation mixer.
+clearance volumes and all support contacts. Timed compatible target blending is
+documented in [ACTING.md](ACTING.md). There is no event queue, clock, accumulated
+delta or persistent animation mixer.
 
 ## Targets
 
@@ -184,7 +186,7 @@ passes and keeps no previous-frame pose cache. Support results are reused within
 the current evaluation when there are no physical reaches. GPU sharing/disposal
 still follows the existing engine owner; `cast.dispose()` is idempotent and
 invalidates evaluation. No cross-engine GPU caches are added. No general
-inter-character/prop collision, arbitrary body turning or timeline blending exists.
+inter-character/prop collision, arbitrary body turning or story timeline exists.
 Static-path walking and path-tangent body facing are documented in
 [WALKING.md](WALKING.md). Keep the same walk descriptor before/after its time
 window to hold its endpoints; omission restores the construction stance,
