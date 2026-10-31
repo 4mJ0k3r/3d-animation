@@ -7,7 +7,8 @@ export function compileShotTimeline(shots: readonly StaticShot[], durationInFram
     sorted = shots.map(s => {
       if (!s || typeof s.id !== 'string' || !s.id.trim() || ids.has(s.id)) directionFail('INVALID_SHOT_ID', 'Shot IDs must be nonempty and unique');
       ids.add(s.id);
-      if (Object.keys(s).some(k => !['id', 'type', 'startFrame', 'endFrame', 'subject', 'subjects', 'region', 'view'].includes(k))) directionFail('UNSUPPORTED_SHOT', 'Unknown shot option', {
+      if (s.allowAxisCrossing!==undefined&&typeof s.allowAxisCrossing!=='boolean')directionFail('UNSUPPORTED_SHOT','allowAxisCrossing must be boolean');
+      if (Object.keys(s).some(k => !['id', 'type', 'startFrame', 'endFrame', 'subject', 'subjects', 'region', 'view','allowAxisCrossing'].includes(k))) directionFail('UNSUPPORTED_SHOT', 'Unknown shot option', {
         shotId: s.id
       });
       if (!['establishing', 'twoShot', 'medium', 'fullBody', 'closeUp', 'reaction', 'objectFocus'].includes(s.type) || s.view !== undefined && !['front', 'threeQuarter', 'subjectFront'].includes(s.view)) directionFail('UNSUPPORTED_SHOT', 'Unsupported shot type/view', {

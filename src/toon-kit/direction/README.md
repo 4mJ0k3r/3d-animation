@@ -158,3 +158,10 @@ other layout templates or action timeline. A non-subject actor can enter/crop
 at a shot edge. Captions may overlap scene content. These are 3C/3D concerns.
 Do not hide actors or enable expensive effects to conceal such limitations.
 All existing CPU-only production safety rules remain mandatory.
+
+## Opt-in Phase 3C
+
+The exclusions above describe the retained Phase 3B default. For bounded
+visibility-aware candidate selection, measured caption clearance and axis
+checks, pass `composition:{captions}` and read [COMPOSITION.md](COMPOSITION.md).
+The DoctorClinicVisible composition demonstrates the complete readiness bridge.

@@ -3,6 +3,7 @@ import { createUniversalClinic } from './clinic-universal';
 import { createClinicStage } from './toon-kit/staging';
 import { createDirector } from './toon-kit/direction';
 import type { StaticShot } from './toon-kit/direction';
+import type { CompositionOptions } from './toon-kit/direction';
 export const CLINIC_STATIC_SHOTS: readonly StaticShot[] = Object.freeze([{
   id: 'conversation',
   type: 'twoShot',
@@ -31,7 +32,7 @@ export const CLINIC_STATIC_SHOTS: readonly StaticShot[] = Object.freeze([{
   endFrame: 150,
   view: 'subjectFront'
 }].map(s => Object.freeze(s as StaticShot)));
-export function createCinematicClinic(engine: CartoonEngine, aspect = engine.camera.aspect, shots = CLINIC_STATIC_SHOTS) {
+export function createCinematicClinic(engine: CartoonEngine, aspect = engine.camera.aspect, shots = CLINIC_STATIC_SHOTS, composition?: CompositionOptions) {
   const clinic = createUniversalClinic(engine),
     stage = createClinicStage(engine, {
       environment: clinic.environment,
@@ -42,7 +43,8 @@ export function createCinematicClinic(engine: CartoonEngine, aspect = engine.cam
     stage,
     shots,
     durationInFrames: 150,
-    aspect
+    aspect,
+    composition
   });
   const sample = (frame: number) => stage.snapshot(clinic.evaluate(frame));
   director.prepare({

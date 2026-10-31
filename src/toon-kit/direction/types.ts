@@ -7,6 +7,7 @@ export interface Bounds {
 }
 export type ActorRegion = 'head' | 'face' | 'torso' | 'fullBody' | 'leftHand' | 'rightHand' | 'gesture';
 export interface CompositionActor {
+  readonly visibility?:import('./visibility-types').ActorVisibility;
   readonly visible: boolean;
   readonly origin: Vec3;
   readonly facing: Vec3;
@@ -18,6 +19,7 @@ export interface CompositionProp {
   readonly regions: Readonly<Record<string, Bounds>>;
 }
 export interface CompositionSnapshot {
+  readonly visibility?:import('./visibility-types').StageVisibility;
   readonly frame: number;
   readonly fps: number;
   readonly actors: Readonly<Record<string, CompositionActor>>;
@@ -30,6 +32,7 @@ export interface CompositionSnapshot {
 }
 export type ShotType = 'establishing' | 'twoShot' | 'medium' | 'fullBody' | 'closeUp' | 'reaction' | 'objectFocus';
 export interface StaticShot {
+  readonly allowAxisCrossing?:boolean;
   readonly id: string;
   readonly type: ShotType;
   readonly startFrame: number;
@@ -57,6 +60,7 @@ export interface CameraState {
   readonly view: null;
 }
 export interface DirectionDiagnostic {
+  readonly details?:unknown;
   readonly code: string;
   readonly message: string;
   readonly shotId?: string;

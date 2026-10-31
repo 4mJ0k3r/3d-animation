@@ -22,7 +22,8 @@
     "verify:walking": "node scripts/verify-walking.cjs",
     "verify:acting": "node scripts/verify-acting.cjs",
     "verify:clinic": "node scripts/verify-clinic.cjs",
-    "verify:direction": "node scripts/verify-direction.cjs"
+    "verify:direction": "node scripts/verify-direction.cjs",
+    "verify:composition": "node scripts/verify-composition.cjs"
   },
   "keywords": [],
   "author": "",

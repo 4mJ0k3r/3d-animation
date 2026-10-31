@@ -9,6 +9,7 @@ import { bindActor } from '../direction/bindings';
 import { geometryBounds, transformBounds } from '../direction/bounds';
 import { directionFail } from '../direction/types';
 import type { Bounds, CompositionSnapshot, Vec3 } from '../direction/types';
+import { boxProxy } from '../direction/proxies';
 export function createClinicStage(engine: CartoonEngine, options: {
   environment?: ClinicEnvironment;
   targets?: TargetLibrary;
@@ -52,6 +53,26 @@ export function createClinicStage(engine: CartoonEngine, options: {
     min: uv(node[0] - art.glowRadius / w, node[1] + art.glowRadius / h),
     max: uv(node[0] + art.glowRadius / w, node[1] - art.glowRadius / h)
   };
+  const boxes: {
+    mesh: T.Mesh;
+    bounds: Bounds;
+    id: string;
+    plane?: boolean;
+  }[] = [];
+  environment.group.traverse(o => {
+    if (o instanceof T.Mesh && o.geometry.type === 'BoxGeometry') boxes.push({
+      mesh: o,
+      bounds: geometryBounds(o.geometry),
+      id: 'room.box.' + boxes.length
+    });
+  });
+  const floorBounds = geometryBounds(environment.floorSurface.geometry),
+    floorWidth = floorBounds.max[0] - floorBounds.min[0],
+    floorDepth = floorBounds.max[1] - floorBounds.min[1];
+  const wallHeight = Math.max(...environment.group.children.filter(o => o instanceof T.Mesh && o !== environment.floorSurface && o.geometry.type === 'PlaneGeometry').map(o => {
+    const b = geometryBounds((o as T.Mesh).geometry);
+    return b.max[1] - b.min[1];
+  }));
   let bindings: Record<string, ReturnType<typeof bindActor>> | null = null,
     closed = false;
   const issued = new WeakSet<CompositionSnapshot>();
@@ -73,9 +94,26 @@ export function createClinicStage(engine: CartoonEngine, options: {
     environment,
     targets,
     cameraViews: Object.freeze(['front', 'threeQuarter', 'subjectFront'] as const),
+    registerOccluder(id: string, mesh: T.Mesh, kind: 'box' | 'plane' = 'box') {
+      live();
+      if (!id.trim() || boxes.some(b => b.id === 'prop.' + id) || !(mesh instanceof T.Mesh) || !['box', 'plane'].includes(kind)) directionFail('INVALID_PROXY', 'Unique ID and mesh box/plane required');
+      for (let p: T.Object3D | null = mesh; p; p = p.parent) if (String(p.userData.outlineGroup ?? '').startsWith('character:')) directionFail('INVALID_PROXY', 'Character proxies must come from complete cast poses');
+      let owner: T.Object3D | null = mesh;
+      while (owner && owner !== engine.scene) owner = owner.parent;
+      if (owner !== engine.scene) directionFail('INVALID_OWNER', 'Occluder belongs to another scene');
+      boxes.push({
+        mesh,
+        bounds: geometryBounds(mesh.geometry),
+        id: 'prop.' + id,
+        plane: kind === 'plane'
+      });
+    },
     prop(name: 'medicalChart', region: 'full' | 'diagram' | 'node' = 'full') {
       if (name !== 'medicalChart' || !['full', 'diagram', 'node'].includes(region)) directionFail('UNKNOWN_REGION', 'Unknown clinic prop region');
-      return Object.freeze({ subject: name, region });
+      return Object.freeze({
+        subject: name,
+        region
+      });
     },
     mark: (name: 'doctor') => {
       if (name !== 'doctor') directionFail('UNKNOWN_MARK', String(name));
@@ -113,6 +151,46 @@ export function createClinicStage(engine: CartoonEngine, options: {
       const a = actors.doctor?.origin ?? mark,
         b = actors.patient?.origin ?? seat;
       const result: CompositionSnapshot = freezeData({
+        visibility: {
+          proxies: [...Object.values(actors).filter(a => a.visible).flatMap(a => a.visibility?.proxies ?? []), ...boxes.filter(b => {
+            let p: T.Object3D | null = b.mesh;
+            while (p) {
+              if (!p.visible) return false;
+              if (p === engine.scene) return true;
+              p = p.parent;
+            }
+            return false;
+          }).map(b => {
+            b.mesh.updateWorldMatrix(true, false);
+            return boxProxy(b.id, 'room', b.bounds, b.mesh.matrixWorld, b.plane);
+          }), boxProxy('medicalChart.plane', 'medicalChart', local, chart.matrixWorld, true)],
+          zone: {
+            origin: environment.floorSurface.getWorldPosition(new T.Vector3()).toArray(),
+            right: new T.Vector3(1, 0, 0).transformDirection(environment.group.matrixWorld).toArray(),
+            front,
+            halfWidth: floorWidth * readLevelFrame(environment.group).scale / 2,
+            back: environment.medicalChart.position.z * readLevelFrame(environment.group).scale - .06,
+            forward: floorDepth * readLevelFrame(environment.group).scale,
+            minHeight: .1 * readLevelFrame(environment.group).scale,
+            maxHeight: wallHeight * .95 * readLevelFrame(environment.group).scale
+          },
+          viewpoints: [{
+            id: '00-front',
+            yaw: 0
+          }, {
+            id: '01-left15',
+            yaw: -Math.PI / 12
+          }, {
+            id: '02-right15',
+            yaw: Math.PI / 12
+          }, {
+            id: '03-right22',
+            yaw: Math.PI / 8
+          }, {
+            id: '04-right30',
+            yaw: Math.PI / 6
+          }]
+        },
         frame: state.frame,
         fps: state.fps,
         actors,

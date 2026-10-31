@@ -94,3 +94,11 @@
 - Prepare all explicit frames synchronously in initScene; restore frame 0. Do not lazily derive a camera from Remotion's first request, keep previous-camera state, or build scenes/render targets per cut. Initial limits: 600 frames/32 shots, 601 samples maximum, constant-size prepared bounds per shot.
 - Framing guarantees apply to selected geometric regions, not arbitrary visibility. Non-subject foreground crops can occur. Do not claim occlusion, caption-safe positioning or screen-direction enforcement; these belong to 3C. No over-shoulder, pan/push-in, crossfade, other layouts, action timeline or automatic acting changes in 3B.
 - Run verify:direction, test:characters, test:memory and earlier suites serially. Keep all swangle/software-safe, concurrency-1, workspace temp, GPU ownership, memory admission/abort and encoding safeguards unchanged. Windows measurements do not certify Muse/Linux.
+
+## Phase 3C visibility-aware static composition
+
+- Prefer createDirector with composition:{captions} and the SAME createCaptionLayout result in ToonCaptions. Read direction/COMPOSITION.md and DoctorClinicVisible. Await fonts, measured layout and React overlay commit before capture; prepare with the actual viewport.
+- Use registered current-pose actor proxies and actual stage geometry. At most six approved candidates per static shot; test EVERY explicit frame. Never replace failure with an unvalidated wide view, hide actors, move furniture or alter acting to make a shot pass.
+- Faces, eyes, active hands and named prop content must satisfy visibility, size and caption clearance; in-frame containment alone is insufficient. Proxy visibility is approximate, not pixel segmentation. Inspect native beauty renders.
+- Preserve fixed per-shot cameras, stable score/ID tie breaks, scene certificates and prepare-finally restoration. Changed actions/layout require new preparation. No Phase 3D motion or Phase 3E automation is authorized here.
+- Run verify:composition plus existing regression suites serially. Do not change frozen renderer/rig internals, memory limits, swangle/software-safe, concurrency 1, workspace temp or encoding safeguards. Local Windows evidence is not Linux certification.

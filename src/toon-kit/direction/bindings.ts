@@ -7,6 +7,7 @@ import { readLevelFrame } from '../characters/target-resolver';
 import { geometryBounds, transformBounds, unionBounds } from './bounds';
 import type { Bounds, CompositionActor, Vec3 } from './types';
 import { directionFail } from './types';
+import { actorVisibility } from './proxies';
 
 /** Cache immutable local geometry bounds once; evaluated bounds use complete poses,
  * never the live joints' last matrices. No GPU allocations in capture(). */
@@ -81,6 +82,7 @@ export function bindActor(id: string, actor: CastActor, scene: T.Scene) {
     let ancestorsVisible = true;
     for (let n: T.Object3D | null = parent; n; n = n.parent) ancestorsVisible = ancestorsVisible && n.visible;
     return freezeData({
+      visibility: actorVisibility(id, actor.definition.proportions, matrices, p && p.weight !== 0 ? [p.hand] : hands ?? []),
       visible: visible.root && ancestorsVisible,
       origin: new T.Vector3().setFromMatrixPosition(matrices.root).toArray(),
       facing,

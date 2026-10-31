@@ -7,6 +7,8 @@ import { shotBounds, croppingForShot } from './shots';
 import { corners, unionBounds, transformBounds } from './bounds';
 import type { Bounds, CameraState, CompositionSnapshot, StaticShot, Vec3 } from './types';
 import { directionFail } from './types';
+import type { CompositionOptions, CompactVisibilityFrame } from './visibility-types';
+import { compactVisibilityFrame, planVisibleShot, COMPOSITION_LIMITS } from './composition';
 export function applyCameraState(camera: T.PerspectiveCamera, state: CameraState) {
   const vector = (v: readonly number[], length: number) => Array.isArray(v) && v.length === length && v.every(Number.isFinite);
   if (!state || !vector(state.position, 3) || !vector(state.quaternion, 4) || !vector(state.up, 3) || !vector(state.scale, 3) || state.scale.some(v => v !== 1) || ![state.fov, state.aspect, state.near, state.far, state.zoom, state.focus, state.filmGauge, state.filmOffset].every(Number.isFinite) || state.fov <= 0 || state.fov >= 180 || state.aspect <= 0 || state.near <= 0 || state.far <= state.near || state.zoom <= 0 || state.filmGauge <= 0 || state.focus <= 0 || state.view !== null || !Number.isInteger(state.layers) || Math.abs(Math.hypot(...state.quaternion) - 1) > 1e-6 || Math.abs(Math.hypot(...state.up) - 1) > 1e-6) directionFail('INVALID_CAMERA_STATE', 'Complete finite perspective camera state required');
@@ -46,9 +48,13 @@ export function createDirector(engine: CartoonEngine, options: {
   shots: readonly StaticShot[];
   durationInFrames: number;
   aspect: number;
+  composition?: CompositionOptions;
 }) {
   options = {
-    ...options
+    ...options,
+    composition: options.composition ? {
+      ...options.composition
+    } : undefined
   }; // caller edits must not change an already compiled policy
   if (!Number.isFinite(options.aspect) || options.aspect <= 0) directionFail('INVALID_ASPECT', 'Positive viewport aspect required');
   const timeline = compileShotTimeline(options.shots, options.durationInFrames),
@@ -56,7 +62,9 @@ export function createDirector(engine: CartoonEngine, options: {
       camera: CameraState;
       bounds: Bounds;
       envelope: Bounds;
+      composition?: ReturnType<typeof planVisibleShot>;
     }>();
+  const signatures = new Map<number, string>();
   let ready = false,
     busy = false,
     dead = false;
@@ -67,6 +75,7 @@ export function createDirector(engine: CartoonEngine, options: {
     dead = true;
     ready = false;
     plans.clear();
+    signatures.clear();
   };
   engine.registerCleanup(dispose);
   const check = (s: CompositionSnapshot, frame: number) => {
@@ -95,17 +104,30 @@ export function createDirector(engine: CartoonEngine, options: {
           rotation: T.Matrix4;
           inverse: T.Matrix4;
         }>();
+      const visibilityFrames = new Map<string, CompactVisibilityFrame[]>();
+      let signatureBytes = 0;
       const compact = (b: Bounds): Bounds => ({
         min: b.min,
         max: b.max
       });
       try {
+        if (options.composition?.captions && (Math.abs(options.composition.captions.width / options.composition.captions.height - options.aspect) > 1e-8 || Number.isFinite(engine.width) && (engine.width !== options.composition.captions.width || engine.height !== options.composition.captions.height))) directionFail('CAPTION_VIEWPORT', 'Caption layout viewport differs from camera');
         for (let frame = 0; frame < options.durationInFrames; frame++) {
           const s = sample(frame);
           check(s, frame);
           const shot = timeline.select(frame),
             b = shotBounds(shot, s),
             old = boxes.get(shot.id);
+          if (options.composition) {
+            const compactFrame = compactVisibilityFrame(shot, s),
+              frames = visibilityFrames.get(shot.id) ?? [];
+            frames.push(compactFrame);
+            visibilityFrames.set(shot.id, frames);
+            const signature = JSON.stringify(compactFrame);
+            signatureBytes += signature.length * 2;
+            if (signatureBytes > COMPOSITION_LIMITS.maxSignatureBytes) directionFail('PREPARATION_BUDGET', 'Visibility certificates exceed memory budget');
+            signatures.set(frame, signature);
+          }
           boxes.set(shot.id, compact(old ? unionBounds([old, b]) : b));
           if (!directions.has(shot.id)) {
             // Explicit reference is startFrame, reached by this bounded preparation
@@ -158,6 +180,15 @@ export function createDirector(engine: CartoonEngine, options: {
             bounds: freezeData(bounds),
             envelope: freezeData(boxes.get(shot.id)!)
           });
+          if (options.composition) {
+            const result = planVisibleShot(shot, visibilityFrames.get(shot.id)!, options.aspect, options.composition);
+            plans.set(shot.id, {
+              camera: result.camera,
+              bounds: result.bounds,
+              envelope: freezeData(boxes.get(shot.id)!),
+              composition: freezeData(result)
+            });
+          }
         }
       } finally {
         try {
@@ -182,6 +213,10 @@ export function createDirector(engine: CartoonEngine, options: {
       const shot = timeline.select(frame),
         plan = plans.get(shot.id)!;
       const current = shotBounds(shot, snapshot);
+      if (options.composition && JSON.stringify(compactVisibilityFrame(shot, snapshot)) !== signatures.get(frame)) directionFail('COMPOSITION_CHANGED', 'Current visibility state differs from certified preparation; prepare a new director', {
+        shotId: shot.id,
+        frame
+      });
       // A changed stage/action must not silently make the static camera follow it.
       for (let i = 0; i < 3; i++) if (current.min[i] < plan.envelope.min[i] - 1e-6 || current.max[i] > plan.envelope.max[i] + 1e-6) directionFail('REFRAME_REQUIRED', 'Scene/action moved outside prepared envelope', {
         shotId: shot.id,
@@ -204,7 +239,18 @@ export function createDirector(engine: CartoonEngine, options: {
       return freezeData({
         shot,
         cropping: croppingForShot(shot),
-        protectedBounds: plans.get(shot.id)!.bounds
+        protectedBounds: plans.get(shot.id)!.bounds,
+        composition: plans.get(shot.id)!.composition
+      });
+    },
+    preparationStats() {
+      live();
+      if (!ready) directionFail('NOT_PREPARED', 'Director not prepared');
+      return freezeData({
+        sampleCount: options.durationInFrames + 1,
+        signatureBytes: [...signatures.values()].reduce((n, s) => n + s.length * 2, 0),
+        candidateCount: [...plans.values()].reduce((n, p) => n + (p.composition?.candidateCount ?? 0), 0),
+        certifiedFrames: signatures.size
       });
     },
     dispose
