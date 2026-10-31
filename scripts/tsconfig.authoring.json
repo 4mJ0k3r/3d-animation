@@ -1,0 +1,4 @@
+{
+ "extends":"./tsconfig.characters.json",
+ "include":["../src/toon-kit/authoring/document.ts","../src/toon-kit/authoring/font.ts","../src/toon-kit/authoring/starters.ts"]
+}

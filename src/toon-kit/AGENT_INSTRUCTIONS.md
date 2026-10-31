@@ -188,4 +188,23 @@ alignment; never describe estimates as verified speech synchronization. Supplied
 data is structurally validated, not recognized from speech. Preserve pauses,
 punctuation, scene-cut continuity and readiness/disposal guards.
 Run test:story-audio and verify:story-audio serially. No TTS provider, ASR, forced
-alignment, lip-sync or Phase 4C is authorized. All production rules above stand.
+alignment or lip-sync is authorized. Phase 4C-A follows below; all production rules above stand.
+
+## Phase 4C-A: Muse one-shot authoring
+
+For new stories, read [authoring/README.md](authoring/README.md), copy
+`examples/office-idea.story.json`, and edit JSON plus local assets only. Use
+`npm run story -- validate --plan=examples/name.story.json`, then
+`npm run story -- render --plan=examples/name.story.json --output=out/name.mp4 --report=out/name.json`.
+Do not write a new scene, onFrame callback, composition, camera vector, rig math,
+layout coordinates or renderer. The registered AuthoredStory composition delegates
+to the existing story/cast/director/audio/caption APIs. Two curated starters only:
+office/clinic, two active actors in distinct semantic roles, default body dimensions.
+Use documented marks/seats/path/props; unsupported actions/layouts must fail visibly.
+The bundled pinned OFL Noto Sans Devanagari font must pass integrity/readiness
+before caption measurement; never substitute Windows fonts or estimated speech sync.
+Keep the 600-frame budget. Run test:authoring and test:memory serially; optional
+--verify=true runs bounded checks inside the one guarded production browser.
+All prior memory admission/abort, concurrency 1, software-safe/swangle, temp and
+ownership safeguards remain mandatory. No Phase 4C-B/5, TTS, ASR, NLP or long-video
+orchestration is authorized.

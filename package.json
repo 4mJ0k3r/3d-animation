@@ -30,7 +30,9 @@
     "test:story": "node scripts/test-story.cjs",
     "verify:story": "node scripts/verify-story.cjs",
     "test:story-audio": "node scripts/test-story-audio.cjs",
-    "verify:story-audio": "node scripts/verify-story-audio.cjs"
+    "verify:story-audio": "node scripts/verify-story-audio.cjs",
+    "story": "node scripts/story.cjs",
+    "test:authoring": "node scripts/test-authoring.cjs"
   },
   "keywords": [],
   "author": "",

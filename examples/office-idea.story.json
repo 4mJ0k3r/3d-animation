@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "workspace": {
+      "preset": "office"
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 240,
+    "characters": {
+      "meera": {
+        "appearance": "casual",
+        "expression": "worried"
+      },
+      "kabir": {
+        "appearance": "office",
+        "expression": "neutral"
+      }
+    },
+    "scenes": [
+      {
+        "id": "a-small-idea",
+        "setting": "workspace",
+        "startFrame": 0,
+        "endFrame": 240,
+        "axis": [
+          "meera",
+          "kabir"
+        ],
+        "characters": {
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "kabir": {
+            "stance": {
+              "type": "sit",
+              "seat": "chair",
+              "floor": "ground"
+            }
+          }
+        },
+        "beats": [
+          {
+            "id": "arrive",
+            "startFrame": 0,
+            "endFrame": 60,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "walk",
+                "path": "toDesk"
+              }
+            ]
+          },
+          {
+            "id": "idea",
+            "startFrame": 60,
+            "endFrame": 110,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "point",
+                "target": "board",
+                "hand": "auto"
+              },
+              {
+                "actor": "meera",
+                "type": "look",
+                "target": "board"
+              },
+              {
+                "actor": "meera",
+                "type": "expression",
+                "name": "explaining"
+              }
+            ]
+          },
+          {
+            "id": "understand",
+            "startFrame": 110,
+            "endFrame": 150,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "gesture",
+                "name": "nod"
+              },
+              {
+                "actor": "kabir",
+                "type": "expression",
+                "name": "happy"
+              }
+            ]
+          },
+          {
+            "id": "celebrate",
+            "startFrame": 170,
+            "endFrame": 225,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "gesture",
+                "name": "wave"
+              },
+              {
+                "actor": "meera",
+                "type": "look",
+                "target": "audience"
+              },
+              {
+                "actor": "meera",
+                "type": "expression",
+                "name": "happy"
+              }
+            ]
+          }
+        ],
+        "cues": [
+          {
+            "id": "problem",
+            "kind": "dialogue",
+            "speaker": "meera",
+            "language": "en",
+            "text": "Deadline today?",
+            "startFrame": 0,
+            "endFrame": 48,
+            "mode": "words",
+            "timing": "estimated"
+          },
+          {
+            "id": "solution",
+            "kind": "dialogue",
+            "speaker": "meera",
+            "language": "hi",
+            "text": "एक छोटा आइडिया!",
+            "startFrame": 60,
+            "endFrame": 108,
+            "mode": "words",
+            "timing": "estimated"
+          },
+          {
+            "id": "agreement",
+            "kind": "dialogue",
+            "speaker": "kabir",
+            "language": "en",
+            "text": "Let's try it.",
+            "startFrame": 114,
+            "endFrame": 150,
+            "mode": "words",
+            "timing": "estimated"
+          },
+          {
+            "id": "ending",
+            "kind": "caption",
+            "language": "hi",
+            "text": "मिलकर काम आसान!",
+            "startFrame": 174,
+            "endFrame": 228,
+            "mode": "words",
+            "timing": "estimated"
+          }
+        ],
+        "shots": [
+          {
+            "id": "arrival",
+            "type": "fullBody",
+            "subject": "meera",
+            "startFrame": 0,
+            "endFrame": 60
+          },
+          {
+            "id": "sharing",
+            "type": "twoShot",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 60,
+            "endFrame": 110
+          },
+          {
+            "id": "reaction",
+            "type": "reaction",
+            "subject": "kabir",
+            "startFrame": 110,
+            "endFrame": 170,
+            "motion": {
+              "type": "pushIn",
+              "amount": "subtle"
+            }
+          },
+          {
+            "id": "team",
+            "type": "twoShot",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 170,
+            "endFrame": 240
+          }
+        ]
+      }
+    ]
+  }
+}
