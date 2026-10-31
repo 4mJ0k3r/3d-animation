@@ -1,6 +1,7 @@
 import { freezeData } from '../characters/pose';
 import { directionFail } from './types';
 import type { StaticShot } from './types';
+import { normalizeMotion } from './motion-contract';
 export function compileShotTimeline(shots: readonly StaticShot[], durationInFrames: number) {
   if (!Number.isInteger(durationInFrames) || durationInFrames < 1 || durationInFrames > 600 || !Array.isArray(shots) || shots.length < 1 || shots.length > 32) directionFail('INVALID_TIMELINE', 'Use 1..32 shots covering 1..600 frames');
   const ids = new Set<string>(),
@@ -8,7 +9,7 @@ export function compileShotTimeline(shots: readonly StaticShot[], durationInFram
       if (!s || typeof s.id !== 'string' || !s.id.trim() || ids.has(s.id)) directionFail('INVALID_SHOT_ID', 'Shot IDs must be nonempty and unique');
       ids.add(s.id);
       if (s.allowAxisCrossing!==undefined&&typeof s.allowAxisCrossing!=='boolean')directionFail('UNSUPPORTED_SHOT','allowAxisCrossing must be boolean');
-      if (Object.keys(s).some(k => !['id', 'type', 'startFrame', 'endFrame', 'subject', 'subjects', 'region', 'view','allowAxisCrossing'].includes(k))) directionFail('UNSUPPORTED_SHOT', 'Unknown shot option', {
+      if (Object.keys(s).some(k => !['id', 'type', 'startFrame', 'endFrame', 'subject', 'subjects', 'region', 'view','allowAxisCrossing','motion'].includes(k))) directionFail('UNSUPPORTED_SHOT', 'Unknown shot option', {
         shotId: s.id
       });
       if (!['establishing', 'twoShot', 'medium', 'fullBody', 'closeUp', 'reaction', 'objectFocus'].includes(s.type) || s.view !== undefined && !['front', 'threeQuarter', 'subjectFront'].includes(s.view)) directionFail('UNSUPPORTED_SHOT', 'Unsupported shot type/view', {
@@ -26,6 +27,7 @@ export function compileShotTimeline(shots: readonly StaticShot[], durationInFram
       });
       return {
         ...s,
+        ...(s.motion === undefined ? {} : {motion: normalizeMotion(s.motion, p => {compileShotTimeline([{...p,id:s.id,startFrame:0,endFrame:2}],2);})}),
         subjects: s.subjects ? [...s.subjects] : undefined
       };
     }).sort((a, b) => a.startFrame - b.startFrame);

@@ -1,4 +1,5 @@
 import React from 'react';
+import {CameraMotionValidation} from './toon-kit-tests/motion';
 import { Composition } from 'remotion';
 import { DoctorClinicScene } from './DoctorClinicScene';
 import {DoctorClinicUniversal} from './DoctorClinicUniversal';
@@ -7,6 +8,7 @@ import {DoctorClinicCinematic,DoctorClinicVisible} from './DoctorClinicCinematic
 export const Root: React.FC = () => {
   return (
     <>
+      <Composition id="CameraMotionValidation" component={CameraMotionValidation} durationInFrames={90} fps={30} width={720} height={1280}/>
       <Composition id="DoctorClinicVisible" component={DoctorClinicVisible} durationInFrames={150} fps={30} width={1080} height={1920}/>
       <Composition id="DoctorClinicCinematic" component={DoctorClinicCinematic} durationInFrames={150} fps={30} width={1080} height={1920}/>
       <Composition id="DoctorClinicUniversal" component={DoctorClinicUniversal} durationInFrames={150} fps={30} width={1080} height={1920}/>

@@ -32,6 +32,7 @@ export interface CompositionSnapshot {
 }
 export type ShotType = 'establishing' | 'twoShot' | 'medium' | 'fullBody' | 'closeUp' | 'reaction' | 'objectFocus';
 export interface StaticShot {
+  readonly motion?: CameraMotion;
   readonly allowAxisCrossing?:boolean;
   readonly id: string;
   readonly type: ShotType;
@@ -42,6 +43,12 @@ export interface StaticShot {
   readonly region?: string;
   readonly view?: 'front' | 'threeQuarter' | 'subjectFront';
 }
+export type SemanticCameraPlan = Pick<StaticShot, 'type'|'subject'|'subjects'|'region'|'view'>;
+export interface CameraTarget { readonly subject:string; readonly region?:string }
+export type CameraMotion =
+  | {readonly type:'pushIn'; readonly amount?:'subtle'|'moderate'; readonly easing?:'linear'|'easeInOut'}
+  | {readonly type:'pan'; readonly from:CameraTarget; readonly to:CameraTarget; readonly easing?:'linear'|'easeInOut'}
+  | {readonly type:'move'; readonly from:SemanticCameraPlan; readonly to:SemanticCameraPlan; readonly easing?:'linear'|'easeInOut'};
 export interface CameraState {
   readonly shotId: string;
   readonly position: Vec3;

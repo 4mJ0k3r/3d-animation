@@ -23,7 +23,9 @@
     "verify:acting": "node scripts/verify-acting.cjs",
     "verify:clinic": "node scripts/verify-clinic.cjs",
     "verify:direction": "node scripts/verify-direction.cjs",
-    "verify:composition": "node scripts/verify-composition.cjs"
+    "verify:composition": "node scripts/verify-composition.cjs",
+    "test:motion": "node scripts/test-motion.cjs",
+    "verify:motion": "node scripts/verify-motion.cjs"
   },
   "keywords": [],
   "author": "",

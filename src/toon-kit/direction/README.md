@@ -165,3 +165,9 @@ The exclusions above describe the retained Phase 3B default. For bounded
 visibility-aware candidate selection, measured caption clearance and axis
 checks, pass `composition:{captions}` and read [COMPOSITION.md](COMPOSITION.md).
 The DoctorClinicVisible composition demonstrates the complete readiness bridge.
+
+## Phase 3D motion
+
+Optional deterministic `shot.motion` is documented in [MOTION.md](MOTION.md).
+Preparation and frame application use the same director; static shots retain
+Phase 3B/3C behavior.

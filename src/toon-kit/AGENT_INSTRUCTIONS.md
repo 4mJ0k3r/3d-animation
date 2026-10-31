@@ -102,3 +102,9 @@
 - Faces, eyes, active hands and named prop content must satisfy visibility, size and caption clearance; in-frame containment alone is insufficient. Proxy visibility is approximate, not pixel segmentation. Inspect native beauty renders.
 - Preserve fixed per-shot cameras, stable score/ID tie breaks, scene certificates and prepare-finally restoration. Changed actions/layout require new preparation. No Phase 3D motion or Phase 3E automation is authorized here.
 - Run verify:composition plus existing regression suites serially. Do not change frozen renderer/rig internals, memory limits, swangle/software-safe, concurrency 1, workspace temp or encoding safeguards. Local Windows evidence is not Linux certification.
+
+## Phase 3D deterministic camera motion
+
+- Read direction/MOTION.md. Use optional shot.motion pushIn/pan/move through createDirector with composition:{captions}; no raw camera coordinates, timers, previous-camera smoothing, extra render cameras or postprocessing. Omitted motion remains a hard cut/static plan.
+- Keep outer-shot subjects/regions explicit. Pan targets must already be protected sampled face/hand/prop regions. Prepare every frame and bounded half-frame checks before capture; retain exact endpoints, upright focus interpolation, scene certificates and structured path failures. Never hide actors/change actions or weaken safety/composition limits to pass.
+- Prefer test:motion and verify:motion for this stage. Reuse fixtures; one short demonstration suffices. No Phase 3E orchestration/action timelines are approved. All CPU-only, memory, concurrency, ownership and temp rules remain unchanged.

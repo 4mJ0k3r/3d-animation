@@ -9,6 +9,8 @@ import type { Bounds, CameraState, CompositionSnapshot, StaticShot, Vec3 } from 
 import { directionFail } from './types';
 import type { CompositionOptions, CompactVisibilityFrame } from './visibility-types';
 import { compactVisibilityFrame, planVisibleShot, COMPOSITION_LIMITS } from './composition';
+import { prepareCameraMotion, evaluateCameraMotion, motionTarget } from './motion';
+import type { PreparedMotion } from './motion';
 export function applyCameraState(camera: T.PerspectiveCamera, state: CameraState) {
   const vector = (v: readonly number[], length: number) => Array.isArray(v) && v.length === length && v.every(Number.isFinite);
   if (!state || !vector(state.position, 3) || !vector(state.quaternion, 4) || !vector(state.up, 3) || !vector(state.scale, 3) || state.scale.some(v => v !== 1) || ![state.fov, state.aspect, state.near, state.far, state.zoom, state.focus, state.filmGauge, state.filmOffset].every(Number.isFinite) || state.fov <= 0 || state.fov >= 180 || state.aspect <= 0 || state.near <= 0 || state.far <= state.near || state.zoom <= 0 || state.filmGauge <= 0 || state.focus <= 0 || state.view !== null || !Number.isInteger(state.layers) || Math.abs(Math.hypot(...state.quaternion) - 1) > 1e-6 || Math.abs(Math.hypot(...state.up) - 1) > 1e-6) directionFail('INVALID_CAMERA_STATE', 'Complete finite perspective camera state required');
@@ -63,7 +65,45 @@ export function createDirector(engine: CartoonEngine, options: {
       bounds: Bounds;
       envelope: Bounds;
       composition?: ReturnType<typeof planVisibleShot>;
+      motion?: PreparedMotion;
     }>();
+  for (const shot of timeline.shots) {
+    if (shot.motion && !options.composition) directionFail('MOTION_REQUIRES_COMPOSITION', 'Camera motion requires composition:{} or composition:{captions}', {
+      shotId: shot.id
+    });
+    if (shot.motion && shot.endFrame - shot.startFrame < 2) directionFail('INVALID_MOTION_RANGE', 'Motion needs at least two frames', {
+      shotId: shot.id
+    });
+  }
+  const frameData = (shot: StaticShot, s: CompositionSnapshot) => {
+    const main = compactVisibilityFrame(shot, s);
+    if (shot.motion?.type === 'pan') for (const ref of [shot.motion.from, shot.motion.to]) {
+      motionTarget(s, ref);
+      const region = ref.region ?? (Object.hasOwn(s.actors, ref.subject) ? 'face' : 'full');
+      if (!main.required.some(r => r.id === ref.subject + '.' + region)) directionFail('UNPROTECTED_PAN_TARGET', 'Pan targets must be sampled face/hand/prop regions protected by the outer shot', {
+        shotId: shot.id,
+        subject: ref.subject
+      });
+    }
+    const endpoints = shot.motion?.type === 'move' ? [shot.motion.from, shot.motion.to].map(p => {
+      const endpoint = {
+        ...p,
+        id: shot.id,
+        startFrame: shot.startFrame,
+        endFrame: shot.endFrame
+      };
+      for (const id of p.subjects ?? [p.subject!]) if (Object.hasOwn(s.props, id) && !Object.hasOwn(s.props[id].regions, p.region ?? 'full')) directionFail('UNKNOWN_REGION', 'Unknown motion endpoint prop region', {
+        shotId: shot.id,
+        subject: id
+      });
+      shotBounds(endpoint, s); // Same semantic validation as ordinary shots.
+      return compactVisibilityFrame(endpoint, s);
+    }) : [];
+    return {
+      main,
+      endpoints
+    };
+  };
   const signatures = new Map<number, string>();
   let ready = false,
     busy = false,
@@ -105,6 +145,8 @@ export function createDirector(engine: CartoonEngine, options: {
           inverse: T.Matrix4;
         }>();
       const visibilityFrames = new Map<string, CompactVisibilityFrame[]>();
+      const endpointFrames = new Map<string, CompactVisibilityFrame[][]>();
+      const panTargets = new Map<string, readonly Vec3[]>();
       let signatureBytes = 0;
       const compact = (b: Bounds): Bounds => ({
         min: b.min,
@@ -119,11 +161,18 @@ export function createDirector(engine: CartoonEngine, options: {
             b = shotBounds(shot, s),
             old = boxes.get(shot.id);
           if (options.composition) {
-            const compactFrame = compactVisibilityFrame(shot, s),
+            const data = frameData(shot, s),
+              compactFrame = data.main,
               frames = visibilityFrames.get(shot.id) ?? [];
             frames.push(compactFrame);
             visibilityFrames.set(shot.id, frames);
-            const signature = JSON.stringify(compactFrame);
+            if (data.endpoints.length) {
+              const pair = endpointFrames.get(shot.id) ?? [[], []];
+              data.endpoints.forEach((f, i) => pair[i].push(f));
+              endpointFrames.set(shot.id, pair);
+            }
+            if (shot.motion?.type === 'pan' && frame === shot.startFrame) panTargets.set(shot.id, [motionTarget(s, shot.motion.from), motionTarget(s, shot.motion.to)]);
+            const signature = JSON.stringify(data);
             signatureBytes += signature.length * 2;
             if (signatureBytes > COMPOSITION_LIMITS.maxSignatureBytes) directionFail('PREPARATION_BUDGET', 'Visibility certificates exceed memory budget');
             signatures.set(frame, signature);
@@ -188,6 +237,13 @@ export function createDirector(engine: CartoonEngine, options: {
               envelope: freezeData(boxes.get(shot.id)!),
               composition: freezeData(result)
             });
+            if (shot.motion) {
+              const motion = prepareCameraMotion(shot, visibilityFrames.get(shot.id)!, result, options.composition, index => endpointFrames.get(shot.id)![index], index => panTargets.get(shot.id)![index]);
+              plans.set(shot.id, {
+                ...plans.get(shot.id)!,
+                motion
+              });
+            }
           }
         }
       } finally {
@@ -213,7 +269,7 @@ export function createDirector(engine: CartoonEngine, options: {
       const shot = timeline.select(frame),
         plan = plans.get(shot.id)!;
       const current = shotBounds(shot, snapshot);
-      if (options.composition && JSON.stringify(compactVisibilityFrame(shot, snapshot)) !== signatures.get(frame)) directionFail('COMPOSITION_CHANGED', 'Current visibility state differs from certified preparation; prepare a new director', {
+      if (options.composition && JSON.stringify(frameData(shot, snapshot)) !== signatures.get(frame)) directionFail('COMPOSITION_CHANGED', 'Current visibility state differs from certified preparation; prepare a new director', {
         shotId: shot.id,
         frame
       });
@@ -222,7 +278,7 @@ export function createDirector(engine: CartoonEngine, options: {
         shotId: shot.id,
         frame
       });
-      return plan.camera;
+      return plan.motion ? evaluateCameraMotion(plan.motion, frame) : plan.camera;
     },
     applyFrame(input: {
       frame: number;
@@ -240,7 +296,8 @@ export function createDirector(engine: CartoonEngine, options: {
         shot,
         cropping: croppingForShot(shot),
         protectedBounds: plans.get(shot.id)!.bounds,
-        composition: plans.get(shot.id)!.composition
+        composition: plans.get(shot.id)!.composition,
+        motion: plans.get(shot.id)!.motion
       });
     },
     preparationStats() {
@@ -250,7 +307,9 @@ export function createDirector(engine: CartoonEngine, options: {
         sampleCount: options.durationInFrames + 1,
         signatureBytes: [...signatures.values()].reduce((n, s) => n + s.length * 2, 0),
         candidateCount: [...plans.values()].reduce((n, p) => n + (p.composition?.candidateCount ?? 0), 0),
-        certifiedFrames: signatures.size
+        certifiedFrames: signatures.size,
+        motionChecks: [...plans.values()].reduce((n, p) => n + (p.motion?.checks ?? 0), 0),
+        motionEndpointCandidates: [...plans.values()].reduce((n, p) => n + (p.motion?.endpointCandidates ?? 0), 0)
       });
     },
     dispose

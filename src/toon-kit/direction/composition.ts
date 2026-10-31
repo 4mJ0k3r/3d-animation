@@ -253,7 +253,7 @@ export function assessComposition(shot: StaticShot, frame: CompactVisibilityFram
     details
   };
 }
-export function planVisibleShot(shot: StaticShot, frames: readonly CompactVisibilityFrame[], aspect: number, options: CompositionOptions) {
+export function planVisibleShot(shot: StaticShot, frames: readonly CompactVisibilityFrame[], aspect: number, options: CompositionOptions, endpointView?:StaticShot['view']) {
   const first = frames[0],
     views = [...first.viewpoints];
   if (shot.subject) {
@@ -267,6 +267,11 @@ export function planVisibleShot(shot: StaticShot, frames: readonly CompactVisibi
         yaw
       });
     }
+  }
+  if(endpointView){
+    const allowed=views.filter(v=>endpointView==='subjectFront'?v.id==='05-subject':Math.abs(v.yaw-(endpointView==='front'?0:Math.PI/6))<1e-8);
+    views.splice(0,views.length,...allowed);
+    if(!views.length)directionFail('UNSUPPORTED_MOTION_VIEW','Stage does not supply this semantic endpoint view',{shotId:shot.id});
   }
   const failures: unknown[] = [],
     valid: {
