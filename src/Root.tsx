@@ -1,4 +1,5 @@
 import React from 'react';
+import {StoryTimelineValidation,DeclarativeStoryExample} from './toon-kit-tests/story';
 import {OfficeCinematicValidation} from './toon-kit-tests/office';
 import {CameraMotionValidation} from './toon-kit-tests/motion';
 import { Composition } from 'remotion';
@@ -9,6 +10,8 @@ import {DoctorClinicCinematic,DoctorClinicVisible,DoctorClinicIntegrated} from '
 export const Root: React.FC = () => {
   return (
     <>
+      <Composition id="DeclarativeStoryExample" component={DeclarativeStoryExample} durationInFrames={300} fps={30} width={720} height={1280}/>
+      <Composition id="StoryTimelineValidation" component={StoryTimelineValidation} durationInFrames={60} fps={30} width={720} height={1280}/>
       <Composition id="DoctorClinicIntegrated" component={DoctorClinicIntegrated} durationInFrames={150} fps={30} width={720} height={1280}/>
       <Composition id="OfficeCinematicValidation" component={OfficeCinematicValidation} durationInFrames={90} fps={30} width={720} height={1280}/>
       <Composition id="CameraMotionValidation" component={CameraMotionValidation} durationInFrames={90} fps={30} width={720} height={1280}/>

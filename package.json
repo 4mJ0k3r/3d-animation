@@ -26,7 +26,9 @@
     "verify:composition": "node scripts/verify-composition.cjs",
     "test:motion": "node scripts/test-motion.cjs",
     "verify:motion": "node scripts/verify-motion.cjs",
-    "verify:phase3": "node scripts/verify-phase3.cjs"
+    "verify:phase3": "node scripts/verify-phase3.cjs",
+    "test:story": "node scripts/test-story.cjs",
+    "verify:story": "node scripts/verify-story.cjs"
   },
   "keywords": [],
   "author": "",

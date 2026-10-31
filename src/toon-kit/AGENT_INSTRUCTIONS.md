@@ -154,7 +154,22 @@ Construct/bind before preparing. Do not supply hand-built snapshots or camera ma
 Use full named prop regions for this lean adapter; specialized art subregions
 remain the responsibility of an existing specialized adapter such as the clinic.
 Run test:characters, test:memory, audit:phase1 and verify:phase3 serially for the
-closeout gate. No script generation, narration, lip-sync or Phase 4 is authorized.
+closeout gate. No narration, lip-sync or unrestricted script generation is authorized.
 All existing software-safe/swangle, memory, concurrency and temp rules still apply.
 Actor and prop semantic names must be distinct; the internal scenery owner name stage is reserved.
 Visibility now samples eye centers and edges; naturally hidden curved periphery is reported as selfOccluded. Centers and facing edges remain protected. Finite proxies still require visual review.
+
+## Phase 4A: structured story authoring
+
+Prefer `compileStory(plan)` + `createStory(engine,{timeline,settings,captions})`
+for validated structured stories; see [story/README.md](story/README.md) and the
+complete data-only `TEN_SECOND_STORY` example in `../toon-kit-tests/story-plan.ts`.
+Bind existing semantic environments once, commit the same measured caption layout
+to ToonCaptions, call `prepare()` before capture, then only `applyFrame(frame)`.
+All plan frames are absolute and intervals half-open. Conflicts reject; never
+resolve them by previous-frame state or manual joint/camera math. Keep settings
+static and preserve contact-transition diagnostics. Dispose the player on teardown.
+Phase 4A adds no audio, natural-language understanding or Phase 4B/4C features.
+All production software-safe/swangle, memory admission/abort, single-worker and
+workspace-temp protections remain mandatory. Run focused story/motion tests and
+`verify:story` serially after timeline changes; do not weaken safety to render.
