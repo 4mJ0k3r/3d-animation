@@ -14,7 +14,9 @@
     "test:memory": "node --test scripts/tests/memory.test.cjs",
     "test:characters": "node scripts/test-characters.cjs",
     "verify:characters": "node scripts/verify-characters.cjs",
-    "verify:contacts": "node scripts/verify-characters.cjs contacts"
+    "verify:contacts": "node scripts/verify-characters.cjs contacts",
+    "verify:cast": "node scripts/verify-characters.cjs cast",
+    "verify:cast-portrait": "node scripts/verify-characters.cjs cast-portrait"
   },
   "keywords": [],
   "author": "",

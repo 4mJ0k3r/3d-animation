@@ -6,11 +6,13 @@ const crypto = require('node:crypto');
 const {execFileSync,spawn} = require('node:child_process');
 async function main() {
   const contacts=process.argv[2]==='contacts';
-  if(process.argv.length>2&&!contacts)throw new Error('Only the optional contacts validation mode is supported');
-  const stage=contacts?'phase2b':'phase2a',prefix=contacts?'AUDIT_CONTACT':'AUDIT_CHARACTER';
+  const portrait=process.argv[2]==='cast-portrait';
+  const cast=process.argv[2]==='cast'||portrait;
+  if(process.argv.length>2&&!contacts&&!cast)throw new Error('Only optional contacts/cast validation modes are supported');
+  const stage=portrait?'phase2c/portrait':cast?'phase2c':contacts?'phase2b':'phase2a',prefix=cast?'AUDIT_CAST':contacts?'AUDIT_CONTACT':'AUDIT_CHARACTER';
   const root = path.resolve(__dirname,'..'), out = path.join(root,'out',stage);
-  const job={entry:contacts?'src/toon-kit-tests/contacts.tsx':'src/toon-kit-tests/characters.tsx',composition:contacts?'ContactValidation':'CharacterValidation',
-    frames:contacts?90:3,width:contacts?1600:1280,height:contacts?900:720,output:`out/${stage}/views.mp4`,report:`out/${stage}/production-report.json`};
+  const job={entry:cast?'src/toon-kit-tests/cast.tsx':contacts?'src/toon-kit-tests/contacts.tsx':'src/toon-kit-tests/characters.tsx',composition:cast?'CastValidation':contacts?'ContactValidation':'CharacterValidation',
+    frames:portrait?3:contacts||cast?90:3,width:portrait?720:contacts||cast?1600:1280,height:portrait?1280:contacts||cast?900:720,output:`out/${stage}/views.mp4`,report:`out/${stage}/production-report.json`};
   let results, counts;
   await new Promise((resolve,reject)=>{
     const child=spawn(process.execPath,[path.join(__dirname,'render.cjs'),...Object.entries(job).map(([key,value])=>`--${key}=${value}`)],
@@ -26,7 +28,7 @@ async function main() {
     });
     child.once('error',reject);child.once('exit',(code)=>code===0?resolve():reject(new Error(`Character verification exited ${code}`)));
   });
-  if(!Array.isArray(results)||results.length!==(contacts?42:27)||results.some((result)=>!result.pass)||!Array.isArray(counts))throw new Error('Character GPU assertion evidence missing or failed');
+  if(!Array.isArray(results)||results.length!==(cast?50:contacts?42:27)||results.some((result)=>!result.pass)||!Array.isArray(counts))throw new Error('Character GPU assertion evidence missing or failed');
   const report=path.join(root,job.report);
   const data = JSON.parse(fs.readFileSync(report));
   if (!data.worker?.renderer?.length || data.worker.renderer.some((info) => !/swiftshader/i.test(info.renderer))) throw new Error('SwiftShader verification absent');
@@ -42,7 +44,7 @@ async function main() {
     const {RenderInternals}=require('@remotion/renderer');
     const ffmpeg=RenderInternals.getExecutablePath({type:'ffmpeg',binariesDirectory:null,indent:false,logLevel:'error'});
     const ffmpegOptions={cwd:root,windowsHide:true,env:{...process.env,TMPDIR:scratch,TMP:scratch,TEMP:scratch}};
-    if(contacts) {
+    if((contacts||cast)&&!portrait) {
       // The pinned compositor FFmpeg omits select-filter options. Accurate
       // decoder seeks capture CFR frames 0/30/60 without optional filters.
       for(let index=0;index<3;index++)execFileSync(ffmpeg,['-hide_banner','-loglevel','error','-y','-threads','2',
@@ -51,7 +53,7 @@ async function main() {
       '-frames:v','3','-threads','1',path.join(out,'view-%01d.png')],ffmpegOptions);
     ['front','three-quarter','side'].forEach((name,index)=>fs.renameSync(path.join(out,`view-${index+1}.png`),path.join(out,`${name}.png`)));
     const images=['front','three-quarter','side'].map((name)=>({name,sha256:crypto.createHash('sha256').update(fs.readFileSync(path.join(out,`${name}.png`))).digest('hex')}));
-    fs.writeFileSync(path.join(out,'validation-results.json'),JSON.stringify({results,counts,images,source:contacts?
+    fs.writeFileSync(path.join(out,'validation-results.json'),JSON.stringify({results,counts,images,source:contacts||cast?
       'Screenshots extracted at 0/1/2 seconds of the production H.264 video; determinism compares raw RGBA and direct canvas PNG bytes before video encoding':
       'PNG frames extracted from the production H.264 validation video; determinism hashes above use raw RGBA before encoding'},null,2));
   }finally {

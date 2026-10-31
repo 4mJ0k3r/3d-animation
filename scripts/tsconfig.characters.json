@@ -11,5 +11,5 @@
     "types": [],
     "noEmitOnError": true
   },
-  "include": ["../src/toon-kit/characters/**/*.ts", "../src/toon-kit-tests/character-fixture.ts"]
+  "include": ["../src/toon-kit/characters/**/*.ts", "../src/toon-kit-tests/character-fixture.ts", "../src/toon-kit-tests/cast-fixture.ts"]
 }

@@ -18,6 +18,10 @@ export const finiteVector = (value: unknown): value is Vec3 => Array.isArray(val
   [...value].every((v) => typeof v==='number' && Number.isFinite(v) && Math.abs(v)<=1e6);
 export const yawPoint = (a: Vec3, yaw: number): Vec3 => [Math.cos(yaw)*a[0]+Math.sin(yaw)*a[2],a[1],-Math.sin(yaw)*a[0]+Math.cos(yaw)*a[2]];
 export const inverseQ = (q: Quat): Quat => [-q[0],-q[1],-q[2],q[3]];
+export function rotateQ(q:Quat,v:Vec3):Vec3 {
+  const t=mul(cross([q[0],q[1],q[2]],v),2);
+  return add(v,add(mul(t,q[3]),cross([q[0],q[1],q[2]],t)));
+}
 export function canonicalQ(q: Quat): Quat {
   const n=Math.hypot(...q), s=q[3]<0?-1/n:1/n;
   return [q[0]*s,q[1]*s,q[2]*s,q[3]*s];

@@ -34,3 +34,12 @@
 - These sampled safeguards cannot guarantee survival of abrupt host reclamation between readings. Wait for memory recovery after an admission rejection, and review the report after any controlled abort.
 - Run `npm run test:memory` for non-destructive, simulated low-memory rejection/tree-cleanup tests. The production job API has no fake-memory flag. Run `npm run audit:phase1` to preserve deterministic/outline/readiness/lifecycle coverage.
 - `src/toon-kit-tests/software.tsx` is the tracked representative fixture available in this checkout. `src/toon-kit-tests/clinic.tsx` wraps the original clinic component for 300-frame certification; it does not rewrite a rig or change the production Root's 150-frame duration.
+
+## Stage 2C scene authoring
+
+- Build createCast/createTargets once in initScene. Prefer standAt/sitAt, lookAt, pointAt and reachFor over raw joint transforms. Read characters/CAST.md for the public contracts and defaults.
+- Assign scene props from the requested absolute frame before cast.evaluate({frame,fps,poses}); update the camera afterward. Omitted intentions reset to documented defaults, never the previous frame.
+- Bind scene points/marks/seats to actual props. Use cast.actors[name].target() for character anchors, not live actor joint matrices. Default targets use current support snapshots; final-anchor dependencies must be acyclic. Parent groups must belong to this engine scene and retain the supported level/uniform transforms.
+- Pointing is directional and does not require touching the target. Reaching requires a physically reachable hand center. Do not bypass clearance failures, stretch limbs, or catch evaluation errors and capture an old pose. Let CastEvaluationError cancel the failed Remotion frame and inspect its diagnostics.
+- Head direction/residual gaze is exposed for future faces. Blue arrows in the Stage 2C fixture are validation gizmos only. Facial systems, hair, clothing, walking, interpolation/blending and legacy clinic migration remain unimplemented; do not add them without the next approved stage.
+- All Phase 1 CPU production, ownership, memory admission, concurrency and temp-isolation rules above remain mandatory and unchanged.

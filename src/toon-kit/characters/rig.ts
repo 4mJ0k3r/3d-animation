@@ -15,6 +15,8 @@ export interface CharacterRig {
   readonly root: THREE.Group;
   readonly definition: CharacterDefinition;
   readonly disposed: boolean;
+  /** Read-only preflight for transactional cast application. */
+  validatePose(pose: CharacterPose): void;
   /** Validates the entire pose before mutating any mesh or joint. */
   applyPose(pose: CharacterPose): void;
   /** Current posed anchor; root space excludes root placement and scale. */
@@ -100,10 +102,13 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
     const rig: CharacterRig = {
       id: options.id, root, definition,
       get disposed() {return dead;},
-      applyPose(pose) {
+      validatePose(pose) {
         ensureLive();
         validateCompletePose(pose);
         checkParentScale(root);
+      },
+      applyPose(pose) {
+        rig.validatePose(pose);
         for (const name of NODE_NAMES) {
           const node = nodes[name], value = pose[name];
           node.matrixAutoUpdate = node.matrixWorldAutoUpdate = true;
@@ -140,7 +145,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
 }
 
 /** Count submitted triangles, including repeated instances of pooled geometry. */
-export function measureCharacter(rig: CharacterRig): {meshes: number; triangles: number; geometries: number; materials: number} {
+export function measureCharacter(rig: Pick<CharacterRig,'root'>): {meshes: number; triangles: number; geometries: number; materials: number} {
   let meshes = 0, triangles = 0;
   const geometries = new Set<THREE.BufferGeometry>(), materials = new Set<THREE.Material>();
   rig.root.traverse((object) => {

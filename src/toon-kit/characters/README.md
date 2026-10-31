@@ -1,8 +1,9 @@
-# Universal character foundation and contacts — Stages 2A–2B
+# Universal character foundation, contacts and cast — Stages 2A–2C
 
-Neutral geometry, complete pose data and pure analytic contact constraints.
-See [CONTACTS.md](CONTACTS.md) for Stage 2B. No walking, gesture blending, facial
-expressions, hair, clothing, final intent orchestration or legacy migration.
+Neutral geometry, complete pose data, analytic contacts and declarative cast
+evaluation. See [CONTACTS.md](CONTACTS.md) for Stage 2B and [CAST.md](CAST.md) for
+Stage 2C. No walking, gesture blending, facial expressions, hair, clothing or
+legacy migration. Prefer createCast for new high-level scene authoring.
 
 ```ts
 import {createCharacterFactory, createRestPose} from './toon-kit';

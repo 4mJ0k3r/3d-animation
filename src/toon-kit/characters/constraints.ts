@@ -20,9 +20,15 @@ const identityFrame:LevelFrame=freezeData({position:[0,0,0],yaw:0,scale:1});
 
 /** Complete pure snapshot. Rejected constraints return pose:null, never a broken fallback. */
 export function solveContactPose(definition:CharacterDefinition,request:ContactRequest):ContactResult {
+  return solveContactPoseWithPoles(definition,request,{});
+}
+
+/** Internal extension: directional pointing supplies bend hints to the SAME IK/clearance pipeline. */
+export function solveContactPoseWithPoles(definition:CharacterDefinition,request:ContactRequest,armPoles:Partial<Record<Side,Vec3>>):ContactResult {
   const diagnostics:ConstraintDiagnostic[]=[];
   try {
     if(!request||!request.support||!onlyKeys(request,['support','parent','scale','visible','reaches']))fail('INVALID_REQUEST','A standing or sitting support descriptor is required; unknown request fields are not supported.');
+    if(Object.entries(armPoles).some(([side,pole])=>!['left','right'].includes(side)||!finiteVector(pole)))fail('INVALID_REQUEST','Invalid internal arm pole.');
     const support=request.support,parent=request.parent??identityFrame,scale=request.scale??1;
     if(!validFrame(parent)||!finite(scale)||scale<.05||scale>20)fail('INVALID_FRAME','Parent must be level yaw/translation with uniform scale 0.05..20; root scale must be 0.05..20.');
     if(request.visible!==undefined&&typeof request.visible!=='boolean')fail('INVALID_REQUEST','Visibility must be boolean.');
@@ -91,7 +97,7 @@ export function solveContactPose(definition:CharacterDefinition,request:ContactR
       const ik=solveTwoBoneIK({origin:anchor(names[0]),target:goal,
         upperLength:kind==='arm'?p.upperArmLength:p.upperLegLength,
         lowerLength:kind==='arm'?p.lowerArmLength:p.lowerLegLength,
-        pole:kind==='arm'?[sign,-.35,-.25]:[0,0,1],fallbackPole:kind==='arm'?[0,-1,0]:[0,1,0]});
+        pole:kind==='arm'?(armPoles[side]??[sign,-.35,-.25]):[0,0,1],fallbackPole:kind==='arm'?[0,-1,0]:[0,1,0]});
       if(!ik.ok||!ik.reachable)fail(kind==='arm'?'REACH_UNREACHABLE':'STANCE_UNREACHABLE',
         'Target cannot be reached with these fixed limb lengths.',limb);
       diagnostics.push(...ik.diagnostics.filter((d)=>d.severity==='info').map((d)=>({...d,limb})));

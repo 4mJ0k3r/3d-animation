@@ -5,4 +5,4 @@ const root = path.resolve(__dirname, '..');
 const tsc = path.join(path.dirname(require.resolve('typescript/package.json')), 'bin', 'tsc');
 // Compile with the installed compiler, not a substitute TypeScript loader.
 execFileSync(process.execPath, [tsc, '-p', 'scripts/tsconfig.characters.json'], {cwd: root, stdio: 'inherit', windowsHide: true});
-execFileSync(process.execPath, ['--test', '--test-concurrency=1', 'scripts/tests/characters.test.cjs', 'scripts/tests/constraints.test.cjs'], {cwd: root, stdio: 'inherit', windowsHide: true});
+execFileSync(process.execPath, ['--test', '--test-concurrency=1', 'scripts/tests/characters.test.cjs', 'scripts/tests/constraints.test.cjs', 'scripts/tests/cast.test.cjs'], {cwd: root, stdio: 'inherit', windowsHide: true});
