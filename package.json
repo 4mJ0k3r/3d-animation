@@ -17,7 +17,8 @@
     "verify:contacts": "node scripts/verify-characters.cjs contacts",
     "verify:cast": "node scripts/verify-characters.cjs cast",
     "verify:cast-portrait": "node scripts/verify-characters.cjs cast-portrait",
-    "verify:faces": "node scripts/verify-faces.cjs"
+    "verify:faces": "node scripts/verify-faces.cjs",
+    "verify:appearance": "node scripts/verify-appearance.cjs"
   },
   "keywords": [],
   "author": "",

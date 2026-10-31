@@ -12,6 +12,7 @@ import {worldToRoot} from './pose-space';
 import {inverseQ,rotateQ,sub} from './math';
 import {resolveFace,validateFaceConfig} from './face';
 import type {ResolvedFace} from './face';
+import {resolveAppearance} from './appearance';
 import {solvePointing} from './pointing';
 import {solveHeadGaze} from './gaze';
 import {castFail,CastEvaluationError} from './cast-error';
@@ -30,8 +31,9 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
   try {
     for(const name of names) {
       if(!name.trim()||['__proto__','constructor','prototype'].includes(name))castFail('INVALID_CAST_REQUEST','Actor names must be nonempty safe dictionary keys.');
-      if(!options[name]||typeof options[name]!=='object'||Array.isArray(options[name])||Object.keys(options[name]).some(k=>!['proportions','colors','stance','scale','parent','face'].includes(k)))castFail('INVALID_CAST_REQUEST','Unknown actor construction fields.',name);
+      if(!options[name]||typeof options[name]!=='object'||Array.isArray(options[name])||Object.keys(options[name]).some(k=>!['proportions','colors','stance','scale','parent','face','appearance'].includes(k)))castFail('INVALID_CAST_REQUEST','Unknown actor construction fields.',name);
       const config={...options[name]};configs.set(name,config);
+      if(config.appearance!==undefined)try{if(config.colors!==undefined)throw new Error('Use appearance or legacy colors, not both');config.appearance=resolveAppearance(config.appearance);}catch(error){castFail('APPEARANCE_INVALID',String(error),name);}
       if(config.face!==false){try{validateFaceConfig(config.face??{});}catch(error){castFail('FACE_INVALID',String(error),name);}
         config.face=freezeData({...config.face,blink:config.face?.blink?{...config.face.blink}:undefined});}
       if(config.scale!==undefined&&(typeof config.scale!=='number'||!Number.isFinite(config.scale)||config.scale<.05||config.scale>20))castFail('INVALID_CAST_REQUEST','Invalid default scale.',name);
@@ -39,8 +41,8 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
       if(config.parent!==undefined&&!(config.parent instanceof THREE.Object3D))castFail('INVALID_PARENT','Actor parent must be a scene object.',name);
       const parent=config.parent??engine.scene;
       for(let node:THREE.Object3D|null=parent;node;node=node.parent)if(node instanceof THREE.Scene&&node!==engine.scene)castFail('INVALID_PARENT','Actor parent belongs to another engine scene.',name);
-      const rig=factory.create({id:name,proportions:config.proportions,colors:config.colors,face:config.face});rigs.set(name,rig);parent.add(rig.root);
-      actors[name as keyof T]=Object.freeze({root:rig.root,definition:rig.definition,target:(anchor:AnchorName='head',phase:ActorTarget['phase']='support')=>Object.freeze({...characterTarget(name,anchor,phase),scope})});
+      const rig=factory.create({id:name,proportions:config.proportions,colors:config.colors,face:config.face,appearance:config.appearance});rigs.set(name,rig);parent.add(rig.root);
+      actors[name as keyof T]=Object.freeze({root:rig.root,definition:rig.definition,appearance:rig.appearance,target:(anchor:AnchorName='head',phase:ActorTarget['phase']='support')=>Object.freeze({...characterTarget(name,anchor,phase),scope})});
     }
   }catch(error){factory.dispose();throw error;}
   Object.freeze(actors);

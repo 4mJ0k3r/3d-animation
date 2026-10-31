@@ -154,6 +154,7 @@ faces do not turn toward the camera independently. Frontal/oblique shots are the
 readability reference. The fixed head tessellation still has a mild polygonal
 outer contour at large magnification. Eye gaze cannot exceed anatomical limits;
 mouth shapes and expression changes are discrete. No nose, facial animation
-blending, audio lip-sync, hair, clothing, appearance presets, walking or legacy
-clinic migration is implemented. Camera architecture and production memory limits
+blending or audio lip-sync is implemented here. Hair, clothing and appearance
+presets are now provided through [APPEARANCE.md](APPEARANCE.md); walking and legacy
+clinic migration remain out of scope. Camera architecture and production memory limits
 are unchanged. Local measurements do not certify the ballooned Linux VM.

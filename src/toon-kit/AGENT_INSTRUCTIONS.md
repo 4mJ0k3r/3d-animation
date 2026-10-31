@@ -41,7 +41,7 @@
 - Assign scene props from the requested absolute frame before cast.evaluate({frame,fps,poses}); update the camera afterward. Omitted intentions reset to documented defaults, never the previous frame.
 - Bind scene points/marks/seats to actual props. Use cast.actors[name].target() for character anchors, not live actor joint matrices. Default targets use current support snapshots; final-anchor dependencies must be acyclic. Parent groups must belong to this engine scene and retain the supported level/uniform transforms.
 - Pointing is directional and does not require touching the target. Reaching requires a physically reachable hand center. Do not bypass clearance failures, stretch limbs, or catch evaluation errors and capture an old pose. Let CastEvaluationError cancel the failed Remotion frame and inspect its diagnostics.
-- Head direction/residual gaze is exposed for faces. Blue arrows in the Stage 2C fixture are diagnostic gizmos only; omit them in beauty previews. Hair, clothing, walking, interpolation/blending and legacy clinic migration remain outside the approved scope.
+- Head direction/residual gaze is exposed for faces. Blue arrows in the Stage 2C fixture are diagnostic gizmos only; omit them in beauty previews. Walking, interpolation/blending and legacy clinic migration remain outside the approved scope.
 - All Phase 1 CPU production, ownership, memory admission, concurrency and temp-isolation rules above remain mandatory and unchanged.
 
 ## Stage 2D-A faces
@@ -49,4 +49,12 @@
 - Read characters/FACES.md. Use declarative expression/blink/eyeGaze inputs; never paint scene-specific canvases, edit UVs, add face boxes or duplicate head joints. Casts enable faces; raw factory rigs opt in with face:{}.
 - Resolve complete current-frame inputs through cast.evaluate. Omitted expression returns to its configured default; omitted blink uses absolute-time actor timing. Keep Stage 2C head/pointing/contact behavior. Invalid facial data must fail capture before any actor is applied.
 - Mutable facial textures are private per character. Preserve staging-before-publication, no-upload caching, engine ownership and transparent-cutout/depth policies. Never allocate facial geometry/materials per frame or add postprocessing for faces.
-- Run verify:faces and all earlier regressions serially; test:memory launches simulated jobs and must not overlap production renders. Keep source fixtures, not generated videos/logs. Stop before hair/clothing/appearance presets, audio lip-sync, walking, blending, camera automation and legacy clinic migration.
+- Run verify:faces and all earlier regressions serially; test:memory launches simulated jobs and must not overlap production renders. Keep source fixtures, not generated videos/logs. Hair/clothing now follow Stage 2D-B below; audio lip-sync, walking, blending, camera automation and legacy clinic migration remain out of scope.
+
+## Stage 2D-B appearance
+
+- Hair/clothing/appearance presets are now approved through characters/APPEARANCE.md. Use appearancePreset or declarative appearance at construction, alongside proportions and semantic home stances. Never build separate doctor/patient rigs or migrate legacy files in this stage.
+- Use the existing hair, hood and glasses anatomical bindings; do not hand-position components, add face boxes, floating lapels/pockets or stacks of hair spheres. Preserve frontal eye/brow clearance, welded cap seams, actor outline groups and silhouette-only policies.
+- Fabric and hair resources are factory/engine owned and shared immutably. Do not mutate a character's shared materials/geometry, allocate new ones per frame, or dispose pooled assets from one actor. Facial textures remain private and independently mutable.
+- Keep appearance out of frame intentions. Preserve complete pose resets, Stage 2C pointing/gaze/contact behavior and Stage 2D-A expressions/blinking. Run verify:appearance plus every previous regression serially through the unchanged CPU production launcher.
+- Production memory limits, software GL, one worker, disabled heavy effects/parallel encoding and workspace temp rules above are mandatory. Do not lower limits to make tests pass. Stop before walking, timeline/blending, cinematic automation, hair/cloth simulation, hats/large accessory expansion, Stage 2E/2F and legacy migration.

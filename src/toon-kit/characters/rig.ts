@@ -9,11 +9,14 @@ import {ownerCharacterIds} from './owner-ids';
 import {validateFaceConfig,resolveFace} from './face';
 import type {ResolvedFace} from './face';
 import {createFacePool} from './face-view';
+import {resolveAppearance} from './appearance';
+import {createAppearancePool} from './appearance-view';
 import type {AnchorName, CharacterDefinition, CharacterOptions, CharacterPose, NodeName} from './types';
 
 /** The existing engine owns GPU resources, even while a character is detached. */
 export type CharacterResourceOwner = Pick<CartoonEngine, 'profile' | 'signal' | 'track' | 'registerCleanup'>;
 export interface CharacterRig {
+  readonly appearance?:import('./appearance').ResolvedAppearance;
   readonly id: string;
   readonly root: THREE.Group;
   readonly definition: CharacterDefinition;
@@ -50,6 +53,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
   } = createPrimitiveFactory(owner as CartoonEngine);
   const rigs = new Map<string, CharacterRig>();
   const makeFace=createFacePool(owner);
+  const appearancePool=createAppearancePool(owner);
   const usedIds = ownerCharacterIds(owner);
   let closed = false;
   const checkOpen = () => {if (closed || owner.signal.aborted) throw new Error('Character factory is disposed');};
@@ -67,6 +71,8 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
     const definition = createCharacterDefinition(options.proportions);
     const initialPose = createRestPose(definition, options.placement);
     if(options.face!==undefined&&options.face!==false)validateFaceConfig(options.face);
+    if(options.appearance!==undefined&&options.colors!==undefined)throw new Error('Use appearance or legacy colors, not both');
+    const appearance=options.appearance===undefined?undefined:resolveAppearance(options.appearance);
     const colors = {skin: '#f2c69d', torso: '#36a9b0', limbs: '#16131a', shoes: '#16131a', ...options.colors};
     // Validate all palette values before allocating pooled meshes/materials.
     for (const color of Object.values(colors)) if (!/^#[0-9a-f]{6}$/i.test(color)) throw new Error('Character colors must be #rrggbb');
@@ -76,13 +82,13 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
     const nodes = {} as Record<NodeName, THREE.Object3D>;
     for (const name of JOINT_NAMES) nodes[name] = new THREE.Group();
     for (const name of PART_NAMES) {
-      const common = {name, outlineMode: 'silhouette-only' as const};
+      const common = {name, outlineMode: 'silhouette-only' as const,material:appearance?appearancePool.partMaterial(name,appearance):undefined};
       let mesh: THREE.Mesh;
       if (name === 'torsoShape') {
         mesh = primitives.capsule({...common, radius: definition.proportions.torsoRadius, length: definition.proportions.torsoLength,
-          capSubdivisions: 8, radialSegments: 16, color: colors.torso, outlineMode: 'full'});
+          capSubdivisions: 8, radialSegments: 16, color: colors.torso, outlineMode: appearance?'silhouette-only':'full'});
       } else if (name === 'headShape') {
-        mesh = primitives.sphere({...common, radius: 1, widthSegments: 24, heightSegments: 18, color: colors.skin, outlineMode: options.face?'silhouette-only':'full'});
+        mesh = primitives.sphere({...common, radius: 1, widthSegments: 24, heightSegments: 18, color: colors.skin, outlineMode: options.face||appearance?'silhouette-only':'full'});
       } else if (name.endsWith('Shape')) {
         mesh = name === 'neckShape'
           ? primitives.cylinder({...common, radiusTop: 1, radiusBottom: 1, height: 1, radialSegments: 12, color: colors.skin})
@@ -105,9 +111,10 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
     }
     let dead = false;
     const face=options.face&&makeFace(nodes.head,definition.proportions.headRadius,options.face);
+    const appearanceView=appearance&&appearancePool.attach(nodes,definition,appearance);
     const ensureLive = () => {checkOpen(); if (dead) throw new Error('Character is disposed');};
     const rig: CharacterRig = {
-      id: options.id, root, definition,
+      id: options.id, root, definition,appearance,
       get disposed() {return dead;},
       prepareFace(state){ensureLive();return face?face.prepare(state):()=>{};},
       validatePose(pose) {
@@ -127,6 +134,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
           node.visible = value.visible;
           node.updateMatrix();
         }
+        if(appearanceView)appearanceView.reset();
         root.updateWorldMatrix(true, true);
       },
       getAnchor(name, space = 'root', target = new THREE.Vector3()) {

@@ -1,9 +1,10 @@
-# Universal characters, contacts, cast and faces — Stages 2A–2D-A
+# Universal characters, contacts, cast, faces and appearance — Stages 2A–2D-B
 
 Neutral geometry, complete pose data, analytic contacts and declarative cast
 evaluation. See [CONTACTS.md](CONTACTS.md) for Stage 2B and [CAST.md](CAST.md) for
-Stage 2C and [FACES.md](FACES.md) for Stage 2D-A. No walking, gesture blending,
-hair, clothing or legacy migration. Prefer createCast for new high-level scene authoring.
+Stage 2C, [FACES.md](FACES.md) for Stage 2D-A and [APPEARANCE.md](APPEARANCE.md)
+for Stage 2D-B. No walking, gesture blending or legacy migration.
+Prefer createCast for new high-level scene authoring.
 
 ```ts
 import {createCharacterFactory, createRestPose} from './toon-kit';

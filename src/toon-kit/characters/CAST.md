@@ -41,6 +41,8 @@ universal characters, not migrated legacy rigs. Cast actor options are
 Faces are enabled by default in casts; see [FACES.md](FACES.md) for expression,
 blink, eye-gaze and construction `face` configuration. The cast owns attachment
 to its parent/scene. GPU resources remain engine-owned.
+Optional construction `appearance` enables the universal hair/clothing/preset
+system; see [APPEARANCE.md](APPEARANCE.md). It is separate from frame intentions.
 Use unique actor names across every factory/cast sharing that engine, including
 after a cast is disposed; separate engines retain independent namespaces.
 

@@ -42,6 +42,7 @@ export interface ActorIntent {
   readonly visible?:boolean;
 }
 export interface CastActorOptions {
+  readonly appearance?:import('./appearance').Appearance;
   readonly face?:FaceConfig|false;
   readonly proportions?:Partial<CharacterProportions>;
   readonly colors?:CharacterColors;
@@ -50,6 +51,7 @@ export interface CastActorOptions {
   readonly parent?:THREE.Object3D;
 }
 export interface CastActor {
+  readonly appearance?:import('./appearance').ResolvedAppearance;
   readonly root:THREE.Group;
   readonly definition:CharacterRig['definition'];
   target(anchor?:AnchorName,phase?:ActorTarget['phase']):ActorTarget;
@@ -57,7 +59,7 @@ export interface CastActor {
 export type CastCode='INVALID_CAST_REQUEST'|'UNKNOWN_ACTOR'|'TARGET_MISSING'|'TARGET_INVALID'|'TARGET_CYCLE'|
   'TARGET_DEPTH'|'TARGET_CALLBACK_FAILED'|'TARGET_PHASE'|'ACTOR_SCENE_TARGET'|'INVALID_PARENT'|
   'CONTACT_FAILED'|'INTENT_CONFLICT'|'POINTING_UNREACHABLE'|'POINTING_COINCIDENT'|'GAZE_LIMITED'|
-  'GAZE_COINCIDENT'|'CAST_DISPOSED'|'POSE_PREFLIGHT'|'FACE_INVALID';
+  'GAZE_COINCIDENT'|'CAST_DISPOSED'|'POSE_PREFLIGHT'|'FACE_INVALID'|'APPEARANCE_INVALID';
 export interface CastDiagnostic {readonly code:CastCode;readonly severity:'info'|'error';readonly message:string;readonly actor?:string;readonly details?:unknown}
 export interface ResolvedGaze {
   readonly targetWorld:Vec3|null;

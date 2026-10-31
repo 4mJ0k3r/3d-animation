@@ -95,4 +95,5 @@ export interface CharacterOptions {
   readonly placement?: CharacterPlacement;
   /** Raw rigs remain faceless unless enabled; declarative casts enable faces. */
   readonly face?: import('./face').FaceConfig|false;
+  readonly appearance?: import('./appearance').Appearance;
 }
