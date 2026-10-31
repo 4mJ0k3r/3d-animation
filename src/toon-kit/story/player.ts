@@ -14,6 +14,7 @@ import { createDirector } from '../direction/director';
 import { StoryError, storyFail } from './types';
 import type { StoryClip, StoryIntent, StoryTarget, StorySupport } from './types';
 import type { CompiledStory } from './compiler';
+import type { PreparedStoryAudio } from './audio-assets';
 export interface StorySettingBinding {
   readonly root: T.Group;
   readonly floor: T.Mesh;
@@ -39,6 +40,7 @@ export function createStory(engine: CartoonEngine, options: {
   timeline: CompiledStory;
   settings: Readonly<Record<string, StorySettingBinding>>;
   captions?: CaptionLayout;
+  audio?: PreparedStoryAudio;
 }) {
   options = {
     ...options,
@@ -52,8 +54,10 @@ export function createStory(engine: CartoonEngine, options: {
       }
     }]))
   };
-  const timeline = options.timeline,
-    stages = new Map<string, ReturnType<typeof createStage>>(),
+  const timeline = options.timeline;
+  if (timeline.audio.clips.length && !options.audio) storyFail('AUDIO_NOT_PREPARED', 'Audio stories require prepareStoryAudio(engine,timeline) before createStory');
+  options.audio?.assertReady(timeline, engine);
+  const stages = new Map<string, ReturnType<typeof createStage>>(),
     directors = new Map<string, ReturnType<typeof createDirector>>(),
     roots = new Map<T.Group, boolean>();
   const targetCache = new Map<string, TargetReference>(),
@@ -75,6 +79,7 @@ export function createStory(engine: CartoonEngine, options: {
     failed = false;
   const live = () => {
     if (dead || engine.signal.aborted) storyFail('STORY_DISPOSED', 'Story owner disposed');
+    options.audio?.assertReady(timeline, engine);
   };
   const binding = (sceneId: string) => {
     const scene = timeline.plan.scenes.find(s => s.id === sceneId)!;
@@ -412,10 +417,10 @@ export function createStory(engine: CartoonEngine, options: {
         for (const scene of timeline.plan.scenes) {
           const captions = options.captions ? {
             ...options.captions,
-            words: options.captions.words.filter(w => w.startFrame >= scene.startFrame && w.endFrame <= scene.endFrame).map(w => ({
+            words: options.captions.words.filter(w => w.startFrame < scene.endFrame && w.endFrame > scene.startFrame).map(w => ({
               ...w,
-              startFrame: w.startFrame - scene.startFrame,
-              endFrame: w.endFrame - scene.startFrame
+              startFrame: Math.max(w.startFrame, scene.startFrame) - scene.startFrame,
+              endFrame: Math.min(w.endFrame, scene.endFrame) - scene.startFrame
             }))
           } : undefined;
           const director = createDirector(engine, {

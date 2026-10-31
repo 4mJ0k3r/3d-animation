@@ -3,3 +3,8 @@ export { compileStory, STORY_LIMITS } from './compiler';
 export type { CompiledStory } from './compiler';
 export { createStory } from './player';
 export type { StoryPlayer, StorySettingBinding } from './player';
+export * from './audio-types';
+export { speechSecondsToFrame } from './audio-compiler';
+export { prepareStoryAudio } from './audio-assets';
+export type { PreparedStoryAudio, AudioAssetMetadata } from './audio-assets';
+export { StoryAudio } from './audio';

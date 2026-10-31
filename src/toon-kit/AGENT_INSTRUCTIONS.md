@@ -154,7 +154,7 @@ Construct/bind before preparing. Do not supply hand-built snapshots or camera ma
 Use full named prop regions for this lean adapter; specialized art subregions
 remain the responsibility of an existing specialized adapter such as the clinic.
 Run test:characters, test:memory, audit:phase1 and verify:phase3 serially for the
-closeout gate. No narration, lip-sync or unrestricted script generation is authorized.
+closeout gate. No speech synthesis, lip-sync or unrestricted script generation is authorized.
 All existing software-safe/swangle, memory, concurrency and temp rules still apply.
 Actor and prop semantic names must be distinct; the internal scenery owner name stage is reserved.
 Visibility now samples eye centers and edges; naturally hidden curved periphery is reported as selfOccluded. Centers and facing edges remain protected. Finite proxies still require visual review.
@@ -173,3 +173,19 @@ Phase 4A adds no audio, natural-language understanding or Phase 4B/4C features.
 All production software-safe/swangle, memory admission/abort, single-worker and
 workspace-temp protections remain mandatory. Run focused story/motion tests and
 `verify:story` serially after timeline changes; do not weaken safety to render.
+
+## Phase 4B: recorded audio
+
+Read [story/AUDIO.md](story/AUDIO.md). Use local immutable `public/audio` assets,
+Node `validateStoryAudioFiles` before the production launcher, and await
+`prepareStoryAudio(engine,timeline)` inside initScene. Pass the result as `audio`
+to createStory and commit `<StoryAudio prepared={audio}/>` with the existing
+measured caption layout before capture. Never invent another clock or decode
+audio per frame. Keep audio metadata, timings and speaker IDs explicit.
+Word cues require `timing:'supplied'` with source-file word seconds, or the
+explicitly labeled `timing:'estimated'` fallback. Sentence timestamps are not word
+alignment; never describe estimates as verified speech synchronization. Supplied
+data is structurally validated, not recognized from speech. Preserve pauses,
+punctuation, scene-cut continuity and readiness/disposal guards.
+Run test:story-audio and verify:story-audio serially. No TTS provider, ASR, forced
+alignment, lip-sync or Phase 4C is authorized. All production rules above stand.

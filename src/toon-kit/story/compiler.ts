@@ -4,7 +4,7 @@ import { GESTURES } from '../characters/acting';
 import { resolveProportions } from '../characters/proportions';
 import { freezeData } from '../characters/pose';
 import { compileShotTimeline } from '../direction/timeline';
-import { generateWordTimings } from '../captions';
+import { compileStoryAudio } from './audio-compiler';
 import { storyFail, StoryError } from './types';
 import type { StoryPlan, StoryScene, StoryAction, StoryClip, StoryFrame, StoryTarget, StorySupport, StoryIntent, StoryBeat } from './types';
 export const STORY_LIMITS = freezeData({
@@ -60,7 +60,7 @@ function support(v: unknown) {
   } else storyFail('INVALID_SUPPORT', 'Use standing/sitting semantic defaults');
 }
 const range = (a: number, b: number, start: number, end: number) => {
-  if (!Number.isInteger(a) || !Number.isInteger(b) || a < start || b <= a || b > end) storyFail('INVALID_RANGE', 'Use finite integer half-open intervals inside the scene');
+  if (!Number.isInteger(a) || !Number.isInteger(b) || a < start || b <= a || b > end) storyFail('INVALID_RANGE', 'Use finite integer half-open intervals inside the allowed timeline range');
 };
 function target(t: unknown, scene: StoryScene) {
   if (typeof t === 'string') {
@@ -75,7 +75,7 @@ function target(t: unknown, scene: StoryScene) {
 const channels = (a: StoryAction) => ['stand', 'sit', 'walk'].includes(a.type) ? ['stance'] : a.type === 'look' ? ['gaze'] : a.type === 'expression' ? ['expression'] : a.type === 'react' ? ['gesture', 'expression'] : ['gesture'];
 function compile(input: StoryPlan) {
   const plan = jsonCopy(input);
-  keys(plan, ['version', 'fps', 'durationInFrames', 'characters', 'scenes']);
+  keys(plan, ['version', 'fps', 'durationInFrames', 'characters', 'scenes', 'audio']);
   if (plan.version !== 1 || !Number.isInteger(plan.fps) || plan.fps < 1 || plan.fps > 60 || !Number.isInteger(plan.durationInFrames) || plan.durationInFrames < 1 || plan.durationInFrames > STORY_LIMITS.frames) storyFail('INVALID_TIMEBASE', 'Version 1 uses integer absolute frames, fps 1..60 and duration 1..600');
   if (!obj(plan.characters) || Object.keys(plan.characters).length < 1 || Object.keys(plan.characters).length > STORY_LIMITS.characters || !Array.isArray(plan.scenes) || !plan.scenes.length || plan.scenes.length > STORY_LIMITS.scenes) storyFail('STORY_BUDGET', 'Use 1..8 characters and 1..4 scenes');
   for (const [id, c] of Object.entries(plan.characters)) {
@@ -229,12 +229,15 @@ function compile(input: StoryPlan) {
     if (scene.cues !== undefined && !Array.isArray(scene.cues)) storyFail('INVALID_CUE', 'cues must be an array');
     const cueIds = new Set<string>();
     for (const cue of scene.cues ?? []) {
-      keys(cue, ['id', 'kind', 'text', 'speaker', 'language', 'startFrame', 'endFrame', 'mode', 'alignmentId']);
+      keys(cue, ['id', 'kind', 'text', 'speaker', 'language', 'startFrame', 'endFrame', 'mode', 'alignmentId', 'timing']);
+      if (cue.timing !== undefined && !['supplied', 'estimated'].includes(cue.timing) || cue.timing !== undefined && cue.mode !== 'words') storyFail('INVALID_CUE', 'Word timing policy requires word captions');
       name(cue.id);
       if (cueIds.has(cue.id)) storyFail('DUPLICATE_ID', 'Duplicate cue');
       cueIds.add(cue.id);
-      range(cue.startFrame, cue.endFrame, scene.startFrame, scene.endFrame);
-      if (!['dialogue', 'caption'].includes(cue.kind) || typeof cue.text !== 'string' || !cue.text.trim() || cue.text.length > 2048 || cue.kind === 'dialogue' && (!cue.speaker || !Object.hasOwn(scene.characters, cue.speaker)) || cue.speaker !== undefined && !Object.hasOwn(scene.characters, cue.speaker) || cue.language !== undefined && !['hi', 'en'].includes(cue.language) || cue.mode !== undefined && !['line', 'words'].includes(cue.mode)) storyFail('INVALID_CUE', 'Invalid caption/dialogue cue');
+      range(cue.startFrame, cue.endFrame, scene.startFrame, plan.durationInFrames);
+      if (cue.startFrame >= scene.endFrame) storyFail('INVALID_RANGE', 'Attach a cue to the scene containing its start');
+      const narrationSpeaker = cue.kind === 'caption' && Array.isArray(plan.audio?.clips) && plan.audio.clips.some(c => c?.kind === 'narration' && c.speaker === cue.speaker);
+      if (!['dialogue', 'caption'].includes(cue.kind) || typeof cue.text !== 'string' || !cue.text.trim() || cue.text.length > 2048 || cue.kind === 'dialogue' && (!cue.speaker || !Object.hasOwn(scene.characters, cue.speaker)) || cue.speaker !== undefined && !Object.hasOwn(scene.characters, cue.speaker) && !narrationSpeaker || cue.language !== undefined && !['hi', 'en'].includes(cue.language) || cue.mode !== undefined && !['line', 'words'].includes(cue.mode)) storyFail('INVALID_CUE', 'Invalid caption/dialogue cue');
       if (cue.speaker !== undefined) name(cue.speaker);
       if (cue.alignmentId !== undefined) name(cue.alignmentId);
       if (cue.mode === 'words' && cue.text.trim().split(/\s+/u).length > cue.endFrame - cue.startFrame) storyFail('INVALID_CUE', 'Word timing needs at least one frame per word');
@@ -264,11 +267,9 @@ function compile(input: StoryPlan) {
       from?: StoryTarget | ExpressionName | null;
     }).from = c.action.type === 'look' ? previous?.action.type === 'look' ? previous.action.target : scene.characters[c.action.actor].lookAt ?? null : previous?.action.type === 'expression' ? previous.action.name : scene.characters[c.action.actor].expression ?? plan.characters[c.action.actor].expression ?? 'neutral';
   }
-  const captionWords = cues.flatMap(c => c.mode === 'words' ? generateWordTimings(c.text, c.startFrame, c.endFrame - c.startFrame) : [{
-    text: c.text,
-    startFrame: c.startFrame,
-    endFrame: c.endFrame
-  }]);
+  const cueIds = cues.map(c => c.alignmentId ?? scenes.find(s => c.startFrame >= s.startFrame && c.startFrame < s.endFrame)!.id + '/' + c.id);
+  const audio = compileStoryAudio(plan, cues, cueIds),
+    captionWords = audio.captionWords;
   if (captionWords.length > STORY_LIMITS.words) storyFail('STORY_BUDGET', 'At most 256 caption words');
   for (const actor of Object.keys(plan.characters)) if (!scenes.some(s => Object.hasOwn(s.characters, actor))) storyFail('UNUSED_CHARACTER', 'Every character needs at least one scene', {
     actor
@@ -280,21 +281,24 @@ function compile(input: StoryPlan) {
     }),
     frozenClips = freezeData(clips),
     words = freezeData(captionWords),
-    alignment = freezeData(cues.map(c => ({
-      id: c.alignmentId ?? scenes.find(s => c.startFrame >= s.startFrame && c.endFrame <= s.endFrame)!.id + '/' + c.id,
+    alignment = freezeData(cues.map((c, i) => ({
+      id: c.alignmentId ?? scenes.find(s => c.startFrame >= s.startFrame && c.startFrame < s.endFrame)!.id + '/' + c.id,
       kind: c.kind,
       text: c.text,
       language: c.language,
       speaker: c.speaker,
       startFrame: c.startFrame,
       endFrame: c.endFrame,
-      fps: plan.fps
+      fps: plan.fps,
+      timing: audio.captionTiming[i].source
     })));
   if (new Set(alignment.map(c => c.id)).size !== alignment.length) storyFail('DUPLICATE_ID', 'Resolved alignment IDs must be unique');
   return Object.freeze({
     plan: frozen,
     clips: frozenClips,
     captionWords: words,
+    audio,
+    captionTiming: audio.captionTiming,
     alignment,
     sample(frame: number): StoryFrame {
       if (!Number.isInteger(frame) || frame < 0 || frame >= plan.durationInFrames) storyFail('INVALID_FRAME', 'Frame outside story', {
@@ -327,7 +331,8 @@ function compile(input: StoryPlan) {
         localFrame: frame - scene.startFrame,
         poses,
         shot,
-        cue: cues.find(c => frame >= c.startFrame && frame < c.endFrame) ?? null
+        cue: cues.find(c => frame >= c.startFrame && frame < c.endFrame) ?? null,
+        audio: audio.byFrame[frame]
       });
     }
   });

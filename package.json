@@ -28,7 +28,9 @@
     "verify:motion": "node scripts/verify-motion.cjs",
     "verify:phase3": "node scripts/verify-phase3.cjs",
     "test:story": "node scripts/test-story.cjs",
-    "verify:story": "node scripts/verify-story.cjs"
+    "verify:story": "node scripts/verify-story.cjs",
+    "test:story-audio": "node scripts/test-story-audio.cjs",
+    "verify:story-audio": "node scripts/verify-story-audio.cjs"
   },
   "keywords": [],
   "author": "",

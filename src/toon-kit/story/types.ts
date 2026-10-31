@@ -3,6 +3,7 @@ import type { CharacterProportions } from '../characters/types';
 import type { ExpressionName } from '../characters/face';
 import type { GestureName } from '../characters/acting';
 import type { StaticShot } from '../direction/types';
+import type { StoryAudioPlan, CompiledAudioClip } from './audio-types';
 export type StoryTarget = string | {
   readonly actor: string;
   readonly anchor?: 'head' | 'pelvis' | 'leftWrist' | 'rightWrist';
@@ -67,6 +68,8 @@ export interface StoryCue {
   readonly endFrame: number;
   readonly mode?: 'line' | 'words';
   readonly alignmentId?: string;
+  /** Required for word captions: supplied timestamps or explicitly estimated fallback. */
+  readonly timing?: 'supplied' | 'estimated';
 }
 export interface StoryScene {
   readonly id: string;
@@ -90,6 +93,7 @@ export interface StoryPlan {
   readonly durationInFrames: number;
   readonly characters: Readonly<Record<string, StoryCharacter>>;
   readonly scenes: readonly StoryScene[];
+  readonly audio?: StoryAudioPlan;
 }
 export interface StoryDiagnostic {
   readonly code: string;
@@ -136,4 +140,5 @@ export interface StoryFrame {
   readonly poses: Readonly<Record<string, StoryIntent>>;
   readonly shot: StaticShot;
   readonly cue: StoryCue | null;
+  readonly audio: readonly CompiledAudioClip[];
 }

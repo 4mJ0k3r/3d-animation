@@ -57,8 +57,11 @@ actors for the existing stage adapter.
   stage does not invent stand-to-sit motion or general transition choreography.
 - Dialogue/caption cues accept Hindi/English text, speaker, `mode:'line'|'words'`
   and optional unique `alignmentId`. `captionWords` feeds existing caption APIs;
-  `alignment` retains absolute timings/text/language for a future audio adapter.
-  There is no speech, transcription, lip-sync or natural-language interpretation.
+  `alignment` retains cue metadata and timing provenance; `audio.alignments`
+  accepts externally supplied source-file word timestamps.
+  Word cues require `timing:'supplied'|'estimated'`; see [AUDIO.md](AUDIO.md) for
+  recorded audio and external word timestamps. There is no TTS, transcription,
+  lip-sync or natural-language interpretation.
   Load an appropriate Devanagari font before measuring and commit the identical
   caption layout used for director safety checks.
 

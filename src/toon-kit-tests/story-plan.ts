@@ -107,7 +107,8 @@ export const TEN_SECOND_STORY: StoryPlan = {
       language: 'en',
       startFrame: 0,
       endFrame: 60,
-      mode: 'words'
+      mode: 'words',
+      timing: 'estimated'
     }, {
       id: 'show',
       kind: 'dialogue',
@@ -117,6 +118,7 @@ export const TEN_SECOND_STORY: StoryPlan = {
       startFrame: 60,
       endFrame: 120,
       mode: 'words',
+      timing: 'estimated',
       alignmentId: 'asha-plan'
     }, {
       id: 'reaction',
@@ -127,6 +129,7 @@ export const TEN_SECOND_STORY: StoryPlan = {
       startFrame: 120,
       endFrame: 170,
       mode: 'words',
+      timing: 'estimated',
       alignmentId: 'ravi-reaction'
     }],
     shots: [{
@@ -208,7 +211,8 @@ export const TEN_SECOND_STORY: StoryPlan = {
       language: 'en',
       startFrame: 170,
       endFrame: 230,
-      mode: 'words'
+      mode: 'words',
+      timing: 'estimated'
     }, {
       id: 'finish',
       kind: 'dialogue',
@@ -217,7 +221,8 @@ export const TEN_SECOND_STORY: StoryPlan = {
       language: 'en',
       startFrame: 230,
       endFrame: 300,
-      mode: 'words'
+      mode: 'words',
+      timing: 'estimated'
     }],
     shots: [{
       id: 'plan',
