@@ -6,6 +6,9 @@ import {createCharacterDefinition} from './proportions';
 import {createRestPose, validateCompletePose} from './pose';
 import {JOINT_NAMES, NODE_NAMES, NODE_PARENTS, PART_NAMES} from './types';
 import {ownerCharacterIds} from './owner-ids';
+import {validateFaceConfig,resolveFace} from './face';
+import type {ResolvedFace} from './face';
+import {createFacePool} from './face-view';
 import type {AnchorName, CharacterDefinition, CharacterOptions, CharacterPose, NodeName} from './types';
 
 /** The existing engine owns GPU resources, even while a character is detached. */
@@ -17,6 +20,7 @@ export interface CharacterRig {
   readonly disposed: boolean;
   /** Read-only preflight for transactional cast application. */
   validatePose(pose: CharacterPose): void;
+  prepareFace(state:ResolvedFace):()=>void;
   /** Validates the entire pose before mutating any mesh or joint. */
   applyPose(pose: CharacterPose): void;
   /** Current posed anchor; root space excludes root placement and scale. */
@@ -45,6 +49,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
     cylinder(options: CylinderOptions): THREE.Mesh;
   } = createPrimitiveFactory(owner as CartoonEngine);
   const rigs = new Map<string, CharacterRig>();
+  const makeFace=createFacePool(owner);
   const usedIds = ownerCharacterIds(owner);
   let closed = false;
   const checkOpen = () => {if (closed || owner.signal.aborted) throw new Error('Character factory is disposed');};
@@ -61,6 +66,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
     if (typeof options.id !== 'string' || !options.id.trim() || usedIds.has(options.id)) throw new Error('Character id must be nonempty and unique within the owner; disposed ids cannot be recycled');
     const definition = createCharacterDefinition(options.proportions);
     const initialPose = createRestPose(definition, options.placement);
+    if(options.face!==undefined&&options.face!==false)validateFaceConfig(options.face);
     const colors = {skin: '#f2c69d', torso: '#36a9b0', limbs: '#16131a', shoes: '#16131a', ...options.colors};
     // Validate all palette values before allocating pooled meshes/materials.
     for (const color of Object.values(colors)) if (!/^#[0-9a-f]{6}$/i.test(color)) throw new Error('Character colors must be #rrggbb');
@@ -76,7 +82,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
         mesh = primitives.capsule({...common, radius: definition.proportions.torsoRadius, length: definition.proportions.torsoLength,
           capSubdivisions: 8, radialSegments: 16, color: colors.torso, outlineMode: 'full'});
       } else if (name === 'headShape') {
-        mesh = primitives.sphere({...common, radius: 1, widthSegments: 24, heightSegments: 18, color: colors.skin, outlineMode: 'full'});
+        mesh = primitives.sphere({...common, radius: 1, widthSegments: 24, heightSegments: 18, color: colors.skin, outlineMode: options.face?'silhouette-only':'full'});
       } else if (name.endsWith('Shape')) {
         mesh = name === 'neckShape'
           ? primitives.cylinder({...common, radiusTop: 1, radiusBottom: 1, height: 1, radialSegments: 12, color: colors.skin})
@@ -98,10 +104,12 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
       if (parent) nodes[parent].add(nodes[name]);
     }
     let dead = false;
+    const face=options.face&&makeFace(nodes.head,definition.proportions.headRadius,options.face);
     const ensureLive = () => {checkOpen(); if (dead) throw new Error('Character is disposed');};
     const rig: CharacterRig = {
       id: options.id, root, definition,
       get disposed() {return dead;},
+      prepareFace(state){ensureLive();return face?face.prepare(state):()=>{};},
       validatePose(pose) {
         ensureLive();
         validateCompletePose(pose);
@@ -138,6 +146,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
       },
     };
     rig.applyPose(initialPose);
+    if(face&&options.face)face.prepare(resolveFace(options.face,options.id,0,undefined,undefined,[0,0,1]))();
     rigs.set(options.id, rig);
     return rig;
   }

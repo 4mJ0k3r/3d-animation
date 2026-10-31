@@ -2,6 +2,7 @@ import type * as THREE from 'three';
 import type {AnchorName,CharacterColors,CharacterPose,CharacterProportions,Vec3} from './types';
 import type {ArmReach,ContactState,ConstraintDiagnostic,FloorTarget,LevelFrame,PointTarget,SeatTarget,Side,SittingContact,StandingContact} from './constraint-types';
 import type {CharacterRig} from './rig';
+import type {ExpressionName,Expression,FaceConfig,ResolvedFace} from './face';
 
 export interface FrameInput {readonly frame:number;readonly fps:number;readonly time:number}
 export interface WorldMark {readonly kind:'mark';readonly position:Vec3;readonly yaw:number}
@@ -29,6 +30,10 @@ export interface LookIntent {readonly kind:'look';readonly target:TargetReferenc
 export interface PointIntent {readonly kind:'point';readonly target:TargetReference;readonly hand:Side|'auto'}
 export interface SemanticReach {readonly hand:Side;readonly target:TargetReference}
 export interface ActorIntent {
+  readonly expression?:ExpressionName|Expression;
+  readonly blink?:number;
+  /** Optional eyes-only target; omission follows residual head gaze. */
+  readonly eyeGaze?:LookIntent;
   readonly stance?:CastStance;
   readonly gaze?:LookIntent;
   readonly gesture?:PointIntent;
@@ -37,6 +42,7 @@ export interface ActorIntent {
   readonly visible?:boolean;
 }
 export interface CastActorOptions {
+  readonly face?:FaceConfig|false;
   readonly proportions?:Partial<CharacterProportions>;
   readonly colors?:CharacterColors;
   readonly stance?:CastStance;
@@ -51,7 +57,7 @@ export interface CastActor {
 export type CastCode='INVALID_CAST_REQUEST'|'UNKNOWN_ACTOR'|'TARGET_MISSING'|'TARGET_INVALID'|'TARGET_CYCLE'|
   'TARGET_DEPTH'|'TARGET_CALLBACK_FAILED'|'TARGET_PHASE'|'ACTOR_SCENE_TARGET'|'INVALID_PARENT'|
   'CONTACT_FAILED'|'INTENT_CONFLICT'|'POINTING_UNREACHABLE'|'POINTING_COINCIDENT'|'GAZE_LIMITED'|
-  'GAZE_COINCIDENT'|'CAST_DISPOSED'|'POSE_PREFLIGHT';
+  'GAZE_COINCIDENT'|'CAST_DISPOSED'|'POSE_PREFLIGHT'|'FACE_INVALID';
 export interface CastDiagnostic {readonly code:CastCode;readonly severity:'info'|'error';readonly message:string;readonly actor?:string;readonly details?:unknown}
 export interface ResolvedGaze {
   readonly targetWorld:Vec3|null;
@@ -66,6 +72,7 @@ export interface ResolvedPointing {
 }
 export interface CastFrameRequest {readonly frame:number;readonly fps:number;readonly poses?:Readonly<Record<string,ActorIntent>>}
 export interface CastSnapshot extends FrameInput {
+  readonly faces:Readonly<Record<string,ResolvedFace|null>>;
   readonly poses:Readonly<Record<string,CharacterPose>>;
   readonly contacts:Readonly<Record<string,ContactState>>;
   readonly gaze:Readonly<Record<string,ResolvedGaze>>;

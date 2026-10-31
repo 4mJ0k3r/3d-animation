@@ -13,5 +13,7 @@ export {createCast} from './cast';
 export {CastEvaluationError} from './cast-error';
 export {createTargets,worldMark,scenePoint,sceneMark,sceneSeat,aliasTarget,frameTarget,markFrom,characterTarget,standAt,sitAt,lookAt,pointAt,reachFor} from './semantic-targets';
 export {GAZE_LIMITS} from './gaze';
+export {EXPRESSIONS,resolveFace,blinkAt} from './face';
+export type {ExpressionName,Expression,MouthShape,FaceConfig,BlinkConfig,ResolvedFace} from './face';
 export type {FrameInput,TargetReference,TargetDefinition,TargetLibrary,WorldMark,CastActorOptions,ActorIntent,
   CastActor,CastFrameRequest,CastSnapshot,CastDiagnostic,ResolvedGaze,ResolvedPointing} from './cast-types';

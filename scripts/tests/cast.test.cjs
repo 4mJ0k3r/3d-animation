@@ -156,7 +156,7 @@ test('target depth, callbacks and missing actors/anchors fail predictably withou
 });
 test('invalid actor data and invalid parents are preflighted across the whole cast',()=>{
   const {engine,cast}=setup();try{cast.evaluate(frame());const before=shot(cast);
-    for(const poses of [{other:{}},{patient:null},{patient:{visible:null}},{doctor:{scale:null}},{doctor:{stance:null}},{doctor:{expression:'happy'}}]){fails(()=>cast.evaluate(frame(0,poses)));assert.deepEqual(shot(cast),before);}
+    for(const poses of [{other:{}},{patient:null},{patient:{visible:null}},{doctor:{scale:null}},{doctor:{stance:null}},{doctor:{expression:'invalid-expression'}}]){fails(()=>cast.evaluate(frame(0,poses)));assert.deepEqual(shot(cast),before);}
     const group=new THREE.Group();engine.scene.add(group);group.add(cast.actors.patient.root);group.scale.set(1,2,1);
     fails(()=>cast.evaluate(frame(80,{doctor:{stance:S.standAt(S.worldMark([3,0,0]))}})),'INVALID_PARENT');assert.deepEqual(shot(cast),before);
   }finally{engine.dispose();}

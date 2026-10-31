@@ -38,7 +38,9 @@ There are no doctor/patient presets yet. Names in this example identify generic
 universal characters, not migrated legacy rigs. Cast actor options are
 `proportions`, `colors`, `stance`, `scale`, and optional scene `parent`.
 `cast.actors[name]` exposes read-only definition/root handles and semantic targets.
-The cast owns attachment to its parent/scene. GPU resources remain engine-owned.
+Faces are enabled by default in casts; see [FACES.md](FACES.md) for expression,
+blink, eye-gaze and construction `face` configuration. The cast owns attachment
+to its parent/scene. GPU resources remain engine-owned.
 Use unique actor names across every factory/cast sharing that engine, including
 after a cast is disposed; separate engines retain independent namespaces.
 
@@ -54,7 +56,8 @@ Omitted actors and fields resolve each frame to:
   floor Y=0. Assign named home marks to avoid overlapping defaults.
 - Scale: construction-time scale, otherwise 1. Visibility: true.
 - Reaches/pointing: none; arms reset to rest. Gaze: neutral forward, head yaw and
-  pitch zero. No expression state exists in this stage.
+  pitch zero. Expressions reset to the configured default, normally neutral;
+  blinking is evaluated from absolute time and eye gaze uses residual head gaze.
 
 The fixed evaluation order is:
 
@@ -157,7 +160,8 @@ Outside limits, the head is bounded and `GAZE_LIMITED` is reported. The returned
 `snapshot.gaze[name]` exposes target world position, desired world direction,
 actual head world direction, residual head-local direction for future eyes,
 yaw, pitch and limit status. Omission resets gaze fully. No eyes, brows, mouth,
-blush, blinking or facial textures are generated.
+blush, blinking or facial textures were part of the original Stage 2C;
+Stage 2D-A now provides them through [FACES.md](FACES.md).
 
 ## Errors, performance and ownership
 

@@ -41,5 +41,12 @@
 - Assign scene props from the requested absolute frame before cast.evaluate({frame,fps,poses}); update the camera afterward. Omitted intentions reset to documented defaults, never the previous frame.
 - Bind scene points/marks/seats to actual props. Use cast.actors[name].target() for character anchors, not live actor joint matrices. Default targets use current support snapshots; final-anchor dependencies must be acyclic. Parent groups must belong to this engine scene and retain the supported level/uniform transforms.
 - Pointing is directional and does not require touching the target. Reaching requires a physically reachable hand center. Do not bypass clearance failures, stretch limbs, or catch evaluation errors and capture an old pose. Let CastEvaluationError cancel the failed Remotion frame and inspect its diagnostics.
-- Head direction/residual gaze is exposed for future faces. Blue arrows in the Stage 2C fixture are validation gizmos only. Facial systems, hair, clothing, walking, interpolation/blending and legacy clinic migration remain unimplemented; do not add them without the next approved stage.
+- Head direction/residual gaze is exposed for faces. Blue arrows in the Stage 2C fixture are diagnostic gizmos only; omit them in beauty previews. Hair, clothing, walking, interpolation/blending and legacy clinic migration remain outside the approved scope.
 - All Phase 1 CPU production, ownership, memory admission, concurrency and temp-isolation rules above remain mandatory and unchanged.
+
+## Stage 2D-A faces
+
+- Read characters/FACES.md. Use declarative expression/blink/eyeGaze inputs; never paint scene-specific canvases, edit UVs, add face boxes or duplicate head joints. Casts enable faces; raw factory rigs opt in with face:{}.
+- Resolve complete current-frame inputs through cast.evaluate. Omitted expression returns to its configured default; omitted blink uses absolute-time actor timing. Keep Stage 2C head/pointing/contact behavior. Invalid facial data must fail capture before any actor is applied.
+- Mutable facial textures are private per character. Preserve staging-before-publication, no-upload caching, engine ownership and transparent-cutout/depth policies. Never allocate facial geometry/materials per frame or add postprocessing for faces.
+- Run verify:faces and all earlier regressions serially; test:memory launches simulated jobs and must not overlap production renders. Keep source fixtures, not generated videos/logs. Stop before hair/clothing/appearance presets, audio lip-sync, walking, blending, camera automation and legacy clinic migration.

@@ -8,6 +8,10 @@ import {levelFloor,standOn,sitOn,worldPoint,reachTo} from './targets';
 import {characterTarget,standAt,worldMark} from './semantic-targets';
 import {TargetResolver,targetPosition,readLevelFrame} from './target-resolver';
 import {rootToWorld} from './pose-space';
+import {worldToRoot} from './pose-space';
+import {inverseQ,rotateQ,sub} from './math';
+import {resolveFace,validateFaceConfig} from './face';
+import type {ResolvedFace} from './face';
 import {solvePointing} from './pointing';
 import {solveHeadGaze} from './gaze';
 import {castFail,CastEvaluationError} from './cast-error';
@@ -26,14 +30,16 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
   try {
     for(const name of names) {
       if(!name.trim()||['__proto__','constructor','prototype'].includes(name))castFail('INVALID_CAST_REQUEST','Actor names must be nonempty safe dictionary keys.');
-      if(!options[name]||typeof options[name]!=='object'||Array.isArray(options[name])||Object.keys(options[name]).some(k=>!['proportions','colors','stance','scale','parent'].includes(k)))castFail('INVALID_CAST_REQUEST','Unknown actor construction fields.',name);
+      if(!options[name]||typeof options[name]!=='object'||Array.isArray(options[name])||Object.keys(options[name]).some(k=>!['proportions','colors','stance','scale','parent','face'].includes(k)))castFail('INVALID_CAST_REQUEST','Unknown actor construction fields.',name);
       const config={...options[name]};configs.set(name,config);
+      if(config.face!==false){try{validateFaceConfig(config.face??{});}catch(error){castFail('FACE_INVALID',String(error),name);}
+        config.face=freezeData({...config.face,blink:config.face?.blink?{...config.face.blink}:undefined});}
       if(config.scale!==undefined&&(typeof config.scale!=='number'||!Number.isFinite(config.scale)||config.scale<.05||config.scale>20))castFail('INVALID_CAST_REQUEST','Invalid default scale.',name);
       if(config.stance!==undefined&&(!config.stance||typeof config.stance!=='object'))castFail('INVALID_CAST_REQUEST','Invalid default stance.',name);
       if(config.parent!==undefined&&!(config.parent instanceof THREE.Object3D))castFail('INVALID_PARENT','Actor parent must be a scene object.',name);
       const parent=config.parent??engine.scene;
       for(let node:THREE.Object3D|null=parent;node;node=node.parent)if(node instanceof THREE.Scene&&node!==engine.scene)castFail('INVALID_PARENT','Actor parent belongs to another engine scene.',name);
-      const rig=factory.create({id:name,proportions:config.proportions,colors:config.colors});rigs.set(name,rig);parent.add(rig.root);
+      const rig=factory.create({id:name,proportions:config.proportions,colors:config.colors,face:config.face});rigs.set(name,rig);parent.add(rig.root);
       actors[name as keyof T]=Object.freeze({root:rig.root,definition:rig.definition,target:(anchor:AnchorName='head',phase:ActorTarget['phase']='support')=>Object.freeze({...characterTarget(name,anchor,phase),scope})});
     }
   }catch(error){factory.dispose();throw error;}
@@ -51,6 +57,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
     const intents=new Map<string,ActorIntent>(),parents=new Map<string,LevelFrame>(),parentObjects=new Map<string,THREE.Object3D>();
     const supports=new Map<string,Extract<ContactResult,{ok:true}>>(),contactRequests=new Map<string,ContactRequest>();
     const finals=new Map<string,CharacterPose>(),gazes=new Map<string,ResolvedGaze>(),points=new Map<string,ResolvedPointing|null>();
+    const faces=new Map<string,ResolvedFace|null>();
     const supportActive=new Set<string>(),intentActive=new Set<string>(),diagnostics:CastSnapshot['diagnostics'][number][]=[];
     const identify=(name:string,error:unknown):never=>{
       if(error instanceof CastEvaluationError)throw new CastEvaluationError(error.diagnostics.map(d=>({...d,actor:d.actor??name})));
@@ -58,7 +65,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
     };
     for(const name of names) {
       const supplied=request.poses?.[name],intent=supplied===undefined?{}:supplied;
-      if(!intent||typeof intent!=='object'||Array.isArray(intent)||Object.keys(intent).some(k=>!['stance','gaze','gesture','reaches','scale','visible'].includes(k)))castFail('INVALID_CAST_REQUEST','Unknown or invalid actor intention fields.',name);
+      if(!intent||typeof intent!=='object'||Array.isArray(intent)||Object.keys(intent).some(k=>!['stance','gaze','gesture','reaches','scale','visible','expression','blink','eyeGaze'].includes(k)))castFail('INVALID_CAST_REQUEST','Unknown or invalid actor intention fields.',name);
       if((intent.stance!==undefined&&(!intent.stance||typeof intent.stance!=='object'))||
         (intent.scale!==undefined&&(typeof intent.scale!=='number'||!Number.isFinite(intent.scale)))||
         (intent.visible!==undefined&&typeof intent.visible!=='boolean'))castFail('INVALID_CAST_REQUEST','Invalid stance, scale or visibility.',name);
@@ -124,6 +131,18 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
         }
         if(intent.gaze!==undefined&&(!intent.gaze||intent.gaze.kind!=='look'))castFail('INVALID_CAST_REQUEST','Invalid gaze intention.',name);
         const gaze=solveHeadGaze(rig.definition,result.pose,parents.get(name)!,intent.gaze?targetPosition(resolver.resolve(intent.gaze.target)):null);
+        let direction=gaze.gaze.eyeLocalDirection;
+        if(intent.eyeGaze!==undefined){
+          if(!intent.eyeGaze||intent.eyeGaze.kind!=='look')castFail('FACE_INVALID','Invalid eyes-only gaze intention.',name);
+          const target=worldToRoot(gaze.pose,parents.get(name)!,targetPosition(resolver.resolve(intent.eyeGaze.target)));
+          direction=rotateQ(inverseQ(gaze.pose.head.quaternion),sub(target,poseAnchorPosition(gaze.pose,rig.definition.anchors.head)));
+        }
+        const faceConfig=configs.get(name)!.face;
+        if(faceConfig===false){
+          if(intent.expression!==undefined||intent.blink!==undefined||intent.eyeGaze!==undefined)castFail('FACE_INVALID','Facial intentions require an enabled face.',name);
+          faces.set(name,null);
+        }else try{faces.set(name,resolveFace(faceConfig??{},name,frame.time,intent.expression,intent.blink,direction));}
+        catch(error){castFail('FACE_INVALID',String(error),name);}
         validateCompletePose(gaze.pose);
         diagnostics.push(...result.diagnostics,...gaze.diagnostics.map(d=>({...d,actor:name})));
         finals.set(name,gaze.pose);gazes.set(name,gaze.gaze);points.set(name,point);return gaze.pose;
@@ -139,8 +158,10 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
       try{rig.validatePose(finals.get(name)!);}catch(error){castFail('POSE_PREFLIGHT','Cast pose preflight failed.',name,String(error));}
     }
     const data=<V>(map:Map<string,V>)=>Object.fromEntries(names.map(name=>[name,map.get(name)!]));
-    const snapshot:CastSnapshot=freezeData({...frame,poses:data(finals),gaze:data(gazes),pointing:data(points),contacts:Object.fromEntries(names.map(name=>[name,supports.get(name)!.contacts])),diagnostics});
+    const commits=names.map(name=>faces.get(name)?rigs.get(name)!.prepareFace(faces.get(name)!):()=>{});
+    const snapshot:CastSnapshot=freezeData({...frame,faces:data(faces),poses:data(finals),gaze:data(gazes),pointing:data(points),contacts:Object.fromEntries(names.map(name=>[name,supports.get(name)!.contacts])),diagnostics});
     names.forEach(name=>rigs.get(name)!.applyPose(snapshot.poses[name]));
+    commits.forEach(commit=>commit());
     return snapshot;
   }
   let evaluating=false;
