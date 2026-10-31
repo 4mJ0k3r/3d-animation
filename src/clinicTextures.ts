@@ -1,5 +1,8 @@
 import * as THREE from 'three';
 
+/** Shared canvas UV landmarks: origin top-left, normalized independently of resolution. */
+export const MEDICAL_CHART_POINTS=Object.freeze({head:Object.freeze([.76,.28] as const),node:Object.freeze([.38,.68] as const)});
+
 /**
  * Generates the blue medical chart whiteboard texture with the stick figure diagram
  * matching the reference image.
@@ -20,8 +23,8 @@ export function createMedicalChartTexture(width = 1024, height = 640): THREE.Can
   ctx.strokeRect(10, 10, width - 20, height - 20);
 
   // 2. White Stick Figure Diagram (right side of chart)
-  const figX = width * 0.76;
-  const figHeadY = height * 0.28;
+  const figX = width * MEDICAL_CHART_POINTS.head[0];
+  const figHeadY = height * MEDICAL_CHART_POINTS.head[1];
   const figSpineBottom = height * 0.82;
 
   ctx.strokeStyle = '#ffffff';
@@ -54,8 +57,8 @@ export function createMedicalChartTexture(width = 1024, height = 640): THREE.Can
   ctx.lineWidth = 8;
   ctx.setLineDash([16, 12]);
 
-  const targetX = width * 0.38;
-  const targetY = height * 0.68;
+  const targetX = width * MEDICAL_CHART_POINTS.node[0];
+  const targetY = height * MEDICAL_CHART_POINTS.node[1];
   const cpX = width * 0.58;
   const cpY = height * 0.32;
 

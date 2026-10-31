@@ -301,11 +301,15 @@ const Lifecycle: React.FC = () => {
     }} />;
 };
 
+// Real composition capture includes HTML captions, unlike a WebGL canvas hash.
+const UniversalClinicEndToEnd=React.lazy(()=>import('../DoctorClinicUniversal').then(m=>({default:m.DoctorClinicUniversal})));
 registerRoot(() => <>
+  <Composition id="UniversalClinicEndToEnd" component={UniversalClinicEndToEnd} width={360} height={640} fps={30} durationInFrames={150}/>
   <Composition id="Phase1Audit" component={Audit} width={320} height={320} fps={30} durationInFrames={100} />
   <Composition id="Phase1Lifecycle" component={() => <StrictMode><Lifecycle /></StrictMode>} width={320} height={320} fps={30} durationInFrames={100} />
   <Composition id="Phase1BridgeOrder" component={BridgeOrder} width={320} height={320} fps={30} durationInFrames={100} />
   <Composition id="Phase1BridgeStatic" component={()=><BridgeOrder mode='static'/>} width={320} height={320} fps={30} durationInFrames={100} />
   <Composition id="Phase1PendingUnmount" component={PendingUnmount} width={320} height={320} fps={30} durationInFrames={100} />
   <Composition id="Phase1Failure" component={Failure} width={320} height={320} fps={30} durationInFrames={100} />
+  <Composition id="Phase1FrameFailure" component={()=><SDK.ThreeCanvas onFrame={()=>{throw new Error('AUDIT_EXPECTED_FRAME_FAILURE');}}/>} width={320} height={320} fps={30} durationInFrames={1}/>
 </>);

@@ -3,6 +3,7 @@ const path = require('node:path');
 const {bundle} = require('@remotion/bundler');
 const {openBrowser, selectComposition, renderStill} = require('@remotion/renderer');
 const http = require('node:http');
+const crypto=require('node:crypto');
 
 (async () => {
   const out = path.resolve(process.env.TOON_AUDIT_OUT || 'out/phase1.1-audit'); fs.mkdirSync(out, {recursive: true});
@@ -32,17 +33,26 @@ const http = require('node:http');
     }
   };
   try {
-    for (const id of ['Phase1Audit', 'Phase1Lifecycle', 'Phase1BridgeOrder', 'Phase1BridgeStatic', 'Phase1PendingUnmount', 'Phase1Failure']) {
+    for (const id of ['Phase1Audit', 'Phase1Lifecycle', 'Phase1BridgeOrder', 'Phase1BridgeStatic', 'Phase1PendingUnmount', 'Phase1Failure','Phase1FrameFailure']) {
       const composition = await selectComposition({serveUrl, id, puppeteerInstance: browser, inputProps});
       try {
         await renderStill({serveUrl, composition, frame: 0, inputProps, output: path.join(out, id + '.png'), puppeteerInstance: browser, chromiumOptions: {gl: process.env.TOON_GL || 'swangle'}, onBrowserLog, timeoutInMilliseconds: 60000});
-        if (id === 'Phase1Failure') throw new Error('Expected asset failure did not cancel capture');
+        if (id === 'Phase1Failure'||id==='Phase1FrameFailure') throw new Error('Expected failure did not cancel capture');
       } catch (error) {
-        if (id !== 'Phase1Failure' || !String(error).includes('AUDIT_EXPECTED_ASSET_FAILURE')) throw error;
-        logs.push({type: 'audit', text: 'PASS rejected asset cancels capture'});
-        console.log('PASS rejected asset cancels capture');
+        const expected=id==='Phase1Failure'?'AUDIT_EXPECTED_ASSET_FAILURE':id==='Phase1FrameFailure'?'AUDIT_EXPECTED_FRAME_FAILURE':null;
+        if (!expected || !String(error).includes(expected)) throw error;
+        const message=id==='Phase1Failure'?'PASS rejected asset cancels capture':'PASS rejected onFrame cancels capture';
+        logs.push({type: 'audit', text:message});console.log(message);
       }
       console.log('RENDERED ' + id);
     }
+    const composition=await selectComposition({serveUrl,id:'UniversalClinicEndToEnd',puppeteerInstance:browser,inputProps}),hashes=[];
+    for(const frame of [0,80,20,80,0]){
+      const output=path.join(out,`clinic-composition-${hashes.length}-${frame}.png`);
+      await renderStill({serveUrl,composition,frame,inputProps,output,puppeteerInstance:browser,chromiumOptions:{gl:process.env.TOON_GL||'swangle'},onBrowserLog,timeoutInMilliseconds:60000});
+      hashes.push({frame,hash:crypto.createHash('sha256').update(fs.readFileSync(output)).digest('hex')});
+    }
+    const pass=hashes[0].hash===hashes[4].hash&&hashes[1].hash===hashes[3].hash&&new Set(hashes.map(x=>x.hash)).size===3;
+    console.log('AUDIT_CLINIC_COMPOSITION:'+JSON.stringify({pass,hashes}));if(!pass)throw new Error('Whole clinic composition including captions is nondeterministic');
   } finally {logs.push({fontsServed}); fs.writeFileSync(path.join(out, 'browser-log.json'), JSON.stringify(logs, null, 2)); server.close(); await browser.close({silent: true});}
 })().catch((error) => {console.error(error); process.exitCode = 1;});

@@ -1,9 +1,13 @@
-# Universal characters — Stages 2A–2E-B
+# Universal characters — Stages 2A–2F
 
 **Use `createCast` for scene authoring.** It resolves contacts, walking, pointing,
 gaze, expressions and complete poses without scene-specific joint mathematics.
 Build the cast and static paths once in `initScene`; evaluate from absolute
 `frame`/`fps` in `onFrame`. Never accumulate motion or move standing marks to walk.
+
+For a complete room/seat/chart integration using one cast, see
+[the universal clinic guide](../../../docs/CLINIC_UNIVERSAL.md) and
+`src/clinic-universal.ts`. The legacy clinic remains available for A/B review.
 
 ```ts
 import {createCast, createPaths, pathThrough, walkAlong, appearancePreset,

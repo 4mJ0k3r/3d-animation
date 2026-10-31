@@ -9,7 +9,8 @@
     "outDir": "../out/character-tests",
     "lib": ["DOM", "DOM.Iterable", "ES2022"],
     "types": [],
-    "noEmitOnError": true
+    "noEmitOnError": true,
+    "jsx": "react-jsx"
   },
-  "include": ["../src/toon-kit/characters/**/*.ts", "../src/toon-kit-tests/character-fixture.ts", "../src/toon-kit-tests/cast-fixture.ts"]
+  "include": ["../src/toon-kit/characters/**/*.ts", "../src/toon-kit-tests/character-fixture.ts", "../src/toon-kit-tests/cast-fixture.ts","../src/clinic-universal.ts"]
 }

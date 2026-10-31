@@ -78,3 +78,11 @@
 - Keep shoulders attached, hips embedded, seated body contact exact, and all appearances in the existing hierarchy. Do not bypass failed contact/gesture diagnostics or capture stale frames. Use current support targets and acyclic final targets, never live character matrices.
 - Validate with test:characters and verify:acting plus all earlier suites, serially through the unchanged launcher. Inspect the normal-speed video, full-body, close-up, side and portrait previews; keep diagnostic shots separate. No debug arrows in beauty previews or accidental character crops.
 - Phase 1 renderer internals, legacy characters/clinic and every production memory, concurrency, software GL, temp-isolation and encoding safeguard remain unchanged. Stop before Stage 2F, cinematic automation, lip-sync, general story timelines or script-to-video orchestration.
+
+## Stage 2F clinic integration
+
+- Stage 2F now permits the separate DoctorClinicUniversal composition; earlier migration exclusions describe earlier stages. Keep DoctorClinicAnimation, Doctor.ts, Patient.ts and DoctorClinicScene.tsx for A/B review. Use one createCast and existing semantic contacts, appearance presets, pointing, gaze and acting; never duplicate rigs/IK or move joints manually.
+- Read docs/CLINIC_UNIVERSAL.md. Build room targets and immutable acting descriptors once; on every requested frame reset authored prop state, resolve current scene targets through cast.evaluate once, set the manual camera, then render. Keep one intentional gesture per actor, the seated start, deterministic captions and no debug arrows in beauty previews.
+- Keep the ThreeCanvas cancellation latch: in pinned Remotion 4.0.539, completing readiness after an error can mask cancellation. Failed captures must reject, and unmount must release owned gates/resources. Run audit:phase1, test:characters, verify:clinic and earlier GPU suites serially before changing this behavior.
+- Preserve swangle/SwiftShader, software-safe, concurrency 1, disabled heavy AO/Bokeh/parallel encoding, workspace scratch and every production admission/abort/memory limit. Windows validation does not certify Muse/Linux or protect against sudden host ballooning. Never bypass the Linux memory guard to complete this scene.
+- Stop after Stage 2F review. No camera automation, voice/lip-sync, general timelines or script-to-video orchestration.

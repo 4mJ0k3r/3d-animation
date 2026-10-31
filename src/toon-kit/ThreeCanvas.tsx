@@ -33,7 +33,7 @@ export const ThreeCanvas: React.FC<ThreeCanvasProps> = (props) => {
   const latest = useRef(props);
   latest.current = props;
   const host = useRef<HTMLDivElement>(null);
-  const session = useRef<{engine: CartoonEngine; queue: Promise<void>; active: boolean; failed: boolean; fail: (error: unknown) => void; reset: () => void; direction: [number,number,number]; staticBounds: THREE.Box3 | null} | null>(null);
+  const session = useRef<{engine: CartoonEngine; queue: Promise<void>; active: boolean; failed: boolean; failureGate:number|null; fail: (error: unknown) => void; reset: () => void; direction: [number,number,number]; staticBounds: THREE.Box3 | null} | null>(null);
   useLayoutEffect(() => {
     if (!host.current) return;
     // Each lifecycle gets a fresh context, including React StrictMode re-mounts.
@@ -43,10 +43,14 @@ export const ThreeCanvas: React.FC<ThreeCanvasProps> = (props) => {
     let engine: CartoonEngine;
     try { engine = new CartoonEngine(canvas, width, height, latest.current.engineOptions); }
     catch (error) { cancelRender(error); return; }
-    const current = {engine, queue: Promise.resolve(), active: true, failed: false, fail: (_error: unknown) => {}, reset: () => {}, direction: [0,0,1] as [number,number,number], staticBounds: null as THREE.Box3 | null};
+    const current = {engine, queue: Promise.resolve(), active: true, failed: false, failureGate:null as number|null, fail: (_error: unknown) => {}, reset: () => {}, direction: [0,0,1] as [number,number,number], staticBounds: null as THREE.Box3 | null};
     current.fail = (error) => {
       if (!current.active || current.failed) return;
       current.failed = true;
+      // Remotion 4.0.539 tests ready BEFORE cancelled. Keep this failed lifecycle
+      // blocked even when ordinary frame gates complete or React re-renders.
+      // Cancellation rejects capture; unmount releases this one owned latch.
+      current.failureGate=delayRender('Toon-Kit cancelled lifecycle');
       // Remotion records the cancellation and then throws; do not turn that into
       // a second unhandled rejection or cancel the same session twice.
       try {cancelRender(error);} catch {}
@@ -75,6 +79,7 @@ export const ThreeCanvas: React.FC<ThreeCanvasProps> = (props) => {
     void current.queue.catch(current.fail);
     return () => {
       current.active = false;
+      if(current.failureGate!==null){continueRender(current.failureGate);current.failureGate=null;}
       if (session.current === current) session.current = null;
       // Do not await loaders. Abort the barrier and release ownership synchronously.
       try { engine.dispose(); } catch (error) { console.error(error); }
@@ -110,7 +115,7 @@ export const ThreeCanvas: React.FC<ThreeCanvasProps> = (props) => {
       current.engine.camera.updateMatrixWorld(true);
       current.engine.renderFrame(frame, config.fps);
       complete();
-    }).catch((error: unknown) => { complete(); if (!cancelled) current.fail(error); });
+    }).catch((error: unknown) => { if (!cancelled) current.fail(error); complete(); });
     return () => { cancelled = true; complete(); };
   }, [frame, config.fps, width, height, optionsKey, fontsKey, props.onFrame, props.autoFrame, props.framing, props.framingSubjects]);
 

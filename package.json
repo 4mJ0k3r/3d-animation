@@ -20,7 +20,8 @@
     "verify:faces": "node scripts/verify-faces.cjs",
     "verify:appearance": "node scripts/verify-appearance.cjs",
     "verify:walking": "node scripts/verify-walking.cjs",
-    "verify:acting": "node scripts/verify-acting.cjs"
+    "verify:acting": "node scripts/verify-acting.cjs",
+    "verify:clinic": "node scripts/verify-clinic.cjs"
   },
   "keywords": [],
   "author": "",

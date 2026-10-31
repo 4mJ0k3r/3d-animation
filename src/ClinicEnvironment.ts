@@ -1,15 +1,22 @@
 import * as THREE from 'three';
 import { createToonMaterial, createToonGradientMap } from './lib';
-import { createMedicalChartTexture, createHealthPosterTexture } from './clinicTextures';
+import { createMedicalChartTexture, createHealthPosterTexture,MEDICAL_CHART_POINTS } from './clinicTextures';
+import {createTargets,sceneMark,sceneSeat,scenePoint,levelFloor} from './toon-kit/characters';
 
 export class ClinicEnvironment {
   public group: THREE.Group;
+  public readonly doctorMark=new THREE.Object3D();
+  public readonly examinationTable:THREE.Group;
+  public readonly examinationCushion:THREE.Mesh;
+  public readonly medicalChart:THREE.Mesh;
+  public readonly floorSurface:THREE.Mesh;
   private chartTexture: THREE.CanvasTexture;
   private posterTexture: THREE.CanvasTexture;
 
   constructor() {
     this.group = new THREE.Group();
     this.group.name = 'ClinicEnvironment';
+    this.doctorMark.name='clinic:doctor-standing';this.doctorMark.position.set(-.95,0,-1.05);this.group.add(this.doctorMark);
 
     const toonRamp = createToonGradientMap(3);
 
@@ -28,6 +35,7 @@ export class ClinicEnvironment {
       gradientMap: toonRamp,
     });
     const floor = new THREE.Mesh(floorGeom, floorMat);
+    this.floorSurface=floor;floor.name='clinic:floor';
     floor.rotation.x = -Math.PI / 2;
     floor.position.set(0, 0, 0);
     floor.receiveShadow = true;
@@ -69,6 +77,7 @@ export class ClinicEnvironment {
     const chartGeom = new THREE.PlaneGeometry(2.1, 1.35);
     const chartMat = new THREE.MeshBasicMaterial({ map: this.chartTexture });
     const chart = new THREE.Mesh(chartGeom, chartMat);
+    this.medicalChart=chart;chart.name='clinic:medical-chart';
     chart.position.set(-0.6, 2.95, -2.94);
     this.group.add(chart);
 
@@ -99,6 +108,7 @@ export class ClinicEnvironment {
 
     // 5. Medical Examination Table (where patient sits)
     const tableGroup = new THREE.Group();
+    this.examinationTable=tableGroup;tableGroup.name='clinic:examination-table';
     tableGroup.position.set(1.4, 0, -1.2);
 
     // Table Base Cabinet (teal/green)
@@ -140,6 +150,7 @@ export class ClinicEnvironment {
       gradientMap: toonRamp,
     });
     const cushion = new THREE.Mesh(cushionGeom, cushionMat);
+    this.examinationCushion=cushion;cushion.name='clinic:examination-cushion';
     cushion.position.set(0, 1.05, 0);
     cushion.castShadow = true;
     cushion.receiveShadow = true;
@@ -218,6 +229,23 @@ export class ClinicEnvironment {
 
     this.group.add(plantGroup);
   }
+
+  /** Optional scene-specific staging. Default construction retains the legacy room. */
+  public stageUniversalPortrait():void {
+    this.doctorMark.position.set(-1.4,0,-.9);
+    this.examinationTable.position.x=.4;this.examinationTable.rotation.y=.45;
+  }
+
+  /** Targets read current world transforms; UV coordinates come from the actual texture artwork. */
+  public semanticTargets(){
+    const geometry=this.medicalChart.geometry;
+    if(!geometry.boundingBox)geometry.computeBoundingBox();const box=geometry.boundingBox!;
+    const point=(uv:readonly[number,number])=>[box.min.x+(box.max.x-box.min.x)*uv[0],box.max.y-(box.max.y-box.min.y)*uv[1],box.max.z] as const;
+    return createTargets({doctor:sceneMark(this.doctorMark),examSeat:sceneSeat(this.examinationCushion),
+      diagram:scenePoint(this.medicalChart,point(MEDICAL_CHART_POINTS.node)),diagramHead:scenePoint(this.medicalChart,point(MEDICAL_CHART_POINTS.head))});
+  }
+
+  public floorTarget(){return levelFloor(this.floorSurface.getWorldPosition(new THREE.Vector3()).y);}
 
   public dispose(): void {
     this.chartTexture.dispose();
