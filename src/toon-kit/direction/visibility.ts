@@ -109,13 +109,17 @@ export function createProjection(state: CameraState) {
 }
 export function estimateVisibility(state: CameraState, feature: FeatureSamples, proxies: readonly VisibilityProxy[]) {
   if (!feature.points.length || feature.points.length > VISIBILITY_LIMITS.maxSamples || feature.points.some(p => p.length !== 3 || !p.every(Number.isFinite))) directionFail('INVALID_FEATURE', 'Finite bounded visibility samples required');
+  if(feature.selfOccluding&&(!feature.normals||feature.normals.length!==feature.points.length||new Set(feature.selfOccluding).size!==feature.selfOccluding.length||feature.selfOccluding.some(i=>!Number.isInteger(i)||i<0||i>=feature.points.length)))directionFail('INVALID_FEATURE','Self-occluding indices require matching normals and valid unique indices');
   const projection = createProjection(state);
   let visible = 0,
     inFrame = 0,
-    backFacing = 0;
+    backFacing = 0, required = 0, selfOccluded = 0;
   const blockers = new Set<string>();
   for (let i = 0; i < feature.points.length; i++) {
     const p = feature.points[i];
+    const facesAway=feature.normals?.[i] && dot(feature.normals[i],sub(state.position,p))<=VISIBILITY_LIMITS.minFacingCosine*Math.hypot(...sub(state.position,p));
+    if(facesAway&&feature.selfOccluding?.includes(i)){selfOccluded++;continue;}
+    required++;
     if (!projection.point(p).inFrame) continue;
     inFrame++;
     if (feature.normals?.[i] && dot(feature.normals[i], sub(state.position, p)) <= VISIBILITY_LIMITS.minFacingCosine * Math.hypot(...sub(state.position, p))) {
@@ -126,8 +130,9 @@ export function estimateVisibility(state: CameraState, feature: FeatureSamples, 
     if (blocker) blockers.add(blocker.id);else visible++;
   }
   return {
-    fraction: visible / feature.points.length,
-    inFrameFraction: inFrame / feature.points.length,
+    fraction: required ? visible / required : 0,
+    inFrameFraction: required ? inFrame / required : 0,
+    selfOccluded,
     backFacing,
     blockers: [...blockers].sort()
   };

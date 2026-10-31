@@ -315,8 +315,8 @@ export function createPrimitiveFactory(engine: CartoonEngine) {
       return result;
     };
   }
-  return {box: pooled('box', createBox), cylinder: pooled('cylinder', createCylinder), sphere: pooled('sphere', createSphere),
-    capsule: pooled('capsule', createCapsule), plane: pooled('plane', createPlane), roundedBox: pooled('roundedBox', createRoundedBox)};
+  return {box: pooled<BoxOptions>('box', createBox), cylinder: pooled<CylinderOptions>('cylinder', createCylinder), sphere: pooled<SphereOptions>('sphere', createSphere),
+    capsule: pooled<CapsuleOptions>('capsule', createCapsule), plane: pooled<PlaneOptions>('plane', createPlane), roundedBox: pooled<RoundedBoxOptions>('roundedBox', createRoundedBox)};
 }
 
 export interface StudioRoomOptions {

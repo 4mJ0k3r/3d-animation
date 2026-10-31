@@ -2,12 +2,13 @@ import React from 'react';
 import { getInputProps, useCurrentFrame, useVideoConfig } from 'remotion';
 import { ThreeCanvas, ToonCaptions, createCaptionLayout, captionAt, createProjection, compactVisibilityFrame, rectsIntersect } from './toon-kit';
 import type { CaptionLayout } from './toon-kit';
-import { createCinematicClinic } from './clinic-cinematic';
+import { createCinematicClinic, CLINIC_INTEGRATED_SHOTS } from './clinic-cinematic';
 import { UNIVERSAL_CLINIC_CAPTIONS } from './clinic-universal-story';
 export const DoctorClinicCinematic: React.FC<{
   visibility?: boolean;
+  integrated?: boolean;
 }> = ({
-  visibility = false
+  visibility = false, integrated = false
 }) => {
   const [captionLayout, setCaptionLayout] = React.useState<CaptionLayout | null>(null),
     captionCommit = React.useRef<(() => void) | null>(null),
@@ -27,6 +28,7 @@ export const DoctorClinicCinematic: React.FC<{
     previewFrames?: number[];
     close?: boolean;
     captionCase?: 'long' | 'large';
+    closeout?: boolean;
   };
   const at = (f: number) => props.previewFrames?.[f] ?? f,
     shift = frame - at(frame);
@@ -73,6 +75,7 @@ export const DoctorClinicCinematic: React.FC<{
         } = await import('./toon-kit-tests/composition-gpu');
         await verifyComposition(engine);
       }
+      if(visibility&&props.closeout){const {verifyPhase3}=await import('./toon-kit-tests/phase3-gpu');await verifyPhase3(engine);}
       const t = performance.now();
       ref.current = createCinematicClinic(engine, width / height, props.close ? [{
         id: 'close',
@@ -81,7 +84,7 @@ export const DoctorClinicCinematic: React.FC<{
         view: 'subjectFront',
         startFrame: 0,
         endFrame: 150
-      }] : undefined, visibility ? {
+      }] : integrated ? CLINIC_INTEGRATED_SHOTS : undefined, visibility ? {
         captions: layout
       } : undefined);
       if (visibility) console.log('AUDIT_COMPOSITION_PLANS:' + JSON.stringify([0, 43, 75, 114].map(f => ref.current!.director.describe(f))));
@@ -147,3 +150,4 @@ export const DoctorClinicCinematic: React.FC<{
       }))} fontSize={width * 66 / 1080} bottom={height * 100 / 1920} strokeWidth={width * 5 / 1080} />}</div></div>;
 };
 export const DoctorClinicVisible: React.FC = () => <DoctorClinicCinematic visibility />;
+export const DoctorClinicIntegrated:React.FC=()=> <DoctorClinicCinematic visibility integrated />;

@@ -108,3 +108,53 @@
 - Read direction/MOTION.md. Use optional shot.motion pushIn/pan/move through createDirector with composition:{captions}; no raw camera coordinates, timers, previous-camera smoothing, extra render cameras or postprocessing. Omitted motion remains a hard cut/static plan.
 - Keep outer-shot subjects/regions explicit. Pan targets must already be protected sampled face/hand/prop regions. Prepare every frame and bounded half-frame checks before capture; retain exact endpoints, upright focus interpolation, scene certificates and structured path failures. Never hide actors/change actions or weaken safety/composition limits to pass.
 - Prefer test:motion and verify:motion for this stage. Reuse fixtures; one short demonstration suffices. No Phase 3E orchestration/action timelines are approved. All CPU-only, memory, concurrency, ownership and temp rules remain unchanged.
+
+## Phase 3 cinematic authoring (verified office + clinic)
+
+Build scene geometry/marks with existing primitives before creating the stage.
+Use createStage for any setting; createClinicStage remains a compatibility adapter.
+The floor placement and scenery dimensions are immutable for that stage; translated,
+yaw-rotated positive-uniform root transforms are supported. Props may move only
+as part of the explicitly prepared absolute-frame scene state. The stage owns
+metadata; the engine owns GPU resources. Read direction/MOTION.md for limits.
+
+```tsx
+// Async ThreeCanvas.initScene; room/floor/board and left/right scene marks exist.
+const captions = await engine.wait(createCaptionLayout({width,height,words,
+  fontSize:44,strokeWidth:3,bottom:64}, engine.signal));
+// Commit the SAME layout to <ToonCaptions layout={captions}/> before init resolves;
+// office.tsx demonstrates the existing layout-effect readiness handshake.
+const stage = createStage(engine, {root:room, floor, axis:['designer','manager']});
+stage.registerProp('board', board);
+const targets = createTargets({left:sceneMark(left),right:sceneMark(right)});
+const cast = createCast(engine, {
+  designer:{appearance:appearancePreset('casual'),stance:standAt(targets.mark('left')),
+    proportions:{headRadius:.46}},
+  manager:{appearance:appearancePreset('office'),stance:standAt(targets.mark('right')),
+    proportions:{headRadius:.54,torsoRadius:.25}},
+});
+stage.bind(cast);
+const director = createDirector(engine, {stage,aspect:width/height,durationInFrames:90,
+  composition:{captions},shots:[
+    {id:'team',type:'twoShot',subjects:['designer','manager'],startFrame:0,endFrame:30},
+    {id:'idea',type:'closeUp',subject:'designer',startFrame:30,endFrame:60,
+      motion:{type:'pushIn',amount:'subtle'}},
+    {id:'plan',type:'objectFocus',...stage.prop('board'),startFrame:60,endFrame:90},
+  ]});
+const sample = (frame:number) => stage.snapshot(cast.evaluate({frame,fps:30,
+  poses:{designer:{expression:'happy'},manager:{expression:'worried'}}}));
+director.prepare({sample});
+// ThreeCanvas autoFrame={false}; onFrame:
+// director.applyFrame({frame,snapshot:sample(frame)});
+```
+
+For a generic stage, registerProp derives its full region/box-or-plane proxy from
+actual mesh geometry; registerOccluder registers additional opaque proxies.
+Construct/bind before preparing. Do not supply hand-built snapshots or camera math.
+Use full named prop regions for this lean adapter; specialized art subregions
+remain the responsibility of an existing specialized adapter such as the clinic.
+Run test:characters, test:memory, audit:phase1 and verify:phase3 serially for the
+closeout gate. No script generation, narration, lip-sync or Phase 4 is authorized.
+All existing software-safe/swangle, memory, concurrency and temp rules still apply.
+Actor and prop semantic names must be distinct; the internal scenery owner name stage is reserved.
+Visibility now samples eye centers and edges; naturally hidden curved periphery is reported as selfOccluded. Centers and facing edges remain protected. Finite proxies still require visual review.

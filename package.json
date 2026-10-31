@@ -25,7 +25,8 @@
     "verify:direction": "node scripts/verify-direction.cjs",
     "verify:composition": "node scripts/verify-composition.cjs",
     "test:motion": "node scripts/test-motion.cjs",
-    "verify:motion": "node scripts/verify-motion.cjs"
+    "verify:motion": "node scripts/verify-motion.cjs",
+    "verify:phase3": "node scripts/verify-phase3.cjs"
   },
   "keywords": [],
   "author": "",

@@ -52,7 +52,13 @@ export function actorVisibility(id: string, p: CharacterProportions, matrices: R
     facePoints.push(f.point);
     normals.push(f.normal);
   }
-  const eyes = [surface(-.30, .14), surface(.30, .14)];
+  // Centers alone miss narrow occluders clipping an eye's inner/outer edge.
+  // Match the canonical face-paint 256px UV layout (centers +/-39, y=103,
+  // radius 25 + half the 4.5px stroke); the face patch spans 2 x 1.5 radians.
+  // Six symmetric center/edge samples stay within the existing nine-point cap.
+  const eyeCenter = 39 / 256 * 2, eyeEdge = (25 + 2.25) / 256 * 2 * .9;
+  const eyeLatitude = (.5 - 103 / 256) * 1.5;
+  const eyes = [-1, 1].flatMap(sign => [-eyeEdge, 0, eyeEdge].map(offset => surface(sign * eyeCenter + offset, eyeLatitude)));
   const features: ActorVisibility['features'] = {
     face: {
       points: facePoints,
@@ -62,6 +68,7 @@ export function actorVisibility(id: string, p: CharacterProportions, matrices: R
     eyes: {
       points: eyes.map(e => e.point),
       normals: eyes.map(e => e.normal),
+      selfOccluding: [0, 2, 3, 5],
       ignore: [id + '.head']
     },
     leftHand: feature(origin('leftWrist'), []),

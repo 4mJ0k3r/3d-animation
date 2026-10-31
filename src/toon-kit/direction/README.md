@@ -171,3 +171,9 @@ The DoctorClinicVisible composition demonstrates the complete readiness bridge.
 Optional deterministic `shot.motion` is documented in [MOTION.md](MOTION.md).
 Preparation and frame application use the same director; static shots retain
 Phase 3B/3C behavior.
+
+Phase 3E adds a minimal generic `createStage(engine,{root,floor,axis})` adapter.
+See the single verified scene example in ../AGENT_INSTRUCTIONS.md and the
+independent office-fixture.ts. It uses the same director and existing cast;
+no clinic geometry, chart artwork or camera coordinates are needed.
+Eye coverage includes center/edge samples; diagnostics separately report naturally self-occluded peripheral samples. See docs/PHASE3E.md for the closeout gate and limitations.

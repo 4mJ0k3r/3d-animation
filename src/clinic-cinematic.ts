@@ -32,6 +32,8 @@ export const CLINIC_STATIC_SHOTS: readonly StaticShot[] = Object.freeze([{
   endFrame: 150,
   view: 'subjectFront'
 }].map(s => Object.freeze(s as StaticShot)));
+/** Same four-shot story; only the final reaction adds the approved subtle dolly. */
+export const CLINIC_INTEGRATED_SHOTS:readonly StaticShot[]=Object.freeze(CLINIC_STATIC_SHOTS.map(s=>Object.freeze(s.id==='reaction'?{...s,motion:{type:'pushIn' as const,amount:'subtle' as const,easing:'easeInOut' as const}}:s)));
 export function createCinematicClinic(engine: CartoonEngine, aspect = engine.camera.aspect, shots = CLINIC_STATIC_SHOTS, composition?: CompositionOptions) {
   const clinic = createUniversalClinic(engine),
     stage = createClinicStage(engine, {

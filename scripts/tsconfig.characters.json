@@ -12,5 +12,5 @@
     "noEmitOnError": true,
     "jsx": "react-jsx"
   },
-  "include": ["../src/toon-kit/characters/**/*.ts", "../src/toon-kit-tests/character-fixture.ts", "../src/toon-kit-tests/cast-fixture.ts","../src/clinic-universal.ts","../src/clinic-cinematic.ts","../src/toon-kit-tests/motion-fixture.ts"]
+  "include": ["../src/toon-kit/characters/**/*.ts", "../src/toon-kit-tests/character-fixture.ts", "../src/toon-kit-tests/cast-fixture.ts","../src/clinic-universal.ts","../src/clinic-cinematic.ts","../src/toon-kit-tests/motion-fixture.ts","../src/toon-kit-tests/office-fixture.ts"]
 }

@@ -22,6 +22,9 @@ export interface FeatureSamples {
   readonly points: readonly Vec3[];
   readonly normals?: readonly Vec3[];
   readonly ignore: readonly string[];
+  /** Peripheral surface samples naturally hidden by their own curved head.
+   * Centers remain mandatory; external occlusion of facing edges still fails. */
+  readonly selfOccluding?: readonly number[];
 }
 export interface ActorVisibility {
   readonly proxies: readonly VisibilityProxy[];
