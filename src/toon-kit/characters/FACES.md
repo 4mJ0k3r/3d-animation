@@ -155,6 +155,7 @@ readability reference. The fixed head tessellation still has a mild polygonal
 outer contour at large magnification. Eye gaze cannot exceed anatomical limits;
 mouth shapes and expression changes are discrete. No nose, facial animation
 blending or audio lip-sync is implemented here. Hair, clothing and appearance
-presets are now provided through [APPEARANCE.md](APPEARANCE.md); walking and legacy
-clinic migration remain out of scope. Camera architecture and production memory limits
+presets are provided through [APPEARANCE.md](APPEARANCE.md), and deterministic
+walking through [WALKING.md](WALKING.md). Legacy clinic migration remains out of
+scope. Camera architecture and production memory limits
 are unchanged. Local measurements do not certify the ballooned Linux VM.

@@ -25,7 +25,7 @@ export interface TargetLibrary {
 export type ResolvedTarget={readonly kind:'point';readonly position:Vec3}|WorldMark|SeatTarget;
 export interface StandAt {readonly kind:'stand-at';readonly target:TargetReference;readonly crouch:number}
 export interface SitAt {readonly kind:'sit-at';readonly target:TargetReference;readonly floor:FloorTarget;readonly feet:SittingContact['feet']}
-export type CastStance=StandAt|SitAt|StandingContact|SittingContact;
+export type CastStance=StandAt|SitAt|StandingContact|SittingContact|import('./walking').WalkAlong;
 export interface LookIntent {readonly kind:'look';readonly target:TargetReference}
 export interface PointIntent {readonly kind:'point';readonly target:TargetReference;readonly hand:Side|'auto'}
 export interface SemanticReach {readonly hand:Side;readonly target:TargetReference}
@@ -59,7 +59,8 @@ export interface CastActor {
 export type CastCode='INVALID_CAST_REQUEST'|'UNKNOWN_ACTOR'|'TARGET_MISSING'|'TARGET_INVALID'|'TARGET_CYCLE'|
   'TARGET_DEPTH'|'TARGET_CALLBACK_FAILED'|'TARGET_PHASE'|'ACTOR_SCENE_TARGET'|'INVALID_PARENT'|
   'CONTACT_FAILED'|'INTENT_CONFLICT'|'POINTING_UNREACHABLE'|'POINTING_COINCIDENT'|'GAZE_LIMITED'|
-  'GAZE_COINCIDENT'|'CAST_DISPOSED'|'POSE_PREFLIGHT'|'FACE_INVALID'|'APPEARANCE_INVALID';
+  'GAZE_COINCIDENT'|'CAST_DISPOSED'|'POSE_PREFLIGHT'|'FACE_INVALID'|'APPEARANCE_INVALID'|
+  'PATH_INVALID'|'WALK_INVALID'|'WALK_SPEED'|'WALK_UNREACHABLE'|'WALK_ARM_YIELD';
 export interface CastDiagnostic {readonly code:CastCode;readonly severity:'info'|'error';readonly message:string;readonly actor?:string;readonly details?:unknown}
 export interface ResolvedGaze {
   readonly targetWorld:Vec3|null;
@@ -74,6 +75,7 @@ export interface ResolvedPointing {
 }
 export interface CastFrameRequest {readonly frame:number;readonly fps:number;readonly poses?:Readonly<Record<string,ActorIntent>>}
 export interface CastSnapshot extends FrameInput {
+  readonly locomotion:Readonly<Record<string,import('./walking').WalkState|null>>;
   readonly faces:Readonly<Record<string,ResolvedFace|null>>;
   readonly poses:Readonly<Record<string,CharacterPose>>;
   readonly contacts:Readonly<Record<string,ContactState>>;

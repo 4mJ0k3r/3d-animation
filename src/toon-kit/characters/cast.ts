@@ -13,6 +13,9 @@ import {inverseQ,rotateQ,sub} from './math';
 import {resolveFace,validateFaceConfig} from './face';
 import type {ResolvedFace} from './face';
 import {resolveAppearance} from './appearance';
+import {planWalk} from './walking';
+import type {WalkState} from './walking';
+import {applyWalkArms} from './walk-arms';
 import {solvePointing} from './pointing';
 import {solveHeadGaze} from './gaze';
 import {castFail,CastEvaluationError} from './cast-error';
@@ -60,6 +63,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
     const supports=new Map<string,Extract<ContactResult,{ok:true}>>(),contactRequests=new Map<string,ContactRequest>();
     const finals=new Map<string,CharacterPose>(),gazes=new Map<string,ResolvedGaze>(),points=new Map<string,ResolvedPointing|null>();
     const faces=new Map<string,ResolvedFace|null>();
+    const locomotion=new Map<string,WalkState|null>(names.map(n=>[n,null]));
     const supportActive=new Set<string>(),intentActive=new Set<string>(),diagnostics:CastSnapshot['diagnostics'][number][]=[];
     const identify=(name:string,error:unknown):never=>{
       if(error instanceof CastEvaluationError)throw new CastEvaluationError(error.diagnostics.map(d=>({...d,actor:d.actor??name})));
@@ -99,6 +103,9 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
           const mark=resolver.resolve(stance.target,'support');
           if(mark.kind!=='mark')castFail('TARGET_INVALID','standAt requires a standing mark.',name);
           support=standOn(levelFloor(mark.position[1]),{at:[mark.position[0],mark.position[2]],yaw:mark.yaw,crouch:stance.crouch});
+        }else if(stance.kind==='walk-along') {
+          const plan=planWalk(rigs.get(name)!.definition,stance,frame.frame,frame.fps,parents.get(name)!.scale*(intent.scale??config.scale??1));
+          support=plan.support;locomotion.set(name,plan.state);
         }else if(stance.kind==='sit-at') {
           const seat=resolver.resolve(stance.target,'support');if(seat.kind!=='seat')castFail('TARGET_INVALID','sitAt requires a seat surface.',name);
           support=sitOn(seat,{floor:stance.floor,feet:stance.feet});
@@ -106,7 +113,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
         else castFail('INVALID_CAST_REQUEST','Unknown stance.',name);
         const contact:ContactRequest={support,parent:parents.get(name),scale:intent.scale??config.scale??1,visible:intent.visible??true};
         const result=solveContactPose(rigs.get(name)!.definition,contact);
-        if(!result.ok)castFail('CONTACT_FAILED','Support constraints failed.',name,result.diagnostics);
+        if(!result.ok)castFail(support.kind==='walk'?'WALK_UNREACHABLE':'CONTACT_FAILED','Support constraints failed.',name,result.diagnostics);
         contactRequests.set(name,contact);supports.set(name,result);return result;
       }catch(error){return identify(name,error);}finally{supportActive.delete(name);}
     }
@@ -131,6 +138,9 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
           const solved=solvePointing(rig.definition,result,contact,targetPosition(resolver.resolve(intent.gesture.target)),intent.gesture.hand);
           result=solved.result;point=solved.pointing;
         }
+        const walking=locomotion.get(name);
+        if(walking){const swung=applyWalkArms(rig.definition,result,contact,walking,point);result=swung.result;locomotion.set(name,swung.state);
+          if(walking.activity>1e-12&&swung.state.swingWeight!==1)diagnostics.push({code:'WALK_ARM_YIELD',severity:'info',actor:name,message:'Walking arm swing yielded to higher-priority actions or clearance.'});}
         if(intent.gaze!==undefined&&(!intent.gaze||intent.gaze.kind!=='look'))castFail('INVALID_CAST_REQUEST','Invalid gaze intention.',name);
         const gaze=solveHeadGaze(rig.definition,result.pose,parents.get(name)!,intent.gaze?targetPosition(resolver.resolve(intent.gaze.target)):null);
         let direction=gaze.gaze.eyeLocalDirection;
@@ -161,7 +171,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
     }
     const data=<V>(map:Map<string,V>)=>Object.fromEntries(names.map(name=>[name,map.get(name)!]));
     const commits=names.map(name=>faces.get(name)?rigs.get(name)!.prepareFace(faces.get(name)!):()=>{});
-    const snapshot:CastSnapshot=freezeData({...frame,faces:data(faces),poses:data(finals),gaze:data(gazes),pointing:data(points),contacts:Object.fromEntries(names.map(name=>[name,supports.get(name)!.contacts])),diagnostics});
+    const snapshot:CastSnapshot=freezeData({...frame,locomotion:data(locomotion),faces:data(faces),poses:data(finals),gaze:data(gazes),pointing:data(points),contacts:Object.fromEntries(names.map(name=>[name,supports.get(name)!.contacts])),diagnostics});
     names.forEach(name=>rigs.get(name)!.applyPose(snapshot.poses[name]));
     commits.forEach(commit=>commit());
     return snapshot;

@@ -1,5 +1,11 @@
 # Stage 2B — analytic IK and supported contacts
 
+For ordinary scene authoring, use [createCast](CAST.md) with `standAt`, `sitAt`,
+`reachFor` and [walkAlong](WALKING.md). The pure functions below are the advanced
+foundation, not a requirement to calculate joints or contacts by hand. Walking
+uses this same solver via an internally resolved `WalkingContact`; authors must
+not manufacture foot targets each frame.
+
 Pure data in, immutable complete pose out. Solvers do not import Three.js, read
 scene objects or previous poses, create geometry, start clocks or retain state.
 Apply the returned pose with the existing rig API. A rejected result has

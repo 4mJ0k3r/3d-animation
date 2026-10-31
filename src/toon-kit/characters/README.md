@@ -1,33 +1,41 @@
-# Universal characters, contacts, cast, faces and appearance — Stages 2A–2D-B
+# Universal characters — Stages 2A–2E-A
 
-Neutral geometry, complete pose data, analytic contacts and declarative cast
-evaluation. See [CONTACTS.md](CONTACTS.md) for Stage 2B and [CAST.md](CAST.md) for
-Stage 2C, [FACES.md](FACES.md) for Stage 2D-A and [APPEARANCE.md](APPEARANCE.md)
-for Stage 2D-B. No walking, gesture blending or legacy migration.
-Prefer createCast for new high-level scene authoring.
+**Use `createCast` for scene authoring.** It resolves contacts, walking, pointing,
+gaze, expressions and complete poses without scene-specific joint mathematics.
+Build the cast and static paths once in `initScene`; evaluate from absolute
+`frame`/`fps` in `onFrame`. Never accumulate motion or move standing marks to walk.
 
 ```ts
-import {createCharacterFactory, createRestPose} from './toon-kit';
+import {createCast, createPaths, pathThrough, walkAlong, appearancePreset,
+  standAt, worldMark, lookAt} from './toon-kit';
 
-// Once per engine/scene, during initScene. Reuse the same factory for the cast.
-const characters = createCharacterFactory(engine);
-const neutral = characters.create({
-  id: 'neutral',
-  colors: {torso: '#36a9b0'},
-  placement: {position: [-.8, 0, 0], yaw: 0, scale: 1},
+const paths = createPaths({toDoor: pathThrough([[0,0,0], [0,0,2], [1,0,4]])});
+const cast = createCast(engine, {
+  doctor: {appearance: appearancePreset('doctor'),
+    stance: walkAlong(paths.path('toDoor'), {startFrame:30, endFrame:270})},
+  patient: {appearance: appearancePreset('patient'),
+    stance: standAt(worldMark([-2,0,1]))},
 });
-engine.scene.add(neutral.root);
 
-// Pure data creation, followed by an explicit complete application.
-const pose = createRestPose(neutral.definition, {position: [-.8, 0, 0]});
-neutral.applyPose(pose);
-neutral.getAnchor('leftSole', 'world');
+// onFrame: update any scene props first, then evaluate, then set the camera.
+cast.evaluate({frame, fps, poses: {
+  doctor: {expression:'happy'},
+  patient: {gaze:lookAt(cast.actors.doctor.target('head'))},
+}});
+// cast.dispose() detaches actors; engine.dispose() releases shared GPU resources.
 ```
+
+[CAST.md](CAST.md): evaluator, targets and precedence.
+[WALKING.md](WALKING.md): paths, root motion and planted contacts.
+[FACES.md](FACES.md): expressions, gaze and blinking.
+[APPEARANCE.md](APPEARANCE.md): hair, garments and four appearance presets.
+[CONTACTS.md](CONTACTS.md): advanced pure IK/contact API.
+No general gesture blending, timeline/camera automation or legacy migration.
 
 ## Coordinates and anatomy
 
 - Units are scene units. Default crown height is derived, not a separate scale.
-- Root `(0,0,0)` lies on the ground plane, centered between ankle projections.
+- Neutral root `(0,0,0)` lies on the ground plane, centered between ankle projections.
   Shoes point forward; their lowest points are slightly forward of root Z.
 - +Y is up, +Z is forward. Anatomical left is +X and right is -X. A character
   looking toward the viewer therefore has its left on the viewer's right.
@@ -50,8 +58,10 @@ neutral.getAnchor('leftSole', 'world');
   it does not claim to calculate world space without scene inputs.
 - Scale the character only through root placement: positive uniform scale
   `0.05..20`. Other joint scales are one. Mesh scales encode construction sizes.
-  Ancestors must use positive uniform scales. For contact with world Y=0, parent
-  placement must preserve that plane: no pitch/roll or vertical translation.
+  Contact parents support finite translation (including Y), yaw and positive
+  uniform scale, with no pitch/roll. The solver compensates parent transforms
+  to preserve the explicitly selected world floor. Keep total uniform scale
+  fixed throughout a walk; scaling is not a locomotion animation channel.
 
 Hierarchy:
 
@@ -79,9 +89,10 @@ then overwrites all 36 transforms, visibility and automatic matrix update flags.
 It does not read a previous pose or construct geometry. Root placement defaults
 to identity when omitted; it does not preserve an earlier placement.
 
-This is a low-level pose foundation, not the final intent evaluator. Arbitrarily
-edited poses can violate attachment or contact constraints. Use solveContactPose
-for supported Stage 2B constraints and handle rejected results before rendering.
+These are the low-level pose contracts used internally by `createCast`.
+Arbitrarily edited poses can violate attachment or contact constraints. Advanced
+integrations may use `createCharacterFactory`, `createRestPose`, `solveContactPose`
+and `rig.applyPose`; ordinary scene authors should use declarative cast inputs.
 Do not add an accumulated-time animation loop or partial-pose mutation API.
 Reparenting rig nodes, changing topology, and mutating shared materials/geometries
 are unsupported.

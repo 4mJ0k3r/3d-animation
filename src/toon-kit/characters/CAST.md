@@ -34,9 +34,10 @@ const snapshot = cast.evaluate({
 });
 ```
 
-There are no doctor/patient presets yet. Names in this example identify generic
-universal characters, not migrated legacy rigs. Cast actor options are
-`proportions`, `colors`, `stance`, `scale`, and optional scene `parent`.
+Names identify universal characters, not migrated legacy rigs. Use
+`appearancePreset('doctor'|'patient'|'office'|'casual')` for reusable looks.
+Cast actor options are `proportions`, `colors`, `appearance`, `face`, `stance`,
+`scale`, and optional scene `parent`.
 `cast.actors[name]` exposes read-only definition/root handles and semantic targets.
 Faces are enabled by default in casts; see [FACES.md](FACES.md) for expression,
 blink, eye-gaze and construction `face` configuration. The cast owns attachment
@@ -57,17 +58,20 @@ Omitted actors and fields resolve each frame to:
 - Stance: construction-time `stance`, otherwise stand at world `(0,0,0)`, yaw 0,
   floor Y=0. Assign named home marks to avoid overlapping defaults.
 - Scale: construction-time scale, otherwise 1. Visibility: true.
-- Reaches/pointing: none; arms reset to rest. Gaze: neutral forward, head yaw and
+- Reaches/pointing: none; walking swings free arms, other stances reset them to
+  rest. Gaze: neutral forward, head yaw and
   pitch zero. Expressions reset to the configured default, normally neutral;
   blinking is evaluated from absolute time and eye gaze uses residual head gaze.
 
 The fixed evaluation order is:
 
 1. Read current positive uniform, level parent world frames.
-2. Resolve all support/placement dependencies and solve Stage 2B contacts.
+2. Resolve supports, including absolute-time walking root/foot targets, through
+   the existing Stage 2B contact/IK solver.
 3. Resolve stable current-frame character and prop targets.
-4. Resolve intention dependencies, physical reaches, directional pointing and gaze.
-5. Validate every complete pose and preflight every rig/parent.
+4. Resolve intention dependencies, explicit reaches and directional pointing;
+   swing only unreserved walking arms, then resolve gaze and facial state.
+5. Validate every complete pose, stage facial rasters and preflight every rig/parent.
 6. Apply all poses synchronously. Return an immutable snapshot.
 
 No rig is applied if target resolution, support, intent solving or preflight
@@ -75,7 +79,8 @@ fails. Ordinary validation failures therefore cannot leave a partially updated
 cast. Arbitrary user hooks or external mutation during commit are unsupported;
 the API does not attempt a history-based rollback of external code.
 
-Precedence is **support contacts → explicit reaches → pointing → gaze**. Reaches
+Precedence is **support contacts → explicit reaches → pointing → free walking
+arm swing → gaze/face**. Reaches
 reserve their selected arms. An explicit pointing/reach collision rejects the
 frame; auto pointing may select the other free arm. Gaze changes only the head's
 orientation about its sphere center, preserving the head/neck overlap, limb
@@ -115,8 +120,10 @@ geometry changes, bind an appropriate explicit local anchor/dimension definition
 rather than relying on the old inferred bounds. Group seats require explicit
 surface/dimensions. Slabs retain Stage 2B's open-front geometry and contact limits.
 
-Actor targets default to the current **support snapshot**. Head centers therefore
-resolve correctly for mutual gaze without recursion. A wrist support target is
+Actor targets default to the current **support snapshot**, including walking
+root placement and pelvis bob for the requested frame. Head centers therefore
+resolve correctly for mutual gaze without recursion or evaluation-order effects.
+A wrist support target is
 the support/rest-arm wrist, not a final pointing wrist. Use explicit `'final'`
 for an acyclic dependency on a solved hand or other final anchor. Final targets
 cannot drive support placement. Named/support/final cycles, callback recursion,
@@ -160,10 +167,9 @@ head targets return neutral forward and an informational diagnostic.
 
 Outside limits, the head is bounded and `GAZE_LIMITED` is reported. The returned
 `snapshot.gaze[name]` exposes target world position, desired world direction,
-actual head world direction, residual head-local direction for future eyes,
-yaw, pitch and limit status. Omission resets gaze fully. No eyes, brows, mouth,
-blush, blinking or facial textures were part of the original Stage 2C;
-Stage 2D-A now provides them through [FACES.md](FACES.md).
+actual head world direction, residual head-local eye direction, yaw, pitch and
+limit status. Omission resets gaze fully. Expressions, eyes, brows, mouth, blush
+and blinking are provided through [FACES.md](FACES.md).
 
 ## Errors, performance and ownership
 
@@ -178,7 +184,11 @@ passes and keeps no previous-frame pose cache. Support results are reused within
 the current evaluation when there are no physical reaches. GPU sharing/disposal
 still follows the existing engine owner; `cast.dispose()` is idempotent and
 invalidates evaluation. No cross-engine GPU caches are added. No general
-inter-character/prop collision, body turning, walking or timeline blending exists.
+inter-character/prop collision, arbitrary body turning or timeline blending exists.
+Static-path walking and path-tangent body facing are documented in
+[WALKING.md](WALKING.md). Keep the same walk descriptor before/after its time
+window to hold its endpoints; omission restores the construction stance,
+never the previous walk's end position.
 
 ## Validation commands
 

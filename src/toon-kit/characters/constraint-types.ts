@@ -59,8 +59,13 @@ export interface SittingContact {
   readonly feet: 'auto' | 'floor' | 'dangle';
 }
 export interface ArmReach {readonly hand: Side; readonly target: PointTarget}
+/** Resolved walking support, world-space sole centers/yaw and local pelvis height. */
+export interface WalkingContact {
+  readonly kind:'walk';readonly floor:FloorTarget;readonly at:readonly[number,number];readonly yaw:number;readonly pelvisHeight:number;
+  readonly feet:Readonly<Record<Side,{readonly position:Vec3;readonly yaw:number;readonly state:'floor'|'swing';readonly step:number}>>;
+}
 export interface ContactRequest {
-  readonly support: StandingContact | SittingContact;
+  readonly support: StandingContact | SittingContact | WalkingContact;
   readonly reaches?: readonly ArmReach[];
   /** Root's positive uniform scale relative to parent, as in Stage 2A. */
   readonly scale?: number;
@@ -69,8 +74,8 @@ export interface ContactRequest {
   readonly visible?: boolean;
 }
 export interface ContactState {
-  readonly support: 'standing' | 'seated';
-  readonly feet: Readonly<Record<Side,'floor' | 'dangling'>>;
+  readonly support: 'standing' | 'seated' | 'walking';
+  readonly feet: Readonly<Record<Side,'floor' | 'dangling' | 'swing'>>;
 }
 export type ContactResult = {readonly ok: true; readonly pose: CharacterPose;
   readonly contacts: ContactState; readonly diagnostics: readonly ConstraintDiagnostic[]} |

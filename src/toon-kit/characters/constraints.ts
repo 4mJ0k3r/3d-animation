@@ -43,6 +43,13 @@ export function solveContactPoseWithPoles(definition:CharacterDefinition,request
       if(!Array.isArray(support.at)||support.at.length!==2||![...support.at].every(finite)||!finite(support.yaw)||
         !finite(support.crouch)||support.crouch<0||support.crouch>1||!onlyKeys(support,['kind','floor','at','yaw','crouch']))fail('INVALID_TARGET','Standing requires finite X/Z, yaw and crouch in 0..1.');
       heading=support.yaw;worldOrigin=[support.at[0],floor.height,support.at[1]];
+    }else if(support.kind==='walk') {
+      if(!Array.isArray(support.at)||support.at.length!==2||!support.at.every(finite)||!finite(support.yaw)||!finite(support.pelvisHeight)||support.pelvisHeight<=ankleHeight||
+        !support.feet||!onlyKeys(support.feet,['left','right'])||!onlyKeys(support,['kind','floor','at','yaw','pelvisHeight','feet']))fail('INVALID_TARGET','Invalid resolved walking support.');
+      for(const side of ['left','right'] as const){const foot=support.feet[side];if(!foot||!finiteVector(foot.position)||!finite(foot.yaw)||!['floor','swing'].includes(foot.state)||!Number.isInteger(foot.step)||
+        foot.position[1]<floor.height-epsilon||(foot.state==='floor'&&Math.abs(foot.position[1]-floor.height)>epsilon)||!onlyKeys(foot,['position','yaw','state','step']))fail('INVALID_TARGET','Walking soles require valid world-space contact targets.');}
+      for(const side of ['left','right'] as const)if(Math.abs(Math.atan2(Math.sin(support.feet[side].yaw-support.yaw),Math.cos(support.feet[side].yaw-support.yaw)))>Math.PI/3)fail('JOINT_LIMIT','Walking foot/body yaw exceeds 60 degrees; use a gentler turn or shorter stride.',`${side}Leg`);
+      heading=support.yaw;worldOrigin=[support.at[0],floor.height,support.at[1]];
     }else if(support.kind==='sit') {
       seated=true;
       const seat=support.seat;
@@ -107,7 +114,7 @@ export function solveContactPoseWithPoles(definition:CharacterDefinition,request
       // Shoes stay level and forward, independent of the shin's bend.
       set(names[2],{quaternion:inverseQ(ik.lowerOrientation)});
     }
-    set('pelvis',{position:[0,seated?seatedPelvisY:ankleHeight+(p.upperLegLength+p.lowerLegLength)*(1-.35*(support.kind==='stand'?support.crouch:0)),0]});
+    set('pelvis',{position:[0,support.kind==='walk'?support.pelvisHeight:seated?seatedPelvisY:ankleHeight+(p.upperLegLength+p.lowerLegLength)*(1-.35*(support.kind==='stand'?support.crouch:0)),0]});
     for(const side of ['left','right'] as const) {
       const hip=anchor(`${side}Hip`);
       let goal:Vec3=[hip[0],ankleHeight,0];
@@ -116,7 +123,12 @@ export function solveContactPoseWithPoles(definition:CharacterDefinition,request
         const forward=footState==='floor'?Math.sqrt(Math.max(0,(p.lowerLegLength-drop)*(p.lowerLegLength+drop))):0;
         goal=[hip[0],footState==='floor'?ankleHeight:hip[1]-p.lowerLegLength,p.upperLegLength+forward];
       }
+      if(support.kind==='walk')goal=sub(toRoot(support.feet[side].position),yawPoint(definition.anchors[`${side}Sole`].offset,support.feet[side].yaw-heading));
       solveChain(side,'leg',goal);
+      if(support.kind==='walk'){
+        const angle=(support.feet[side].yaw-heading)/2;
+        set(`${side}Ankle`,{quaternion:multiplyQ(inverseQ(orientation(`${side}Knee`)),[0,Math.sin(angle),0,Math.cos(angle)])});
+      }
     }
 
     if(request.reaches!==undefined&&!Array.isArray(request.reaches))fail('INVALID_REQUEST','Reaches must be an array of hand/point descriptors.');
@@ -156,7 +168,7 @@ export function solveContactPoseWithPoles(definition:CharacterDefinition,request
         fail('BODY_CLEARANCE','Leg cannot clear the body with this contact.',legLimb);
       }
       const sole=poseAnchorPosition(pose,definition.anchors[`${side}Sole`]);
-      if(sole[1]<-epsilon || (footState==='floor'&&Math.abs(sole[1])>epsilon) || knee[1]-p.legRadius < -epsilon ||
+      if(sole[1]<-epsilon || ((support.kind==='walk'?support.feet[side].state==='floor':footState==='floor')&&Math.abs(sole[1])>epsilon) || knee[1]-p.legRadius < -epsilon ||
         cylinderMinY(hip,knee,p.legRadius)<-epsilon || cylinderMinY(knee,ankle,p.legRadius)<-epsilon) {
         fail('FLOOR_CLEARANCE','Required foot contact or leg clearance cannot be satisfied without floor penetration.',legLimb);
       }
@@ -175,8 +187,13 @@ export function solveContactPoseWithPoles(definition:CharacterDefinition,request
     for(const a of armSegments)for(const b of legSegments)if(segmentDistance(...a,...b)<p.armRadius+p.legRadius-epsilon)fail('LIMB_CLEARANCE','Arm intersects a leg.');
     for(const a of armSegments.slice(0,2))for(const b of armSegments.slice(2))if(segmentDistance(...a,...b)<2*p.armRadius-epsilon)fail('LIMB_CLEARANCE','Arms intersect one another.');
     if(distance(anchor('leftWrist'),anchor('rightWrist'))<2*p.handRadius-epsilon)fail('LIMB_CLEARANCE','Hands intersect one another.');
+    if(support.kind==='walk'){
+      for(const a of legSegments.slice(0,2))for(const b of legSegments.slice(2))if(segmentDistance(...a,...b)<2*p.legRadius-epsilon)fail('LIMB_CLEARANCE','Walking legs intersect.');
+      const shoe=(side:Side):readonly[Vec3,Vec3]=>{const center=add(poseAnchorPosition(pose,definition.anchors[`${side}Sole`]),[0,p.shoeHeight/2,0]),offset=yawPoint([0,0,(p.shoeLength-p.shoeWidth)/2],support.feet[side].yaw-heading);return [sub(center,offset),add(center,offset)];};
+      if(segmentDistance(...shoe('left'),...shoe('right'))<p.shoeWidth-epsilon)fail('LIMB_CLEARANCE','Walking shoes intersect.');
+    }
     validateCompletePose(pose);
-    return freezeData({ok:true,pose:pose as CharacterPose,contacts:{support:seated?'seated':'standing',feet:{left:footState,right:footState}},diagnostics});
+    return freezeData({ok:true,pose:pose as CharacterPose,contacts:{support:support.kind==='walk'?'walking':seated?'seated':'standing',feet:support.kind==='walk'?{left:support.feet.left.state,right:support.feet.right.state}:{left:footState,right:footState}},diagnostics});
   }catch(error) {
     if(!(error instanceof RejectedContact))throw error;
     return freezeData({ok:false,pose:null,diagnostics:[...diagnostics,error.diagnostic]});
