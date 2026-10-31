@@ -1,7 +1,8 @@
-# Universal character foundation — Stage 2A
+# Universal character foundation and contacts — Stages 2A–2B
 
-Neutral geometry and complete pose data only. No IK, walking, gestures, facial
-expressions, hair, clothing or legacy character migration is implemented here.
+Neutral geometry, complete pose data and pure analytic contact constraints.
+See [CONTACTS.md](CONTACTS.md) for Stage 2B. No walking, gesture blending, facial
+expressions, hair, clothing, final intent orchestration or legacy migration.
 
 ```ts
 import {createCharacterFactory, createRestPose} from './toon-kit';
@@ -77,9 +78,9 @@ It does not read a previous pose or construct geometry. Root placement defaults
 to identity when omitted; it does not preserve an earlier placement.
 
 This is a low-level pose foundation, not the final intent evaluator. Arbitrarily
-edited poses can violate attachment or contact constraints; only the generated
-neutral pose has those guarantees in 2A. Do not add an accumulated-time animation
-loop or partial-pose mutation API. Future constraints belong in later stages.
+edited poses can violate attachment or contact constraints. Use solveContactPose
+for supported Stage 2B constraints and handle rejected results before rendering.
+Do not add an accumulated-time animation loop or partial-pose mutation API.
 Reparenting rig nodes, changing topology, and mutating shared materials/geometries
 are unsupported.
 
@@ -90,13 +91,16 @@ are unsupported.
   own pooled capsule. Head, rod, joint, hand/shoe geometry is shared across sizes.
 - Skin and torso use the existing toon materials. Thin black limbs, joint rounds,
   hands, shoes and neck use `silhouette-only`; head/torso use `full`. Parts share
-  `character:<id>` outline groups. IDs must be unique across the scene, including
-  when multiple factories are used. No extra rendering passes or shader changes.
+  `character:<id>` outline groups. IDs are enforced across all factories sharing
+  the same engine owner, including detached characters. Separate owners have
+  independent namespaces. No extra rendering passes or shader changes.
 - Pool geometry/materials/gradients are immutable by contract and belong to this
   engine only. Use palette options before construction to vary appearance.
 - `rig.dispose()` detaches and invalidates a character, without freeing shared
   GPU data. `factory.dispose()` does this for every live character. Both are
-  idempotent. Disposed IDs cannot be recycled within a factory.
+  idempotent. Disposed IDs cannot be recycled within that engine lifetime, even
+  through a different factory. Invalid input before allocation does not reserve
+  an ID; an allocation failure retains it until engine disposal.
 - Engine disposal automatically closes the factory and releases pooled resources
   exactly once, including never-attached or already-detached meshes. Never share
   resources between engines. Build a bounded cast during initialization, not a

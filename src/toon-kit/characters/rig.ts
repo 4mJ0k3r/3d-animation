@@ -5,6 +5,7 @@ import type {CapsuleOptions, CylinderOptions, SphereOptions} from '../lib';
 import {createCharacterDefinition} from './proportions';
 import {createRestPose, validateCompletePose} from './pose';
 import {JOINT_NAMES, NODE_NAMES, NODE_PARENTS, PART_NAMES} from './types';
+import {ownerCharacterIds} from './owner-ids';
 import type {AnchorName, CharacterDefinition, CharacterOptions, CharacterPose, NodeName} from './types';
 
 /** The existing engine owns GPU resources, even while a character is detached. */
@@ -42,25 +43,28 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
     cylinder(options: CylinderOptions): THREE.Mesh;
   } = createPrimitiveFactory(owner as CartoonEngine);
   const rigs = new Map<string, CharacterRig>();
-  const usedIds = new Set<string>();
+  const usedIds = ownerCharacterIds(owner);
   let closed = false;
   const checkOpen = () => {if (closed || owner.signal.aborted) throw new Error('Character factory is disposed');};
   const dispose = () => {
     if (closed) return;
     closed = true;
     for (const rig of [...rigs.values()]) rig.dispose();
-    rigs.clear(); usedIds.clear();
+    rigs.clear(); // IDs stay reserved until owner disposal, across factories.
   };
   owner.registerCleanup(dispose);
 
   function create(options: CharacterOptions): CharacterRig {
     checkOpen();
-    if (typeof options.id !== 'string' || !options.id.trim() || usedIds.has(options.id)) throw new Error('Character id must be nonempty and unique; disposed ids cannot be recycled');
+    if (typeof options.id !== 'string' || !options.id.trim() || usedIds.has(options.id)) throw new Error('Character id must be nonempty and unique within the owner; disposed ids cannot be recycled');
     const definition = createCharacterDefinition(options.proportions);
     const initialPose = createRestPose(definition, options.placement);
     const colors = {skin: '#f2c69d', torso: '#36a9b0', limbs: '#16131a', shoes: '#16131a', ...options.colors};
     // Validate all palette values before allocating pooled meshes/materials.
     for (const color of Object.values(colors)) if (!/^#[0-9a-f]{6}$/i.test(color)) throw new Error('Character colors must be #rrggbb');
+    // Reserve before resource allocation. A failed allocation retains the id;
+    // invalid definitions/palettes above do not consume one.
+    usedIds.add(options.id);
     const nodes = {} as Record<NodeName, THREE.Object3D>;
     for (const name of JOINT_NAMES) nodes[name] = new THREE.Group();
     for (const name of PART_NAMES) {
@@ -129,7 +133,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
       },
     };
     rig.applyPose(initialPose);
-    usedIds.add(options.id); rigs.set(options.id, rig);
+    rigs.set(options.id, rig);
     return rig;
   }
   return {create, dispose};

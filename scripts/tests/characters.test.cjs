@@ -230,6 +230,18 @@ test('separate live owners never share GPU resources; owner disposal invalidates
   a.engine.dispose();assert.equal(a.rig.disposed,true);assert.equal(b.rig.disposed,false);
   b.rig.applyPose(b.rig.definition.restPose);b.engine.dispose();
 });
+test('IDs are owner-scoped across factories, survive factory disposal and remain independent across engines',()=>{
+  const engine=owner(),other=owner(),a=SDK.createCharacterFactory(engine),b=SDK.createCharacterFactory(engine),c=SDK.createCharacterFactory(other);
+  try {
+    const first=a.create({id:'shared'});assert.throws(()=>b.create({id:'shared'}),/owner/);
+    const independent=c.create({id:'shared'});assert.notEqual(first.root,independent.root);
+    first.dispose();a.dispose();assert.throws(()=>b.create({id:'shared'}),/owner/);
+    b.create({id:'distinct'});engine.dispose();assert.equal(independent.disposed,false);
+    independent.applyPose(independent.definition.restPose);
+  }finally{engine.dispose();other.dispose();}
+  for(const count of engine.events.values())assert.equal(count,1);
+  for(const count of other.events.values())assert.equal(count,1);
+});
 test('mesh/triangle budgets, duplicate ids and construction input validation',()=>{
   const {engine,factory,rig}=fixture();
   try {

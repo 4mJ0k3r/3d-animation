@@ -13,7 +13,8 @@
     "audit:phase1": "node scripts/render.cjs --mode=audit",
     "test:memory": "node --test scripts/tests/memory.test.cjs",
     "test:characters": "node scripts/test-characters.cjs",
-    "verify:characters": "node scripts/verify-characters.cjs"
+    "verify:characters": "node scripts/verify-characters.cjs",
+    "verify:contacts": "node scripts/verify-characters.cjs contacts"
   },
   "keywords": [],
   "author": "",
