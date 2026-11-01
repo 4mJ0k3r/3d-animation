@@ -225,8 +225,8 @@ Optional, static display text belongs to a named layout:
 ```
 
 Use the existing `objectFocus` shot with `subject:"board"` to make it readable.
-No coordinates, materials or font configuration are needed. Currently only the
-registered office `board` supports this binding. Without it, the original bars
+No coordinates, materials or font configuration are needed. The legacy `displays.board` binding applies to the
+registered office board; additional signs/screens use `props` below. Without it, the original bars
 remain. Text is literal (no HTML rendering, image embedding or remote assets), static for that layout, bounded
 to 160 characters and four wrapped lines. Hindi/Devanagari, English and supported
 punctuation use the pinned bundled font; emoji/other scripts reject instead of
@@ -243,3 +243,71 @@ Keep posture consistent, or place an explicit stand/sit contact cut earlier in
 the storyboard. Instant stand/sit commands do not animate a smooth transition;
 a command at the same boundary still warns. Intentional time jumps may be
 accepted after review. No poses are changed, and no stand-up animation is added.
+
+
+## Phase 6A: environments and semantic prefabs
+
+Use `layouts.<name>.preset` (`office`, `clinic`, `street`), optional
+`options.palette` (`classic`, or `cool` for office/street), and named `props`.
+The immutable `ENVIRONMENTS` and `PREFABS` exports are the supported catalog;
+`environmentCatalog(layout)` lists the expanded interaction/camera anchors.
+Existing `LAYOUTS` and `createStoryEnvironments()` remain compatible.
+
+```json
+"layouts": {
+  "stop": {
+    "preset": "street",
+    "options": {"palette": "classic"},
+    "props": {
+      "rest": {"prefab": "bench", "slot": "rest", "finish": "wood"},
+      "notice": {"prefab": "sign", "slot": "notice", "text": "बस स्टॉप\nयहाँ मिलें"}
+    }
+  }
+}
+```
+
+A scene selects `setting:"stop"`. Use stance
+`{"type":"sit","seat":"rest","floor":"ground"}`, action
+`{"actor":"meera","type":"point","target":"notice"}`, or shot
+`{"id":"notice-shot","type":"objectFocus","subject":"notice","startFrame":60,"endFrame":90}`.
+Every added prop is a point/gaze target and camera subject. Chair/bench also
+provide a seat, standing mark `<id>.approach`, and walking path `to:<id>`
+from the existing right mark. Use those names in existing stand/walk actions.
+Street also provides entry/finish/right marks, ground floor, toMeeting path,
+and audience/crossing gaze targets (crossing is not a walkable road route).
+
+| Preset | Slots and allowed prefabs |
+| --- | --- |
+| office | furniture: chair/bench/table; display: sign/screen; corner: planter |
+| clinic | corner: planter |
+| street | rest: chair/bench; kiosk: table; notice: sign/screen; corner: planter |
+
+Chair/bench/table finishes: `wood`, `blue`; sign/screen: `teal`, `navy`;
+planter: `terracotta`, `stone`. Omitting finish chooses the first. Only
+sign/screen support `text`, using the existing pinned font/text limits.
+A table's `top` socket accepts one sign or planter:
+`{"prefab":"planter","attachTo":{"prop":"desk","socket":"top"}}`.
+Choose exactly one slot or attachment per prop. Declaration order is irrelevant.
+
+Limits: four props per layout including attachments; one prop per slot/socket;
+one attachment level; static props; two active actors in distinct left/right
+lanes. Seating and added approach paths occupy the right lane. No raw transforms,
+shaders, arbitrary colors, executable registration, collision simulation or
+navigation generation. Built-in office/clinic anchors remain unchanged.
+Unsupported content/interactions reject with structured diagnostics. Full
+visibility/contact certification still requires guarded preparation.
+
+Copy [street-meeting.story.json](../../../examples/street-meeting.story.json)
+for the complete three-second walking/seating/pointing/object-focus example:
+
+```sh
+npm run story -- validate --plan=examples/street-meeting.story.json
+npm run story -- render --plan=examples/street-meeting.story.json --output=out/phase6a/street-meeting.mp4 --report=out/phase6a/production-report.json --verify=true
+```
+
+SDK maintainers extend metadata in `environment-registry.ts` and corresponding
+trusted builders in `starters.ts`/`prefabs.ts`; JSON authors only select catalog
+entries. Builders reuse engine-owned primitives, static semantic targets and
+existing story/director evaluation. Compound props register all physical parts
+with the existing stage; separately registered attachments retain their own
+bounds and visibility ownership. Engine disposal owns generated resources.

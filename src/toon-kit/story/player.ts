@@ -19,7 +19,7 @@ export interface StorySettingBinding {
   readonly root: T.Group;
   readonly floor: T.Mesh;
   readonly targets: TargetLibrary;
-  readonly props?: Readonly<Record<string, T.Mesh>>;
+  readonly props?: Readonly<Record<string, T.Object3D>>;
   readonly paths?: WalkingPaths;
   readonly floors?: Readonly<Record<string, FloorTarget>>;
 }

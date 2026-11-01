@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "stop": {
+      "preset": "street",
+      "options": {
+        "palette": "classic"
+      },
+      "props": {
+        "rest": {
+          "prefab": "bench",
+          "slot": "rest",
+          "finish": "wood"
+        },
+        "notice": {
+          "prefab": "sign",
+          "slot": "notice",
+          "finish": "teal",
+          "text": "बस स्टॉप\nयहाँ मिलें"
+        },
+        "flowers": {
+          "prefab": "planter",
+          "slot": "corner",
+          "finish": "terracotta"
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 90,
+    "characters": {
+      "meera": {
+        "appearance": "casual",
+        "expression": "worried"
+      },
+      "kabir": {
+        "appearance": "office",
+        "expression": "neutral"
+      }
+    },
+    "scenes": [
+      {
+        "id": "meeting-at-the-stop",
+        "setting": "stop",
+        "startFrame": 0,
+        "endFrame": 90,
+        "axis": [
+          "meera",
+          "kabir"
+        ],
+        "characters": {
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "kabir": {
+            "stance": {
+              "type": "sit",
+              "seat": "rest",
+              "floor": "ground"
+            }
+          }
+        },
+        "beats": [
+          {
+            "id": "arrive",
+            "startFrame": 0,
+            "endFrame": 30,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "walk",
+                "path": "toMeeting"
+              }
+            ]
+          },
+          {
+            "id": "notice",
+            "startFrame": 30,
+            "endFrame": 55,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "point",
+                "target": "notice"
+              },
+              {
+                "actor": "kabir",
+                "type": "gesture",
+                "name": "nod"
+              }
+            ]
+          }
+        ],
+        "cues": [],
+        "shots": [
+          {
+            "id": "arrival",
+            "type": "fullBody",
+            "subject": "meera",
+            "startFrame": 0,
+            "endFrame": 30
+          },
+          {
+            "id": "meeting",
+            "type": "twoShot",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 30,
+            "endFrame": 60
+          },
+          {
+            "id": "information",
+            "type": "objectFocus",
+            "subject": "notice",
+            "startFrame": 60,
+            "endFrame": 90
+          }
+        ]
+      }
+    ]
+  }
+}

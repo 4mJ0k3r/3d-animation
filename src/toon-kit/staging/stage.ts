@@ -23,7 +23,7 @@ export function createStage(engine: CartoonEngine, options: {
     bindings: Record<string, ReturnType<typeof bindActor>> | null = null;
   const issued = new WeakSet<CompositionSnapshot>(),
     props = new Map<string, {
-      mesh: T.Mesh;
+      mesh: T.Object3D;
       bounds: Bounds;
     }>(),
     occluders = new Map<T.Mesh, {
@@ -87,7 +87,7 @@ export function createStage(engine: CartoonEngine, options: {
   const add = (id: string, mesh: T.Mesh, owner: string, kind: 'box' | 'plane') => {
     live();
     owned(mesh);
-    if (!id.trim() || [...occluders.values()].some(x => x.id === id)) directionFail('INVALID_PROXY', 'Use unique proxy IDs');
+    if (!id.trim() || [...occluders.entries()].some(([object,x]) => object !== mesh && x.id === id)) directionFail('INVALID_PROXY', 'Use unique proxy IDs');
     for (let p: T.Object3D | null = mesh; p; p = p.parent) if (String(p.userData.outlineGroup ?? '').startsWith('character:')) directionFail('INVALID_PROXY', 'Actor proxies come from complete cast poses');
     occluders.set(mesh, {
       id,
@@ -113,15 +113,42 @@ export function createStage(engine: CartoonEngine, options: {
       if (axis.some(id => !Object.hasOwn(cast.actors, id))) directionFail('INVALID_AXIS', 'Axis names must exist in the bound cast');
       bindings = Object.fromEntries(Object.entries(cast.actors).map(([id, a]) => [id, bindActor(id, a, engine.scene)]));
     },
-    registerProp(name: string, mesh: T.Mesh) {
+    registerProp(name: string, mesh: T.Object3D) {
       live();
       if (!name.trim() || props.has(name)) directionFail('INVALID_PROP', 'Use a unique prop name');
       if(name==='stage'||bindings&&Object.hasOwn(bindings,name))directionFail('DUPLICATE_SUBJECT','Actor/prop names must be distinct; stage is reserved');
-      add('prop.' + name, mesh, name, mesh.geometry.type === 'PlaneGeometry' ? 'plane' : 'box');
+      owned(mesh);
+      if (!(mesh instanceof T.Mesh) && !(mesh instanceof T.Group)) directionFail('INVALID_PROP','Use a mesh or a compound prefab group');
+      if (mesh instanceof T.Mesh) add('prop.'+name,mesh,name,mesh.geometry.type==='PlaneGeometry'?'plane':'box');
       props.set(name, {
         mesh,
-        bounds: geometryBounds(mesh.geometry)
+        bounds: mesh instanceof T.Mesh ? geometryBounds(mesh.geometry) : {min:[0,0,0],max:[0,0,0]}
       });
+      // Keep mesh registration unchanged. Compound prefabs frame ALL physical
+      // parts, excluding separately registered attachments. Recompute at init
+      // so nested prop ownership is independent of registration order.
+      for (const [id, prop] of props) {
+        if (prop.mesh instanceof T.Mesh) {
+          occluders.set(prop.mesh,{id:'prop.'+id,owner:id,bounds:prop.bounds,plane:prop.mesh.geometry.type==='PlaneGeometry'});
+          continue;
+        }
+        prop.mesh.updateWorldMatrix(true,true);
+        const inverseProp=prop.mesh.matrixWorld.clone().invert(),parts:Bounds[]=[];
+        let partIndex=0;
+        const visit=(object:T.Object3D)=>{
+          if(object!==prop.mesh&&[...props.values()].some(p=>p.mesh===object))return;
+          if(object instanceof T.Mesh){
+            for(let p:T.Object3D|null=object;p;p=p.parent)if(String(p.userData.outlineGroup??'').startsWith('character:'))directionFail('INVALID_PROXY','Actor proxies come from cast poses');
+            const bounds=geometryBounds(object.geometry);
+            parts.push(transformBounds(bounds,inverseProp.clone().multiply(object.matrixWorld)));
+            add('prop.'+id+'.'+partIndex++,object,id,object.geometry.type==='PlaneGeometry'?'plane':'box');
+          }
+          object.children.forEach(visit);
+        };
+        visit(prop.mesh);
+        if(!parts.length)directionFail('INVALID_PROP','Compound prop needs geometry');
+        prop.bounds=unionBounds(parts);
+      }
     },
     registerOccluder(id: string, mesh: T.Mesh, kind: 'box' | 'plane' = 'box') {
       add('occluder.' + id, mesh, 'stage', kind);

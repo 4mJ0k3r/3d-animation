@@ -1,5 +1,7 @@
 import { compileStory, compileOrchestrationStory } from '../story/compiler';
 import { authoringWarnings } from './diagnostics';
+import { validateEnvironment, environmentCatalog } from './environment-registry';
+import type { EnvironmentLayout } from './environment-registry';
 import type { StoryPlan, StoryTarget, StorySupport } from '../story/types';
 import { storyFail } from '../story/types';
 import { freezeData } from '../characters/pose';
@@ -12,30 +14,10 @@ export interface StoryDocument {
     readonly height: number;
   };
   readonly font: 'noto-sans-devanagari';
-  readonly layouts: Readonly<Record<string, {
-    readonly preset: 'office' | 'clinic';
-    readonly displays?: Readonly<{board?: Readonly<{text: string}>}>;
-  }>>;
+  readonly layouts: Readonly<Record<string, EnvironmentLayout>>;
   readonly story: StoryPlan;
 }
-export const LAYOUTS = freezeData({
-  office: {
-    marks: ['entry', 'finish', 'right'],
-    seats: ['chair'],
-    points: ['board', 'audience'],
-    props: ['board'],
-    floors: ['ground'],
-    paths: ['toDesk']
-  },
-  clinic: {
-    marks: ['doctor'],
-    seats: ['examSeat'],
-    points: ['diagram', 'diagramHead', 'audience'],
-    props: ['chart', 'examTable'],
-    floors: ['ground'],
-    paths: []
-  }
-});
+export { LAYOUTS } from './environment-registry';
 const keys = (v: unknown, allowed: readonly string[]) => {
   if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).some(k => !allowed.includes(k))) storyFail('INVALID_DOCUMENT', 'Expected an object with only: ' + allowed.join(', '));
 };
@@ -46,21 +28,11 @@ export function compileStoryDocument(input: unknown) {
   keys(d.video, ['width', 'height']);
   if (![[720, 1280], [1280, 720], [1080, 1920], [1920, 1080]].some(([w, h]) => d.video.width === w && d.video.height === h)) storyFail('INVALID_VIEWPORT', 'Choose 720x1280,1280x720,1080x1920 or1920x1080; keep software-safe');
   if (d.font !== 'noto-sans-devanagari') storyFail('FONT_UNAVAILABLE', 'Select font:"noto-sans-devanagari" (bundled OFL font)');
-  if (!d.layouts || typeof d.layouts !== 'object' || Array.isArray(d.layouts) || !Object.keys(d.layouts).length || Object.keys(d.layouts).length > 4) storyFail('UNSUPPORTED_LAYOUT', 'Declare 1..4 named layouts using office or clinic');
-  for (const [name, layout] of Object.entries(d.layouts)) {
-    if (!name.trim() || name.length > 128 || ['__proto__', 'prototype', 'constructor', 'stage'].includes(name)) storyFail('INVALID_DOCUMENT', 'Invalid layout name');
-    keys(layout, ['preset','displays']);
-    if (!Object.hasOwn(LAYOUTS, layout.preset)) storyFail('UNSUPPORTED_LAYOUT', `Unknown layout ${layout.preset}; choose office or clinic`);
-    if (layout.displays !== undefined) {
-      keys(layout.displays, layout.preset === 'office' ? ['board'] : []);
-      if (layout.displays.board !== undefined) {
-        keys(layout.displays.board, ['text']);
-        const text = layout.displays.board.text;
-        if (typeof text !== 'string' || !text.trim() || Array.from(text).length > 160 || /[\u0000-\u0009\u000b-\u001f\u007f]/u.test(text) || text.split('\n').length > 4) storyFail('INVALID_DISPLAY_TEXT', 'Use 1..160 characters of plain text, up to four lines; no control characters');
-        // Repertoire of the pinned Noto font: no OS-dependent emoji/script fallback.
-        if (/[^\n\u0020-\u007e\u0900-\u097f\u200c-\u200d\u2013-\u2014\u2018-\u2019\u201c-\u201d\u2022\u2026\u20b9]/u.test(text) || !text.replace(/[\u200c\u200d]/gu,'').trim()) storyFail('DISPLAY_UNSUPPORTED_GLYPH', 'Use Hindi/Devanagari, English and supported punctuation; emoji/other scripts are not bundled');
-      }
-    }
+  if (!d.layouts || typeof d.layouts !== 'object' || Array.isArray(d.layouts) || !Object.keys(d.layouts).length || Object.keys(d.layouts).length > 4) storyFail('UNSUPPORTED_LAYOUT', 'Declare 1..4 named registered layouts');
+  const layouts:Record<string,EnvironmentLayout> = {};
+  for (const [name,layout] of Object.entries(d.layouts)) {
+    if (!name.trim() || name.length > 128 || ['__proto__', 'prototype', 'constructor', 'stage'].includes(name)) storyFail('INVALID_DOCUMENT','Invalid layout name');
+    layouts[name]=validateEnvironment(layout);
   }
   if (Array.isArray(d.story?.scenes)) for (const scene of d.story.scenes) if (scene?.endFrame - scene?.startFrame > 600) storyFail('SEGMENT_BOUNDARY', 'Add an explicit scene cut within 600 frames; seamless cross-segment transitions are unsupported');
   const timeline = d.story?.durationInFrames > 600 ? compileOrchestrationStory(d.story) : compileStory(d.story);
@@ -73,7 +45,7 @@ export function compileStoryDocument(input: unknown) {
     if (!Object.hasOwn(d.layouts, scene.setting)) storyFail('UNSUPPORTED_LAYOUT', 'Declare layouts.' + scene.setting, {
       scene: scene.id
     });
-    const slots = LAYOUTS[d.layouts[scene.setting].preset];
+    const slots = environmentCatalog(layouts[scene.setting]);
     if (Object.keys(scene.characters).length !== 2) storyFail('LAYOUT_CAPACITY', 'Curated layouts support two active actors per scene', {
       scene: scene.id
     });
@@ -129,8 +101,8 @@ export function compileStoryDocument(input: unknown) {
       for (const actor of Object.keys(scene.characters)) {
         const s = state.poses[actor].stance,
           a = 'action' in s ? s.action : s,
-          role = a.type === 'sit' || a.type === 'stand' && a.at === 'right' ? 'right' : 'left';
-        if (used.has(role)) storyFail('SLOT_OCCUPIED', 'Use one actor in the standing/walking lane and one at the right mark or seat; swap roles only at a cut', {
+          role = slots.roles[a.type==='sit'?a.seat:a.type==='walk'?a.path:a.type==='stand'?a.at:''];
+        if (used.has(role)) storyFail('SLOT_OCCUPIED', 'Use distinct left/right semantic lanes for two active actors; swap roles only at a cut', {
           scene: scene.id,
           actor,
           frame
@@ -146,10 +118,7 @@ export function compileStoryDocument(input: unknown) {
         ...d.video
       },
       font: d.font,
-      layouts: Object.fromEntries(Object.entries(d.layouts).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, {
-        preset: v.preset,
-        ...(v.displays === undefined ? {} : {displays: v.displays.board === undefined ? {} : {board:{text:v.displays.board.text}}})
-      }])),
+      layouts: Object.fromEntries(Object.entries(layouts).sort(([a],[b])=>a.localeCompare(b))),
       story: timeline.plan
     }),
     timeline,

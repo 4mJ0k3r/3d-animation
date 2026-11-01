@@ -3,7 +3,7 @@ import { STORY_FONT } from './font';
 import { storyFail } from '../story/types';
 
 /** One immutable, engine-owned texture per configured display. No frame work. */
-export function createDisplayMaterial(text: string) {
+export function createDisplayMaterial(text: string, background = '#206d80') {
   if (typeof document === 'undefined') storyFail('DISPLAY_DOM_REQUIRED', 'Prepare display text in the browser after prepareStoryFont()');
   if (!Array.from(document.fonts).some(f => f.family === STORY_FONT.family && f.status === 'loaded') || !document.fonts.check(`900 44px "${STORY_FONT.family}"`, text)) storyFail('FONT_UNAVAILABLE', 'Load the bundled story font before building text displays');
   const canvas = document.createElement('canvas');
@@ -36,7 +36,7 @@ export function createDisplayMaterial(text: string) {
       step = Math.max(size * 1.4, ascent + descent + size * .2),
       height = ascent + descent + (lines.length - 1) * step;
     if (!Number.isFinite(height) || height > canvas.height - pad * 2) continue;
-    ctx.fillStyle = '#206d80';
+    ctx.fillStyle = background;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     ctx.fillStyle = '#fff6e5';
     lines.forEach((line, i) => ctx.fillText(line, canvas.width / 2, (canvas.height - height) / 2 + ascent + i * step));

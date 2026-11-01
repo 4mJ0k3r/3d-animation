@@ -429,3 +429,69 @@ test('display materials require a loaded font, preserve shaping tokens and are i
   const dense=example();dense.layouts.workspace.displays={board:{text:'W'.repeat(160)}};bad(()=>D.createStoryEnvironments(b,D.compileStoryDocument(dense)),'DISPLAY_TEXT_TOO_DENSE');
  }finally{a.dispose();b.dispose();if(prior===undefined)delete global.document;else global.document=prior;}
 });
+
+const street=()=>JSON.parse(fs.readFileSync('examples/street-meeting.story.json','utf8'));
+function streetWithoutText(){const d=street();delete d.layouts.stop.props.notice.text;return d;}
+test('immutable environment/prefab metadata validates semantic props and canonicalizes declaration order',()=>{
+ assert.ok(Object.isFrozen(D.ENVIRONMENTS.street.slots));assert.ok(Object.isFrozen(D.PREFABS.table.sockets.top));
+ const raw=streetWithoutText(),c=D.compileStoryDocument(raw);assert.equal(Object.keys(c.document.story.scenes[0].characters).length,2);
+ raw.layouts.stop.props=Object.fromEntries(Object.entries(raw.layouts.stop.props).reverse());assert.deepEqual(c.document,D.compileStoryDocument(raw).document);
+ assert.ok(D.environmentCatalog(c.document.layouts.stop).seats.includes('rest'));assert.ok(D.environmentCatalog(c.document.layouts.stop).paths.includes('to:rest'));
+ assert.deepEqual(D.compileStorySegment(c,0).document.layouts,c.document.layouts);
+});
+test('missing prefabs, incompatible slots, attachments, styles and raw geometry fail before allocation',()=>{
+ const cases=[
+ [d=>d.layouts.stop.props.rest.prefab='castle','UNSUPPORTED_PREFAB'],
+ [d=>d.layouts.stop.props.rest.slot='roof','UNSUPPORTED_SLOT'],
+ [d=>d.layouts.stop.props.rest.slot='notice','INCOMPATIBLE_PROP'],
+ [d=>d.layouts.stop.props.copy={prefab:'sign',slot:'notice'},'PROP_SLOT_OCCUPIED'],
+ [d=>d.layouts.stop.props.rest.finish='raw-shader','UNSUPPORTED_APPEARANCE'],
+ [d=>d.layouts.stop.options.palette='hdr','UNSUPPORTED_APPEARANCE'],
+ [d=>d.layouts.stop.props.rest.position=[0,1,2],'INVALID_DOCUMENT'],
+ [d=>d.layouts.stop.props.rest.text='No','INCOMPATIBLE_PROP_CONTENT'],
+ [d=>d.layouts.stop.props.flowers={prefab:'planter',attachTo:{prop:'absent',socket:'top'}},'MISSING_PROP'],
+ [d=>d.layouts.stop.props.flowers={prefab:'planter',attachTo:{prop:'rest',socket:'top'}},'INVALID_ATTACHMENT'],
+ [d=>d.layouts.stop.props.flowers={prefab:'planter',slot:'corner',attachTo:{prop:'rest',socket:'top'}},'INVALID_ATTACHMENT'],
+ [d=>d.layouts.stop.props={a:{prefab:'table',attachTo:{prop:'b',socket:'top'}},b:{prefab:'table',attachTo:{prop:'a',socket:'top'}}},'INVALID_ATTACHMENT'],
+ [d=>d.layouts.stop.props={...d.layouts.stop.props,a:{prefab:'planter',slot:'corner'},b:{prefab:'planter',slot:'corner'}},'PROP_BUDGET'],
+ [d=>d.layouts.stop.props.entry={prefab:'planter',slot:'corner'},'PROP_ID_COLLISION']];
+ for(const [edit,code]of cases){const d=streetWithoutText();edit(d);bad(()=>D.compileStoryDocument(d),code);}
+ for(const edit of [d=>d.story.scenes[0].characters.kabir.stance.seat='notice',d=>d.story.scenes[0].beats[0].actions[0].path='to:notice',d=>d.story.scenes[0].shots[2].subject='missing']){const d=streetWithoutText();edit(d);bad(()=>D.compileStoryDocument(d),'UNKNOWN_SLOT');}
+ const d=streetWithoutText();d.story.scenes[0].characters.third={stance:{type:'stand',at:'right'}};d.story.characters.third={};bad(()=>D.compileStoryDocument(d),'LAYOUT_CAPACITY');
+});
+test('semantic furniture/attachments retain full grouped framing, independent child ownership and floor contact',()=>{
+ const {createStory}=require('../../out/character-tests/toon-kit/story/player'),{createStage}=require('../../out/character-tests/toon-kit/staging/stage');
+ const d=streetWithoutText();d.layouts.stop.props={rest:{prefab:'bench',slot:'rest'},table:{prefab:'table',slot:'kiosk',finish:'blue'},plant:{prefab:'planter',attachTo:{prop:'table',socket:'top'},finish:'stone'},notice:{prefab:'sign',slot:'notice'}};
+ const c=D.compileStoryDocument(d),e=owner();try{
+  const b=D.createStoryEnvironments(e,c).stop,seat=b.targets.entries.rest.object;assert.ok(b.props.rest instanceof T.Group);assert.ok(Math.abs(new T.Vector3().setFromMatrixPosition(seat.matrixWorld).y+.075-.44)<1e-6);
+  const player=createStory(e,{timeline:c.timeline,settings:{stop:b}});player.prepare();
+  const samples=[0,80,20,80,0].map(f=>JSON.stringify(player.applyFrame(f)));assert.equal(samples[0],samples[4]);assert.equal(samples[1],samples[3]);
+  assert.deepEqual(player.applyFrame(45).cast.contacts.kabir.feet,{left:'floor',right:'floor'});
+  for(const reverse of [false,true]){
+   const stage=createStage(e,{root:b.root,floor:b.floor,axis:c.timeline.plan.scenes[0].axis});stage.bind(player.cast);
+   for(const [id,prop]of reverse?Object.entries(b.props).reverse():Object.entries(b.props))stage.registerProp(id,prop);
+   const snap=stage.snapshot(player.applyFrame(20).cast);assert.ok(snap.props.rest.regions.full.max[1]>1.2);assert.ok(snap.props.rest.regions.full.min[1]<1e-6);
+   assert.ok(Math.abs(snap.props.table.regions.full.max[1]-.9)<1e-6);assert.ok(snap.props.plant.regions.full.min[1]>=.9-1e-6);
+   assert.ok(snap.visibility.proxies.some(p=>p.owner==='plant'));assert.ok(snap.visibility.proxies.length<=64);stage.dispose();
+  }
+ }finally{e.dispose();e.dispose();}
+});
+test('prop resources and appearance remain owner-local over repeated creation/destruction',()=>{
+ const raw=streetWithoutText();raw.layouts.stop.options.palette='cool';let prior;
+ for(let i=0;i<3;i++){
+  const e=owner();try{const c=D.compileStoryDocument(raw),b=D.createStoryEnvironments(e,c,['other','stop']).stop;assert.equal(b.root.position.x,20);assert.equal(b.props.rest.parent,b.root);
+   const mesh=b.props.rest.children.find(o=>o instanceof T.Mesh);if(prior)assert.notEqual(mesh.material,prior);prior=mesh.material;
+   let count=0;mesh.material.addEventListener('dispose',()=>count++);e.dispose();e.dispose();assert.equal(count,1);
+  }finally{e.dispose();}
+ }
+});
+
+test('street standing and approach marks clear the furniture and retain forward level walking',()=>{
+ for(const kind of ['chair','bench']){
+  const d=streetWithoutText();d.layouts.stop.props.rest.prefab=kind;const e=owner();try{
+   const b=D.createStoryEnvironments(e,D.compileStoryDocument(d)).stop,seat=b.targets.entries.rest.object,right=b.targets.entries.right.object,approach=b.targets.entries['rest.approach'].object;
+   const rightPosition=right.getWorldPosition(new T.Vector3()),approachPosition=approach.getWorldPosition(new T.Vector3()),seatBox=new T.Box3().setFromObject(seat);
+   assert.ok(rightPosition.z-.25>seatBox.max.z+.09);assert.equal(rightPosition.y,0);assert.equal(approachPosition.y,0);assert.ok(approachPosition.z>rightPosition.z);assert.ok(b.paths.entries['to:rest']);
+  }finally{e.dispose();}
+ }
+});

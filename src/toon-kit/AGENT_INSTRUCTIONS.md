@@ -240,3 +240,15 @@ objectFocus shot; never hand-build text geometry or change camera math. Read
 posture across cuts or author deliberate contact cuts. Stand/sit remains instant,
 not a stand-up animation. All production/preflight safeguards remain mandatory.
 No further story features, effects, environments, TTS or transition system.
+
+
+## Phase 6A: curated environment registry
+
+Phase 6A permits office/clinic/street selection and bounded prefab placement.
+Use authoring/README.md and examples/street-meeting.story.json; select named
+slots, finishes, semantic prop/seat/approach/path targets. Never emit geometry,
+coordinates, custom shaders or runtime registry mutation in story JSON.
+Keep the two-active-actor limit, four-prop limit, guarded whole-story preflight,
+software-safe rendering, concurrency 1, memory admission/abort limits, workspace
+temp isolation and engine ownership unchanged. Existing audio and story examples
+remain unchanged. Stop at Phase 6A; Phase 6B is not authorized.
