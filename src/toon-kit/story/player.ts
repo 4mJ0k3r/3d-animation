@@ -13,6 +13,8 @@ import { createStage } from '../staging/stage';
 import { createDirector } from '../direction/director';
 import { createPropAnimator } from './prop-animation';
 import type { PropAnimator } from './prop-animation';
+import { createEffectPlayer } from './effects';
+import type { EffectPlayer } from './effects';
 import { StoryError, storyFail } from './types';
 import type { StoryClip, StoryIntent, StoryTarget, StorySupport } from './types';
 import type { CompiledStory } from './compiler';
@@ -83,6 +85,7 @@ export function createStory(engine: CartoonEngine, options: {
       fromEnd: number;
       toStart: number;
     }>();
+  let effects: EffectPlayer | undefined;
   let cast: ReturnType<typeof createCast> | undefined,
     ready = false,
     busy = false,
@@ -105,6 +108,7 @@ export function createStory(engine: CartoonEngine, options: {
     cast?.dispose();
     animators.forEach(a => a.reset());
     animators.clear();
+    effects?.dispose();
     roots.forEach((v, r) => {
       r.visible = v;
     });
@@ -299,6 +303,7 @@ export function createStory(engine: CartoonEngine, options: {
     });
     // Absolute-frame prop state is assigned BEFORE cast targets and stage snapshots read it.
     animators.get(scene.setting)?.apply(scene.id, globalFrame);
+    effects?.apply(scene.id, globalFrame);
     const state = cast!.evaluate({
       frame: globalFrame + offset,
       fps: timeline.plan.fps,
@@ -362,6 +367,43 @@ export function createStory(engine: CartoonEngine, options: {
       if (!scenes.some(s => s.propAnimations?.length)) continue;
       const b = options.settings[setting];
       animators.set(setting, createPropAnimator(b.props ?? {}, b.anchors, scenes));
+    }
+    if (timeline.plan.scenes.some(s => s.effects?.length)) {
+      const box = new T.Box3(), size = new T.Vector3();
+      // Resolved after prop animation each frame, so effects follow moved props.
+      effects = createEffectPlayer(engine, timeline.plan.scenes, sceneId => {
+        const b = binding(sceneId);
+        return name => {
+          b.root.updateWorldMatrix(true, true);
+          const front = new T.Vector3(0, 0, 1).transformDirection(b.root.matrixWorld);
+          if (b.props && Object.hasOwn(b.props, name)) {
+            box.setFromObject(b.props[name]);
+            box.getSize(size);
+            const center = box.getCenter(new T.Vector3());
+            return {
+              center,
+              base: new T.Vector3(center.x, box.min.y, center.z),
+              size: Math.min(2, Math.max(.3, size.x, size.z)),
+              front
+            };
+          }
+          const entry = Object.hasOwn(b.targets.entries, name) ? b.targets.entries[name] : undefined;
+          if (!entry || !('object' in entry)) storyFail('EFFECT_TARGET_UNSUPPORTED', 'Effect target must be a bound prop or scene mark', {
+            scene: sceneId,
+            details: name
+          });
+          const base = entry.object.getWorldPosition(new T.Vector3());
+          return {
+            center: base.clone().add(new T.Vector3(0, .5, 0)),
+            base,
+            size: .6,
+            front
+          };
+        };
+      });
+      // Validate every declared target once, before any capture.
+      for (const s of timeline.plan.scenes) for (const e of s.effects ?? []) effects.apply(s.id, e.startFrame);
+      effects.apply('', 0);
     }
     cast = createCast(engine, Object.fromEntries(Object.entries(timeline.plan.characters).map(([id, c]) => [id, {
       ...(c.appearance ? {

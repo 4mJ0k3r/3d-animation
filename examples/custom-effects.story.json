@@ -1,0 +1,173 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "yard": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "paving"
+        },
+        "items": {
+          "backdrop": {
+            "kind": "wall",
+            "size": {
+              "width": 8,
+              "height": 3.2
+            },
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "crate": {
+            "kind": "block",
+            "size": {
+              "width": 0.8,
+              "height": 0.8,
+              "depth": 0.8
+            },
+            "finish": "wood",
+            "place": {
+              "relation": "near",
+              "target": "right",
+              "side": "right",
+              "gap": 1
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 30,
+    "characters": {
+      "meera": {
+        "appearance": "casual",
+        "expression": "happy"
+      },
+      "kabir": {
+        "appearance": "office"
+      }
+    },
+    "scenes": [
+      {
+        "id": "crate-drop",
+        "setting": "yard",
+        "startFrame": 0,
+        "endFrame": 30,
+        "axis": [
+          "meera",
+          "kabir"
+        ],
+        "characters": {
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "kabir": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "beats": [
+          {
+            "id": "watch-crate",
+            "startFrame": 8,
+            "endFrame": 30,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "look",
+                "target": "crate"
+              }
+            ]
+          },
+          {
+            "id": "surprise",
+            "startFrame": 14,
+            "endFrame": 30,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "react",
+                "name": "surprised"
+              }
+            ]
+          }
+        ],
+        "cues": [],
+        "shots": [
+          {
+            "id": "pair",
+            "type": "twoShot",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 0,
+            "endFrame": 8
+          },
+          {
+            "id": "crate-focus",
+            "type": "objectFocus",
+            "subject": "crate",
+            "startFrame": 8,
+            "endFrame": 30
+          }
+        ],
+        "propAnimations": [
+          {
+            "prop": "crate",
+            "type": "slide",
+            "to": "backdrop.front",
+            "startFrame": 0,
+            "endFrame": 8,
+            "easing": "easeInOut"
+          },
+          {
+            "prop": "crate",
+            "type": "lift",
+            "height": 0.6,
+            "startFrame": 8,
+            "endFrame": 12,
+            "easing": "easeInOut"
+          },
+          {
+            "prop": "crate",
+            "type": "lift",
+            "height": 0,
+            "startFrame": 12,
+            "endFrame": 14
+          }
+        ],
+        "effects": [
+          {
+            "type": "impactFlash",
+            "target": "crate",
+            "startFrame": 14,
+            "intensity": "medium"
+          },
+          {
+            "type": "dustPuff",
+            "target": "crate",
+            "startFrame": 14
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -823,3 +823,87 @@ test('prop animation: objects, gaze/pointing targets and object-focus camera fol
     } finally {e.dispose();}
   }
 });
+
+const effectsExample = () => JSON.parse(fs.readFileSync('examples/custom-effects.story.json', 'utf8'));
+const FX = require('../../out/character-tests/toon-kit/story/effects');
+test('effects: schema, duration, budget and target rules reject with structured diagnostics', () => {
+  const ok = D.compileStoryDocument(effectsExample()), list = ok.timeline.plan.scenes[0].effects;
+  assert.equal(list.length, 2); assert.ok(Object.isFrozen(list)); assert.equal(list.find(e => e.type === 'dustPuff').intensity, 'medium');
+  const fx = (extra) => ({type: 'impactFlash', target: 'crate', startFrame: 0, ...extra});
+  const withFx = (effects) => {const d = effectsExample(); d.story.scenes[0].effects = effects; return d;};
+  const cases = [
+    [withFx([fx({type: 'explosion'})]), 'INVALID_EFFECT'],
+    [withFx([fx({position: [0, 1, 0]})]), 'INVALID_EFFECT'],
+    [withFx([fx({durationFrames: 40})]), 'INVALID_EFFECT'],
+    [withFx([fx({intensity: 'huge'})]), 'INVALID_EFFECT'],
+    [withFx([fx({type: 'dustPuff', startFrame: 20})]), 'INVALID_EFFECT'],
+    [withFx([fx({startFrame: 2.5})]), 'INVALID_EFFECT'],
+    [withFx([]), 'INVALID_EFFECT'],
+    [withFx(Array.from({length: 7}, (_, i) => fx({startFrame: i * 3}))), 'EFFECT_BUDGET'],
+    [withFx([fx(), fx({type: 'dustPuff'}), fx({startFrame: 2}), fx({type: 'dustPuff', startFrame: 4})]), 'EFFECT_BUDGET'],
+    [withFx([fx({target: 'kabir'})]), 'EFFECT_TARGET_UNSUPPORTED'],
+    [withFx([fx({target: 'nowhere'})]), 'UNKNOWN_SLOT']
+  ];
+  cases.forEach(([doc, code], i) => {try {D.compileStoryDocument(doc);} catch (error) {assert.equal(error.diagnostic?.code, code, `case ${i}: ${JSON.stringify(error.diagnostic)}`); return;} assert.fail(`case ${i} should reject with ${code}`);});
+  // ground marks and structural items are valid static targets
+  assert.ok(D.compileStoryDocument(withFx([fx({target: 'entry'}), fx({type: 'dustPuff', target: 'backdrop'})])));
+  // three simultaneous is the bound, not an error
+  assert.ok(D.compileStoryDocument(withFx([fx(), fx({type: 'dustPuff'}), fx({target: 'right', startFrame: 4})])));
+  // timing is pure and fixed-duration
+  const flash = list.find(e => e.type === 'impactFlash'), dust = list.find(e => e.type === 'dustPuff');
+  assert.equal(FX.effectState(flash, 13), null); assert.ok(FX.effectState(flash, 14)); assert.ok(FX.effectState(flash, 21)); assert.equal(FX.effectState(flash, 22), null);
+  assert.ok(FX.effectState(dust, 29)); assert.equal(FX.effectState(dust, 30), null);
+  assert.deepEqual(FX.effectState(dust, 20), FX.effectState(dust, 20));
+  assert.ok(FX.effectState(dust, 15).opacity > FX.effectState(dust, 28).opacity && FX.effectState(dust, 28).spread > FX.effectState(dust, 15).spread);
+  // segments rebase effect frames
+  const two = effectsExample(), s1 = JSON.parse(JSON.stringify(two.story.scenes[0]));
+  s1.id = 'again'; for (const k of ['beats', 'shots', 'propAnimations']) s1[k].forEach(x => {x.startFrame += 30; x.endFrame += 30;}); s1.effects.forEach(e => {e.startFrame += 30;}); s1.startFrame = 30; s1.endFrame = 60;
+  two.story.durationInFrames = 60; two.story.scenes.push(s1);
+  const c = D.compileStoryDocument(two);
+  assert.deepEqual(D.compileStorySegment(c, 1).timeline.plan.scenes[0].effects, c.timeline.plan.scenes[0].effects);
+  // per-story object budget
+  const many = [{id: 'a', effects: Array.from({length: 5}, (_, i) => ({type: 'impactFlash', target: 'x', startFrame: i * 8, intensity: 'low'}))}, {id: 'b', effects: Array.from({length: 4}, (_, i) => ({type: 'impactFlash', target: 'x', startFrame: i * 8, intensity: 'low'}))}];
+  bad(() => FX.createEffectPlayer({scene: new T.Scene(), track() {}}, many, () => () => ({})), 'EFFECT_BUDGET');
+});
+
+test('effects: reused objects follow the animated prop, hide when inactive, are frame-order independent and dispose once', () => {
+  const {createStory} = require('../../out/character-tests/toon-kit/story/player');
+  let baseline;
+  for (let instance = 0; instance < 2; instance++) {
+    const e = owner();
+    try {
+      const c = D.compileStoryDocument(effectsExample()), b = D.createStoryEnvironments(e, c).yard, p = createStory(e, {timeline: c.timeline, settings: {yard: b}});
+      const group = e.scene.getObjectByName('StoryEffects');
+      assert.ok(group, 'effect group created at construction');
+      const flash = group.children.find(g => g.children.length === 2), dust = group.children.find(g => g.children.length === 6);
+      assert.equal(flash.children.length + dust.children.length, 8);
+      const inventory = () => {const s = new Set(); e.scene.traverse(o => {if (o instanceof T.Mesh) {s.add(o.geometry); for (const m of [o.material].flat()) s.add(m);}}); return s;};
+      const fxResources = new Set(); group.traverse(o => {if (o instanceof T.Mesh) {fxResources.add(o.geometry); fxResources.add(o.material);}});
+      assert.equal([...fxResources].filter(r => r instanceof T.BufferGeometry).length, 3);
+      assert.equal([...fxResources].filter(r => r instanceof T.Material).length, 3);
+      for (const r of fxResources) if (r instanceof T.Material) assert.ok(r.transparent && !r.depthWrite);
+      const before = inventory();
+      try {p.prepare();} catch (error) {throw new Error(JSON.stringify(error.diagnostic));}
+      const sequence = [29, 0, 14, 17, 21, 22, 13, 17, 29, 0], states = [];
+      for (const f of sequence) {
+        p.applyFrame(f);
+        const crate = new T.Box3().setFromObject(b.props.crate), center = crate.getCenter(new T.Vector3());
+        const state = {f, flash: flash.visible, dust: dust.visible, fp: flash.position.toArray(), fs: flash.scale.x, fo: flash.children[0].material.opacity, dp: dust.position.toArray(), parts: dust.children.map(m => [...m.position.toArray(), m.scale.x]), dop: dust.children[0].material.opacity};
+        assert.equal(state.flash, f >= 14 && f < 22, `frame ${f}: flash visibility`);
+        assert.equal(state.dust, f >= 14 && f < 30, `frame ${f}: dust visibility`);
+        if (state.flash) assert.ok(Math.hypot(state.fp[0] - center.x, state.fp[1] - center.y) < 1e-9 && state.fp[2] > crate.max.z, `frame ${f}: flash sits in front of the current crate`);
+        if (state.dust) assert.ok(Math.abs(state.dp[1] - crate.min.y) < 1e-9 && Math.hypot(state.dp[0] - center.x, state.dp[2] - center.z) < 1e-9, `frame ${f}: dust at the current crate base`);
+        states.push(state);
+      }
+      const at = (f) => states.filter(s => s.f === f);
+      for (const f of [29, 0, 17]) assert.deepEqual(at(f)[0], at(f)[1]);
+      if (baseline) assert.deepEqual(states, baseline); baseline = states;
+      const after = inventory(); assert.equal(after.size, before.size); for (const r of after) assert.ok(before.has(r), 'no per-frame geometry/material creation');
+      const counts = new Map(); for (const r of after) {counts.set(r, 0); r.addEventListener('dispose', () => counts.set(r, counts.get(r) + 1));}
+      p.dispose(); p.dispose();
+      assert.equal(group.parent, null, 'player disposal detaches effects');
+      e.dispose(); e.dispose();
+      for (const count of counts.values()) assert.equal(count, 1);
+    } finally {e.dispose();}
+  }
+});

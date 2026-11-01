@@ -90,6 +90,15 @@ export function compileStoryDocument(input: unknown) {
       if (shot.subjects) for (const actor of shot.subjects) requireName(actor, Object.keys(scene.characters), 'camera actor');
     };
     checkPropAnimations(scene, layouts[scene.setting]);
+    for (const effect of scene.effects ?? []) {
+      if (Object.hasOwn(timeline.plan.characters, effect.target)) storyFail('EFFECT_TARGET_UNSUPPORTED', `Effects attach to layout props or ground marks, not actors (${effect.target}); target a nearby mark or prop`, {
+        scene: scene.id,
+        details: {
+          target: effect.target
+        }
+      });
+      requireName(effect.target, [...slots.props, ...slots.marks], 'effect target');
+    }
     for (const shot of scene.shots) {
       camera(shot);
       if (shot.motion?.type === 'move') {

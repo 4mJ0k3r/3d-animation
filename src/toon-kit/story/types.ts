@@ -91,6 +91,13 @@ export type PropAnimation = {
   readonly axis: 'x' | 'y' | 'z';
   readonly degrees: number;
 });
+/** Phase 6D-B: fixed-duration cartoon effects at a named prop or ground mark. */
+export interface StoryEffect {
+  readonly type: 'impactFlash' | 'dustPuff';
+  readonly target: string;
+  readonly startFrame: number;
+  readonly intensity?: 'low' | 'medium' | 'high';
+}
 export interface StoryScene {
   readonly id: string;
   readonly setting: string;
@@ -106,6 +113,7 @@ export interface StoryScene {
   readonly cues?: readonly StoryCue[];
   readonly shots: readonly StaticShot[];
   readonly propAnimations?: readonly PropAnimation[];
+  readonly effects?: readonly StoryEffect[];
 }
 /** JSON-only; all frame numbers are absolute, intervals half-open. */
 export interface StoryPlan {

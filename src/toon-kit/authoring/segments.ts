@@ -50,6 +50,12 @@ export function compileStorySegment(source: CompiledStoryDocument, index: number
         endFrame: a.endFrame - start
       }))
     } : {}),
+    ...(s.effects ? {
+      effects: s.effects.map(e => ({
+        ...e,
+        startFrame: e.startFrame - start
+      }))
+    } : {}),
     cues: []
   }));
   const settings = new Set(scenes.map(s => s.setting));

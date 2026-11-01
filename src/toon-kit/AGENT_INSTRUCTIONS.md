@@ -282,3 +282,8 @@ named mark, bounded lift, bounded rotate) per authoring/CONSTRUCTION.md. The sto
 player resets animated props to rest and assigns the absolute frame before cast and
 stage evaluation; no new meshes, passes or history. Do not animate structures, use
 an animated item's generated anchors, or start Phase 6D-B.
+
+Phase 6D-B exception: scenes may declare `effects` (`impactFlash`, `dustPuff`) at a
+layout prop or ground mark, per authoring/README.md. Effect objects are built once,
+reset and assigned from the absolute frame after prop animation; transparent unlit
+materials, no new passes, shaders, particles or randomness. Stop after 6D-B, not 6E.

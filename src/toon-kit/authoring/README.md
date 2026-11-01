@@ -322,3 +322,31 @@ to build unique settings from structures and existing prefabs. See the concise
 [JSON contract, relationships, anchors and limits](CONSTRUCTION.md), with complete
 school-courtyard and garden examples. This reuses the same compiler, cast,
 director, captions and guarded CLI. No school/garden preset or per-scene callback.
+
+
+## Phase 6D-B: cartoon effects
+
+Any scene may add `effects` at a layout prop or ground mark (custom, office, clinic
+or street). Durations are fixed; there are no positions, colors or shaders.
+
+```json
+"effects": [
+  {"type": "impactFlash", "target": "crate", "startFrame": 14, "intensity": "medium"},
+  {"type": "dustPuff", "target": "crate", "startFrame": 14}
+]
+```
+
+- `impactFlash`: 8 frames. Two flat star bursts in front of the target, facing the
+  stage front; pops up, then fades. `dustPuff`: 16 frames. Six fixed-layout puffs
+  at the target's base that spread, rise and fade. `intensity` is `low`, `medium`
+  (default) or `high` and scales the size.
+- `startFrame` is an absolute story frame; the whole effect must fit in the scene.
+- At most 6 effects per scene, 8 per rendered segment and 3 active at once
+  (`EFFECT_BUDGET`). Actor targets reject with `EFFECT_TARGET_UNSUPPORTED`;
+  unknown names with `UNKNOWN_SLOT`.
+- Effects follow the target's current-frame transform, including `propAnimations`.
+- All effect geometry/materials are created once when the story player is built;
+  inactive effects are hidden in a fixed reset state. Effects are not visibility
+  proxies: they never change camera selection and may visually cover part of a subject.
+
+Example: [custom-effects.story.json](../../../examples/custom-effects.story.json).
