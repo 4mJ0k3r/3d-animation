@@ -26,7 +26,7 @@ function fail(code, message) {
 }
 async function main() {
   if (os.tmpdir() !== job.scratch || !['TMPDIR', 'TMP', 'TEMP'].every(k => process.env[k] === job.scratch)) fail('TEMP_BOOTSTRAP', 'Workspace temp bootstrap failed');
-  if (job.command === 'render') {
+  if (job.command !== 'validate') {
     const p = require('./render-policy.cjs').productionPolicy,
       a = require('./linux-memory.cjs').createMemoryGuard(p).admission();
     if (!a.admitted) fail('MEMORY_ADMISSION', a.reason);
@@ -60,7 +60,9 @@ async function main() {
   const segments = planStorySegments(compiled);
   const result = {
     valid: true,
-    scope: 'Schema, semantic slots and local-file integrity; decode/framing certified in render preparation',
+    scope: 'Schema, slots, files and static risk warnings only; full camera/actor validation requires guarded preparation',
+    visibilityValidated: false,
+    warnings: compiled.warnings,
     fps: compiled.timeline.plan.fps,
     frames: compiled.timeline.plan.durationInFrames,
     video: compiled.document.video,
@@ -74,9 +76,22 @@ async function main() {
     },
     temp: os.tmpdir()
   };
-  if (job.command === 'render') {
+  if (job.command !== 'validate') {
     await new Promise(setImmediate);
     if (cancelled) fail('AUTHORING_CANCELLED', 'Cancelled before rendering');
+    result.preflightReport = await require('./render.cjs').runProductionRender({
+      mode: 'prepare', entry: 'src/index.ts', composition: 'AuthoredStory',
+      report: job.report + '.preflight.json',
+      inputProps: {document: compiled.document}
+    });
+    result.visibilityValidated = true;
+    if (cancelled) fail('AUTHORING_CANCELLED', 'Cancelled after whole-story preparation');
+    if (job.command === 'prepare') {
+      result.scope = 'Guarded whole-story camera/actor preparation passed; no video encoded';
+      result.report = result.preflightReport;
+      fs.writeFileSync(path.join(job.scratch, 'result.json'), JSON.stringify(result));
+      return;
+    }
     if(result.frames > 600) {
       result.orchestration = await require('./story-segments.cjs').renderSegments({job,compiled,files,planSHA256,planStorySegments,cancelled:()=>cancelled});
     } else await require('./render.cjs').runProductionRender({
@@ -104,13 +119,11 @@ async function main() {
   fs.writeFileSync(path.join(job.scratch, 'result.json'), JSON.stringify(result));
 }
 main().catch(e => {
-  console.error(JSON.stringify({
-    error: e.diagnostic ?? {
-      code: 'AUTHORING_FAILED',
-      message: String(e),
-      hint: 'Check AUDIT_AUTHORING_ERROR and the production report for contact/visibility diagnostics.'
-    }
-  }));
+  // Preserve the structured cause for the parent CLI/programmatic caller, not
+  // merely the child console log. The private bootstrap owns and removes it.
+  const diagnostic = e.diagnostic ?? {code:'AUTHORING_FAILED',message:String(e),hint:'Inspect the guarded production/preflight report.'};
+  try { fs.writeFileSync(path.join(job.scratch, 'error.json'), JSON.stringify(diagnostic)); } catch {}
+  console.error(JSON.stringify({error:diagnostic}));
   process.exitCode = 1;
 }).finally(() => {
   if (process.connected) process.disconnect();

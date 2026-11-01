@@ -189,3 +189,24 @@ Reproduce the original signal-boundary check after rendering the example:
 audio stream duration and zero sample shift around 9s/18s. AAC can expose a codec
 padding tail after decoding beyond the MP4 presentation duration; this is reported
 separately, not counted as timeline content or an inter-segment gap.
+
+## Phase 5B: whole-story preparation
+
+`story render` now runs a guarded **whole-story preflight before any video is
+encoded**, including resumed jobs. It reuses the same composition, caption/font
+readiness and `createStory().prepare()` over every segment, sequentially in one
+software browser. One diagnostic still completes readiness per segment; pages
+close between segments. The preflight browser closes before video workers start.
+Run only this phase with `npm run story -- prepare --plan=examples/name.story.json`
+(or `runAuthoredStory({command:"prepare",plan:...})`), without video encoding.
+Reports are saved to `<report>.preflight.json`; later errors preserve scene/shot,
+nested director diagnostic and an actionable hint. Fix the plan, not renderer
+thresholds; memory admission/abort protections still apply to every phase.
+
+`story validate` returns `warnings` and `visibilityValidated:false`. In particular,
+`TWO_SHOT_GAZE_RISK` flags off-axis gaze: a board/prop/actor look can make both
+faces impossible to frame together. Aim actors toward `audience` for that shot,
+or use `closeUp`/`medium`/`objectFocus` cuts. This is a conservative warning, not
+proof a shot fails. Full camera/actor certification requires actual preparation.
+The generic office chair now has four legs and a backrest; its `chair` seat
+surface and existing contact API are unchanged.

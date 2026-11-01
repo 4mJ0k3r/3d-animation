@@ -14,7 +14,7 @@ let cancelCapture = () => {};
 const onBrowserLog = ({text,type}) => {
   if (text.startsWith('TOON_FRAME:')) report.frames.push(JSON.parse(text.slice(11)));
   else if (text.startsWith('TOON_RENDERER:')) {const info=JSON.parse(text.slice(14));report.renderer.push(info);if(!/swiftshader/i.test(info.renderer)) {report.error='Selected backend did not produce SwiftShader: '+info.renderer; cancelCapture();}}
-  else if (text.startsWith('AUDIT_')) console.log(text);
+  else if (text.startsWith('AUDIT_')) {if(text.startsWith('AUDIT_AUTHORING_ERROR:')) report.diagnostic=JSON.parse(text.slice('AUDIT_AUTHORING_ERROR:'.length));console.log(text);}
   else if (type === 'error') console.error(text);
 };
 async function main() {
@@ -53,7 +53,7 @@ async function main() {
     return;
   }
   const {bundle} = require('@remotion/bundler');
-  const {openBrowser,selectComposition,renderMedia,makeCancelSignal,RenderInternals} = require('@remotion/renderer');
+  const {openBrowser,selectComposition,renderMedia,renderStill,makeCancelSignal,RenderInternals} = require('@remotion/renderer');
   const {cancelSignal,cancel} = makeCancelSignal(); cancelCapture = cancel;
   // Verified against renderer 4.0.539; report the actual bundled binary, not PATH ffmpeg.
   const ffmpeg = RenderInternals.getExecutablePath({type:'ffmpeg',binariesDirectory:null,indent:false,logLevel:'error'});
@@ -62,6 +62,28 @@ async function main() {
   const serveUrl = await bundle({entryPoint:entry,outDir:path.join(scratch,'bundle'),enableCaching:false});
   const browser = await openBrowser('chrome',{chromiumOptions:{gl:job.backend,enableMultiProcessOnLinux:false}});
   try {
+    if (job.mode === 'prepare') {
+      const document = job.inputProps?.document;
+      if (!document || !Array.isArray(document.story?.scenes) || document.story.scenes.length < 1 || document.story.scenes.length > 8) throw new Error('Preparation requires a bounded authored story');
+      const indices = document.story.durationInFrames > 600 ? document.story.scenes.map((_, i)=>i) : [undefined];
+      report.preparations = [];
+      for (const segmentIndex of indices) {
+        const inputProps = {document, segmentIndex};
+        const composition = await selectComposition({serveUrl,id:job.composition || 'AuthoredStory',inputProps,puppeteerInstance:browser,timeoutInMilliseconds:policy.timeout,chromiumOptions:{gl:job.backend}});
+        const before = report.frames.length, start = performance.now();
+        // The existing readiness barrier runs createStory().prepare() over ALL
+        // frames/camera paths before this one diagnostic still can complete.
+        // renderStill closes its page before the next segment; no video encoding.
+        await renderStill({serveUrl,composition,inputProps,output:null,frame:0,
+          imageFormat:'png',puppeteerInstance:browser,cancelSignal,onBrowserLog,
+          timeoutInMilliseconds:policy.timeout,chromiumOptions:{gl:job.backend,enableMultiProcessOnLinux:false}});
+        if(report.frames.length===before || report.diagnostic) throw new Error('Preparation did not complete readiness/capture');
+        report.preparations.push({segmentIndex:segmentIndex??null,frames:composition.durationInFrames,wallMs:performance.now()-start,pass:true});
+        console.log('AUDIT_STORY_PREFLIGHT:'+JSON.stringify(report.preparations.at(-1)));
+      }
+      if(!report.renderer.length) throw new Error('Preparation did not verify software renderer identity');
+      return;
+    }
     const variants = job.mode === 'benchmark' ? ['base','ao','bokeh','no-shadows'] : [job.inputProps?.variant || 'base'];
     for (const variant of variants) {
       const inputProps = {...job.inputProps,quality:job.quality,variant};

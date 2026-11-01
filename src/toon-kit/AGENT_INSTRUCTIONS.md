@@ -220,4 +220,14 @@ one global audio mix. Never encode/mux independent segment AAC tracks or invent
 speech timings. Never edit manifests, bypass fingerprints/locks, overwrite user
 assets, delete active recovery data or report an incomplete output as success.
 Preserve completed segments on failure. All original Linux admission/abort and
-workspace-temp safeguards remain mandatory. Stop at 4C-B; no Phase 5.
+workspace-temp safeguards remain mandatory. Approved Phase 5B corrections follow below.
+
+## Phase 5B: preparation and diagnostics
+
+`story render` must preflight every segment before encoding any video. Use
+`npm run story -- prepare --plan=...` for guarded preparation without encoding;
+`story validate` only checks static data/files and reports risk warnings, not
+camera visibility. Never skip preflight or lower memory/visibility limits to
+force a partial render; fix gaze/shot intentions or wait for VM memory recovery.
+The existing `chair` slot/contact API is unchanged. These Phase 5B corrections
+are approved; no other Phase 5 story features, effects, environments or TTS.

@@ -13,6 +13,7 @@ import { compileStoryDocument } from './document';
 import type { CompiledStoryDocument } from './document';
 import { createStoryEnvironments } from './starters';
 import { prepareStoryFont } from './font';
+import { FRAMING_HINT } from './diagnostics';
 import { compileStorySegment, planStorySegments } from './segments';
 import type { CaptionWord } from '../captions';
 export const AuthoredStory: React.FC<{
@@ -127,7 +128,7 @@ const StorySession: React.FC<{
             code: 'AUTHORING_PREPARATION',
             message: String(e)
           }),
-          hint: 'Check named slots and assets. For framing, use a wider twoShot/fullBody preset or shorter captions; never patch camera coordinates.'
+          hint: 'Check named slots and assets. ' + FRAMING_HINT
         }));
         throw e;
       }

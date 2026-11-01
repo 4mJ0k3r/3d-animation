@@ -74,13 +74,16 @@ export function createStoryEnvironments(engine: CartoonEngine, compiled: Compile
         position: [1, 1.025, -.5],
         color: '#6b8e9c'
       });
-    root.add(floor, wall, board, chair, p.box({
-      width: .8,
-      height: .95,
-      depth: .65,
-      position: [1, .475, -.5],
-      color: '#415c65'
-    }));
+    chair.name = 'OfficeChairSeat';
+    root.add(floor, wall, board, chair);
+    // Keep the exact semantic seat surface; replace the solid pedestal with
+    // four floor-to-seat legs and an attached backrest behind the sitter.
+    for (const x of [-.45,.45]) for (const z of [-.37,.37]) {
+      const leg = p.box({width:.08,height:.95,depth:.08,position:[1+x,.475,-.5+z],color:'#415c65'});
+      leg.name = 'OfficeChairLeg'; root.add(leg);
+    }
+    const back = p.box({width:1.1,height:.9,depth:.12,position:[1,1.55,-.94],color:'#6b8e9c'});
+    back.name = 'OfficeChairBack'; root.add(back);
     for (let i = 0; i < 3; i++) root.add(p.box({
       width: .25 + i * .2,
       height: .09,

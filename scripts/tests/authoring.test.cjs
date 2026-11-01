@@ -363,3 +363,27 @@ test('CLI cancellation before rendering cleans the bootstrap and leaves no live 
   assert.equal(fs.existsSync('.remotion-tmp/authoring.lock'), false);
   assert.equal(fs.existsSync('.remotion-tmp/active.lock'), false);
 });
+
+test('static two-shot gaze warnings are actionable, deterministic and do not claim visibility certification',()=>{
+ const d=example(),first=D.compileStoryDocument(d),second=D.compileStoryDocument(d);
+ assert.deepEqual(first.warnings,second.warnings);assert.ok(Object.isFrozen(first.warnings));
+ assert.ok(first.warnings.some(w=>w.code==='TWO_SHOT_GAZE_RISK'&&w.actor==='meera'&&w.target==='board'&&w.message.includes('audience')));
+ d.story.scenes[0].beats.forEach(b=>b.actions=b.actions.filter(a=>a.type!=='look'));d.story.scenes[0].characters.meera.lookAt='audience';d.story.scenes[0].characters.kabir.lookAt='audience';
+ assert.deepEqual(D.compileStoryDocument(d).warnings,[]);
+});
+test('office chair has four grounded legs/backrest and preserves the original semantic seat surface',()=>{
+ const e=owner();try{
+  const b=D.createStoryEnvironments(e,D.compileStoryDocument(example())).workspace,seat=b.targets.entries.chair.object;
+  assert.equal(seat.name,'OfficeChairSeat');assert.deepEqual(seat.position.toArray(),[1,1.025,-.5]);
+  seat.geometry.computeBoundingBox();const box=seat.geometry.boundingBox;assert.ok(Math.abs(box.max.y+seat.position.y-1.1)<1e-6);assert.ok(Math.abs(box.max.x-box.min.x-1.1)<1e-6);
+  const legs=b.root.children.filter(o=>o.name==='OfficeChairLeg');assert.equal(legs.length,4);
+  for(const leg of legs){leg.geometry.computeBoundingBox();assert.ok(Math.abs(leg.position.y+leg.geometry.boundingBox.min.y)<1e-6);assert.ok(Math.abs(leg.position.y+leg.geometry.boundingBox.max.y-.95)<1e-6);}
+  const back=b.root.getObjectByName('OfficeChairBack');assert.ok(back);back.geometry.computeBoundingBox();assert.ok(Math.abs(back.position.y+back.geometry.boundingBox.min.y-1.1)<1e-6);
+ }finally{e.dispose();}
+});
+
+test('derived preflight report cannot overwrite the input plan',async()=>{
+ const dir=fs.mkdtempSync(path.resolve('out/preflight-path-test-')),plan=path.join(dir,'report.json.preflight.json');fs.writeFileSync(plan,JSON.stringify(example()));
+ try{await assert.rejects(require('../story.cjs').runAuthoredStory({command:'validate',plan,report:path.join(dir,'report.json'),output:path.join(dir,'video.mp4')}),e=>e.diagnostic?.code==='OUTPUT_PATH');assert.ok(fs.readFileSync(plan,'utf8').includes('workspace'));}
+ finally{assert.equal(fs.realpathSync(dir),dir);assert.ok(dir.startsWith(path.resolve('out')+path.sep));fs.rmSync(dir,{recursive:true});}
+});

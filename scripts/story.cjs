@@ -25,9 +25,9 @@ async function runAuthoredStory(options) {
   if (!options || typeof options !== 'object' || Array.isArray(options)) fail('AUTHORING_ARGUMENT', 'Pass an authoring options object');
   const allowed = ['command', 'plan', 'output', 'report', 'verify'];
   for (const k of Object.keys(options)) if (!allowed.includes(k)) fail('AUTHORING_ARGUMENT', 'Unsupported option ' + k);
-  if (!['validate', 'render'].includes(options.command) || typeof options.plan !== 'string') fail('AUTHORING_ARGUMENT', 'Use story validate|render --plan=examples/name.story.json [--output=out/name.mp4] [--report=out/name.json] [--verify=true]');
+  if (!['validate', 'prepare', 'render'].includes(options.command) || typeof options.plan !== 'string') fail('AUTHORING_ARGUMENT', 'Use story validate|prepare|render --plan=examples/name.story.json [--output=out/name.mp4] [--report=out/name.json] [--verify=true]');
   if (options.verify !== undefined && typeof options.verify !== 'boolean') fail('AUTHORING_ARGUMENT', 'verify must be boolean');
-  if (options.command === 'render') {
+  if (options.command !== 'validate') {
     const policy = require('./render-policy.cjs').productionPolicy,
       admission = require('./linux-memory.cjs').createMemoryGuard(policy).admission();
     if (!admission.admitted) fail('MEMORY_ADMISSION', admission.reason);
@@ -43,7 +43,7 @@ async function runAuthoredStory(options) {
   const output = inside(options.output ?? 'out/authored-story.mp4'),
     report = inside(options.report ?? 'out/authored-story-report.json');
   if (!output.startsWith(path.join(root, 'out') + path.sep) || !output.endsWith('.mp4') || !report.startsWith(path.join(root, 'out') + path.sep) || !report.endsWith('.json')) fail('OUTPUT_PATH', 'Output/report must be .mp4/.json paths under out/');
-  for (const file of [output, report]) {
+  for (const file of [output, report, report + '.preflight.json']) {
     if (file === plan) fail('OUTPUT_PATH', 'Never overwrite the input plan');
     let parent = path.dirname(file);
     while (!fs.existsSync(parent)) parent = path.dirname(parent);
@@ -108,12 +108,17 @@ async function runAuthoredStory(options) {
     try {
       await new Promise((resolve, reject) => {
         child.once('error', reject);
-        child.once('exit', code => code === 0 ? resolve() : reject(Object.assign(new Error('Authoring failed; inspect the structured diagnostic above and render report'), {
-          diagnostic: {
-            code: 'AUTHORING_FAILED',
-            message: 'No completed MP4; inspect the preceding diagnostic/report'
-          }
-        })));
+        child.once('exit', code => {
+          if (code === 0) return resolve();
+          let diagnostic;
+          try { diagnostic = JSON.parse(fs.readFileSync(path.join(scratch, 'error.json'))); } catch {}
+          reject(Object.assign(new Error(diagnostic?.message ?? 'Authoring failed; inspect the structured diagnostic above and render report'), {
+            diagnostic: diagnostic ?? {
+              code: 'AUTHORING_FAILED',
+              message: 'Authoring did not complete; inspect the preceding diagnostic/report'
+            }
+          }));
+        });
       });
     } finally {
       process.removeListener('SIGINT', cancel);

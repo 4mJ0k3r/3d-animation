@@ -1,4 +1,5 @@
 import { compileStory, compileOrchestrationStory } from '../story/compiler';
+import { authoringWarnings } from './diagnostics';
 import type { StoryPlan, StoryTarget, StorySupport } from '../story/types';
 import { storyFail } from '../story/types';
 import { freezeData } from '../characters/pose';
@@ -139,7 +140,8 @@ export function compileStoryDocument(input: unknown) {
       }])),
       story: timeline.plan
     }),
-    timeline
+    timeline,
+    warnings: authoringWarnings(timeline)
   });
 }
 export type CompiledStoryDocument = ReturnType<typeof compileStoryDocument>;

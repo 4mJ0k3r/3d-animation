@@ -13,7 +13,7 @@ const {createMemoryGuard} = require('./linux-memory.cjs');
 async function runProductionRender(job = {}) {
   const allowed = new Set(['mode','entry','composition','output','width','height','frames','quality','backend','inputProps','report']);
   for (const key of Object.keys(job)) if (!allowed.has(key)) throw new Error(`Unsupported production override: ${key}`);
-  if(job.mode && !['render','cli','audit','benchmark'].includes(job.mode)) throw new Error('Invalid render mode');
+  if(job.mode && !['render','cli','audit','benchmark','prepare'].includes(job.mode)) throw new Error('Invalid render mode');
   const root = path.resolve(__dirname, '..');
   const authoringLock = path.join(root, '.remotion-tmp', 'authoring.lock');
   if (fs.existsSync(authoringLock) && JSON.parse(fs.readFileSync(authoringLock)).id !== process.env.TOON_AUTHORING_OWNER) throw new Error('An authoring job owns the production pipeline; wait for it to finish');
@@ -61,7 +61,7 @@ async function runProductionRender(job = {}) {
     fs.mkdirSync(path.dirname(report), {recursive: true});
     fs.writeFileSync(report, JSON.stringify({job, backend, policy, admission, host: {platform: process.platform, node: process.version, cpus: os.availableParallelism(), totalRAM: os.totalmem(), originalTemp: os.tmpdir()}, scratch, stats, worker, failure}, null, 2));
     console.log('PRODUCTION_REPORT ' + report);
-    if (failure || stats.limitExceeded) throw new Error(stats.limitExceeded || failure);
+    if (failure || stats.limitExceeded) throw Object.assign(new Error(stats.limitExceeded || failure), !stats.limitExceeded && worker?.diagnostic ? {diagnostic:{...worker.diagnostic,report}} : {});
     return report;
   } finally {
     if (child && child.exitCode === null && !child.signalCode) terminate(child);
