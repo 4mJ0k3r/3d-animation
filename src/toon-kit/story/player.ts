@@ -18,6 +18,7 @@ import type { PreparedStoryAudio } from './audio-assets';
 export interface StorySettingBinding {
   readonly root: T.Group;
   readonly floor: T.Mesh;
+  readonly cameraSpace?: Readonly<{width:number;depth:number;height:number}>;
   readonly targets: TargetLibrary;
   readonly props?: Readonly<Record<string, T.Object3D>>;
   readonly paths?: WalkingPaths;
@@ -339,7 +340,8 @@ export function createStory(engine: CartoonEngine, options: {
         stage = createStage(engine, {
           root: b.root,
           floor: b.floor,
-          axis: scene.axis
+          axis: scene.axis,
+          cameraSpace: b.cameraSpace
         });
       for (const [id, mesh] of Object.entries(b.props ?? {})) stage.registerProp(id, mesh);
       stages.set(scene.id, stage);

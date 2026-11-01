@@ -13,6 +13,8 @@ export function createStage(engine: CartoonEngine, options: {
   root: T.Group;
   floor: T.Mesh;
   axis: readonly [string, string];
+  /** Optional exterior camera volume, in stage-local metres; floor contact remains unchanged. */
+  cameraSpace?: Readonly<{width:number;depth:number;height:number}>;
 }) {
   const {
       root,
@@ -81,7 +83,9 @@ export function createStage(engine: CartoonEngine, options: {
       });
     }
   });
-  const height = unionBounds(scenery).max[1] - ground;
+  const height = options.cameraSpace?.height ?? unionBounds(scenery).max[1] - ground;
+  const cameraWidth=options.cameraSpace?.width??width,cameraDepth=options.cameraSpace?.depth??depth;
+  if(options.cameraSpace&&[cameraWidth,cameraDepth,height].some(v=>!Number.isFinite(v)||v<=.2||v>64))directionFail('INVALID_CAMERA_SPACE','Use finite camera-space dimensions in (0.2,64]');
   if (!Number.isFinite(height) || height <= .2) directionFail('INVALID_STAGE_BOUNDS', 'Scenery must define usable vertical camera space; construct the stage before binding actors');
   const floorCenter: Vec3 = [(floorLocal.min[0] + floorLocal.max[0]) / 2, ground, (floorLocal.min[2] + floorLocal.max[2]) / 2];
   const add = (id: string, mesh: T.Mesh, owner: string, kind: 'box' | 'plane') => {
@@ -203,9 +207,9 @@ export function createStage(engine: CartoonEngine, options: {
             origin,
             right: new T.Vector3(1, 0, 0).transformDirection(root.matrixWorld).toArray(),
             front,
-            halfWidth: width * level.scale / 2,
-            back: -depth * level.scale / 2 + .06 * level.scale,
-            forward: depth * level.scale / 2,
+            halfWidth: cameraWidth * level.scale / 2,
+            back: -cameraDepth * level.scale / 2 + .06 * level.scale,
+            forward: cameraDepth * level.scale / 2,
             minHeight: .1 * level.scale,
             maxHeight: height * .95 * level.scale
           },

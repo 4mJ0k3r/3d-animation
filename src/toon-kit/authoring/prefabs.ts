@@ -145,7 +145,7 @@ const SLOTS = freezeData({
   }
 } as const);
 export function placeProps(p: Factory, binding: StorySettingBinding, layout: EnvironmentLayout): StorySettingBinding {
-  if (!Object.keys(layout.props ?? {}).length) return binding;
+  if (layout.preset === 'custom' || !Object.keys(layout.props ?? {}).length) return binding;
   const built = new Map<string, Built>(),
     props = {
       ...binding.props
@@ -187,3 +187,6 @@ export function placeProps(p: Factory, binding: StorySettingBinding, layout: Env
     ...(Object.keys(paths).length ? {paths: createPaths(paths)} : {})
   };
 }
+
+/** Shared owner-local prefab construction for curated and composed layouts. */
+export function buildPrefab(p: Factory, name: PrefabName, finish?: string, text?: string, mounted=false) { return BUILDERS[name](p,finish,text,mounted); }

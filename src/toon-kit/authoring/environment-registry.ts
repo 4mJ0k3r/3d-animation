@@ -1,11 +1,14 @@
 import { freezeData } from '../characters/pose';
 import { storyFail } from '../story/types';
 import { validateDisplayText } from './display-content';
-export type EnvironmentPreset = 'office' | 'clinic' | 'street';
+import { planConstruction } from './construction';
+import type { Construction } from './construction';
+export type EnvironmentPreset = 'office' | 'clinic' | 'street' | 'custom';
 export type PrefabName = 'chair' | 'bench' | 'table' | 'sign' | 'screen' | 'planter';
 type Role = 'left' | 'right';
 export interface EnvironmentLayout {
   readonly preset: EnvironmentPreset;
+  readonly composition?: Construction;
   readonly displays?: Readonly<{
     board?: Readonly<{
       text: string;
@@ -128,6 +131,19 @@ export const ENVIRONMENTS: Readonly<Record<EnvironmentPreset, Readonly<Environme
       corner: ['planter']
     }
   },
+  custom: {
+    anchors: {
+      marks: [],
+      seats: [],
+      points: [],
+      props: [],
+      floors: [],
+      paths: []
+    },
+    roles: {},
+    palettes: ['classic', 'cool'],
+    slots: {}
+  },
   street: {
     anchors: {
       marks: ['entry', 'finish', 'right'],
@@ -158,9 +174,10 @@ const keys = (v: unknown, allowed: readonly string[]) => {
   if (!v || typeof v !== 'object' || Array.isArray(v) || Object.keys(v).some(k => !allowed.includes(k))) storyFail('INVALID_DOCUMENT', 'Use only: ' + allowed.join(', '));
 };
 export function validateEnvironment(input: unknown): EnvironmentLayout {
+  if (input && typeof input === 'object' && 'preset' in input && input.preset === 'custom') return planConstruction(input).layout;
   keys(input, ['preset', 'displays', 'options', 'props']);
   const layout = input as EnvironmentLayout;
-  if (!Object.hasOwn(ENVIRONMENTS, layout.preset)) storyFail('UNSUPPORTED_LAYOUT', 'Choose office, clinic or street');
+  if (!Object.hasOwn(ENVIRONMENTS, layout.preset)) storyFail('UNSUPPORTED_LAYOUT', 'Choose '+Object.keys(ENVIRONMENTS).join(', '));
   const spec = ENVIRONMENTS[layout.preset];
   if (layout.options !== undefined) {
     keys(layout.options, ['palette']);
@@ -242,6 +259,7 @@ export function validateEnvironment(input: unknown): EnvironmentLayout {
 export function environmentCatalog(layout: EnvironmentLayout): Readonly<Anchors & {
   roles: Readonly<Record<string, Role>>;
 }> {
+  if (layout.preset === 'custom') return planConstruction(layout).catalog;
   const base = ENVIRONMENTS[layout.preset],
     a = base.anchors;
   const result = {

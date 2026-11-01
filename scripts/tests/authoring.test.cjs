@@ -495,3 +495,92 @@ test('street standing and approach marks clear the furniture and retain forward 
   }finally{e.dispose();}
  }
 });
+
+
+const customExample=(name='school')=>JSON.parse(fs.readFileSync('examples/custom-'+name+'.story.json','utf8'));
+const noCustomText=d=>{for(const l of Object.values(d.layouts))for(const s of Object.values(l.composition.items))delete s.text;return d;};
+test('custom construction is canonical, immutable and independent of JSON declaration order',()=>{
+ for(const name of ['school','garden']){
+  const d=customExample(name),key=Object.keys(d.layouts)[0],c=D.compileStoryDocument(d),a=D.planConstruction(d.layouts[key]);
+  d.layouts[key].composition.items=Object.fromEntries(Object.entries(d.layouts[key].composition.items).reverse());
+  assert.deepEqual(D.planConstruction(d.layouts[key]),a);assert.deepEqual(D.compileStoryDocument(d).document,c.document);
+  assert.ok(Object.isFrozen(a.items[0].box.min));assert.ok(Object.isFrozen(D.STRUCTURES.wall.max));assert.ok(Object.isFrozen(D.CONSTRUCTION_LIMITS));
+  assert.deepEqual(D.compileStorySegment(c,0).document.layouts,c.document.layouts);
+ }
+});
+test('semantic construction resolves exact face, boundary, relative and top contacts with quarter-turn orientation',()=>{
+ const school=D.planConstruction(customExample().layouts.schoolyard),by=Object.fromEntries(school.items.map(i=>[i.id,i]));
+ assert.equal(by.facade.box.min[2],-5);assert.ok(Math.abs(by.entrance.box.min[2]-by.facade.box.max[2]-.01)<1e-10);
+ assert.ok(by.porch.box.min[2]>by.facade.box.max[2]);assert.equal(by.rest.position[0],1.15);assert.ok(by.eastWindow.position[0]>0&&by.westWindow.position[0]<0);
+ const garden=D.planConstruction(customExample('garden').layouts.garden),g=Object.fromEntries(garden.items.map(i=>[i.id,i]));
+ assert.equal(g.centerpiece.box.min[1],g.plinth.box.max[1]);assert.equal(g.border.turn,1);assert.ok(Math.abs(g.border.box.max[0]-g.border.box.min[0]-.2)<1e-9);assert.ok(g.pillar.box.max[0]<g.plinth.box.min[0]);
+ const d=customExample();d.layouts.schoolyard.composition.items.facade.facing='back';
+ // Explicit opposite facing is inherited by all front-face attachments, never mixed spaces.
+ const back=D.planConstruction(d.layouts.schoolyard),b=Object.fromEntries(back.items.map(i=>[i.id,i]));assert.equal(b.entrance.turn,2);assert.ok(b.entrance.box.max[2]<b.facade.box.min[2]);
+});
+test('custom construction rejects unknown parts, invalid dimensions, cycles, overlaps and unsupported contacts',()=>{
+ const cases=[
+ [l=>l.composition.items.facade.kind='school','UNKNOWN_STRUCTURE'],
+ [l=>l.composition.items.facade.size.width=100,'INVALID_DIMENSION'],
+ [l=>l.composition.items.facade.size.height=NaN,'INVALID_DIMENSION'],
+ [l=>l.composition.items.facade.position=[0,0,0],'INVALID_CONSTRUCTION'],
+ [l=>l.composition.items.facade.place={relation:'behind',target:'absent'},'MISSING_CONSTRUCTION_TARGET'],
+ [l=>l.composition.items.facade.place={relation:'behind',target:'porch'},'PLACEMENT_CYCLE'],
+ [l=>l.composition.items.eastWindow.place.align='start','STRUCTURAL_OVERLAP'],
+ [l=>l.composition.items.entrance.place.target='garden','INVALID_ATTACHMENT'],
+ [l=>l.composition.items.garden.place={relation:'onTopOf',target:'rest'},'INVALID_ATTACHMENT'],
+ [l=>l.composition.items.porch.place={relation:'onTopOf',target:'facade'},'INVALID_ATTACHMENT'],
+ [l=>l.composition.items.schoolName.facing='left','INVALID_ATTACHMENT'],
+ [l=>l.composition.items.garden.place={relation:'alongBoundary',boundary:'left',gap:-1},'INVALID_DIMENSION'],
+ [l=>{delete l.composition.items.garden;l.composition.items.facade.place={relation:'near',target:'finish',side:'behind',gap:0};},'BLOCKED_INTERACTION'],
+ [l=>l.composition.items.notice.place={relation:'near',target:'audience',side:'front'},'MISSING_CONSTRUCTION_TARGET'],
+ [l=>l.composition.items.entrance.text='raw','INCOMPATIBLE_PROP_CONTENT']
+ ];
+ for(const [edit,code]of cases){const d=customExample();edit(d.layouts.schoolyard);bad(()=>D.compileStoryDocument(d),code);}
+});
+test('construction enforces independent piece, geometry, attachment and display budgets',()=>{
+ const l=()=>({preset:'custom',composition:{ground:{width:20,depth:20},items:{}}});
+ let a=l();for(let i=0;i<25;i++)a.composition.items['p'+i]={kind:'block',place:{relation:'alongBoundary',boundary:'back'}};bad(()=>D.planConstruction(a),'CONSTRUCTION_BUDGET');
+ a=l();for(let i=0;i<19;i++)a.composition.items['p'+i]={kind:'wall',place:{relation:'alongBoundary',boundary:'back'}};bad(()=>D.planConstruction(a),'CONSTRUCTION_BUDGET');
+ a=l();for(let i=0;i<7;i++)a.composition.items['p'+i]={prefab:'planter',place:{relation:'alongBoundary',boundary:'back'}};bad(()=>D.planConstruction(a),'CONSTRUCTION_BUDGET');
+ a=l();for(let i=0;i<5;i++)a.composition.items['p'+i]={prefab:'sign',text:'hello',place:{relation:'alongBoundary',boundary:'back'}};bad(()=>D.planConstruction(a),'CONSTRUCTION_BUDGET');
+ a=l();a.composition.items={base:{kind:'platform',place:{relation:'alongBoundary',boundary:'back'}},one:{kind:'block',size:{width:1,height:.5,depth:1},place:{relation:'onTopOf',target:'base'}},two:{kind:'block',size:{width:.7,height:.5,depth:.7},place:{relation:'onTopOf',target:'one'}},three:{kind:'block',size:{width:.4,height:.5,depth:.4},place:{relation:'onTopOf',target:'two'}}};bad(()=>D.planConstruction(a),'ATTACHMENT_DEPTH');
+});
+test('constructed anchors, resource envelopes and complete poses agree across owners and shuffled frames',()=>{
+ const {createStory}=require('../../out/character-tests/toon-kit/story/player');
+ for(const name of ['school','garden']){
+  const raw=noCustomText(customExample(name)),compiled=D.compileStoryDocument(raw),key=Object.keys(raw.layouts)[0];let baseline;
+  for(let iteration=0;iteration<3;iteration++){
+   const e=owner();try{
+    const settings=D.createStoryEnvironments(e,compiled),b=settings[key],plan=D.planConstruction(raw.layouts[key]);
+    assert.deepEqual(Object.keys(b.targets.entries).sort(),[...new Set([...plan.catalog.marks,...plan.catalog.points,...plan.catalog.seats])].sort());
+    for(const i of plan.items){const box=new T.Box3().setFromObject(b.props[i.id]);for(let k=0;k<3;k++){const axis=['x','y','z'][k];assert.ok(box.min[axis]>=i.box.min[k]-.0001,i.id+' min '+axis);assert.ok(box.max[axis]<=i.box.max[k]+.0001,i.id+' max '+axis);}}
+    assert.ok(b.root.userData.construction.meshes<=D.CONSTRUCTION_LIMITS.meshes);assert.ok(b.root.userData.construction.triangles<=D.CONSTRUCTION_LIMITS.triangles);
+    const p=createStory(e,{timeline:compiled.timeline,settings});try{p.prepare();}catch(error){throw new Error(JSON.stringify(error.diagnostic));}const values=[];
+    for(const f of [0,80,20,80,0])values.push(p.applyFrame(f));assert.deepEqual(values[0],values[4]);assert.deepEqual(values[1],values[3]);
+    const stable=JSON.parse(JSON.stringify(values));if(baseline)assert.deepEqual(stable,baseline);else baseline=stable;
+    if(name==='school'){assert.deepEqual(p.applyFrame(45).cast.contacts.kabir.feet,{left:'floor',right:'floor'});assert.ok(plan.catalog.marks.includes('rest.approach'));assert.ok(plan.catalog.paths.includes('to:rest'));}
+    for(const mark of Object.values(plan.marks))assert.equal(mark[1],0);
+    for(const [id,[start,end]]of Object.entries(plan.paths)){const path=b.paths.entries[id];assert.deepEqual(path.sample(0).position,plan.marks[start]);assert.deepEqual(path.sample(path.length).position,plan.marks[end]);}
+    const {createStage}=require('../../out/character-tests/toon-kit/staging/stage'),stage=createStage(e,{root:b.root,floor:b.floor,axis:compiled.timeline.plan.scenes[0].axis,cameraSpace:b.cameraSpace});stage.bind(p.cast);for(const [id,prop]of Object.entries(b.props))stage.registerProp(id,prop);assert.ok(stage.snapshot(p.applyFrame(20).cast).visibility.proxies.length<=64);stage.dispose();
+    const geometries=new Set(),materials=new Set();b.root.traverse(o=>{if(o instanceof T.Mesh){geometries.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material])materials.add(m);}});
+    let disposed=0,materialDisposals=0;for(const g of geometries)g.addEventListener('dispose',()=>disposed++);for(const m of materials)m.addEventListener('dispose',()=>materialDisposals++);p.dispose();e.dispose();e.dispose();assert.equal(disposed,geometries.size);assert.equal(materialDisposals,materials.size);
+   }finally{e.dispose();}
+  }
+ }
+});
+
+
+test('custom exterior camera space is optional, validated and preserves scene-local anchors under layout translation',()=>{
+ const d=noCustomText(customExample('garden'));d.layouts.garden.composition.items.westTree.finish='white';const c=D.compileStoryDocument(d),e=owner();
+ try{
+  const b=D.createStoryEnvironments(e,c,['other','garden']).garden,plan=D.planConstruction(c.document.layouts.garden),{createStage}=require('../../out/character-tests/toon-kit/staging/stage');
+  assert.equal(b.root.position.x,20);assert.equal(b.props.westTree.children[0].material.color.getHexString(),'fff6e5');
+  for(const [id,position]of Object.entries(plan.marks)){const p=b.targets.entries[id].object.getWorldPosition(new T.Vector3());assert.ok(Math.abs(p.x-position[0]-20)<1e-9);assert.equal(p.y,0);assert.equal(p.z,position[2]);}
+  for(const [id,[from,to]]of Object.entries(plan.paths)){const path=b.paths.entries[id];assert.ok(Math.abs(path.sample(0).position[0]-plan.marks[from][0]-20)<1e-9);assert.ok(Math.abs(path.sample(path.length).position[0]-plan.marks[to][0]-20)<1e-9);}
+  const o={root:b.root,floor:b.floor,axis:c.timeline.plan.scenes[0].axis};
+  assert.throws(()=>createStage(e,{...o,cameraSpace:{width:NaN,depth:40,height:6}}),err=>err.diagnostic?.code==='INVALID_CAMERA_SPACE');
+  const {createStory}=require('../../out/character-tests/toon-kit/story/player'),p=createStory(e,{timeline:c.timeline,settings:{garden:b}});p.prepare();
+  for(const external of [false,true]){const stage=createStage(e,{...o,...(external?{cameraSpace:b.cameraSpace}:{})});stage.bind(p.cast);const snap=stage.snapshot(p.applyFrame(0).cast);assert.equal(snap.visibility.zone.forward,external?20:6);assert.equal(snap.visibility.zone.origin[0],20);stage.dispose();}p.dispose();
+ }finally{e.dispose();}
+});

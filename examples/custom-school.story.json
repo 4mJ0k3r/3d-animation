@@ -1,0 +1,216 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "schoolyard": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 14,
+          "depth": 12,
+          "finish": "paving"
+        },
+        "items": {
+          "facade": {
+            "kind": "wall",
+            "size": {
+              "width": 9,
+              "height": 3.8
+            },
+            "finish": "brick",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 1
+            }
+          },
+          "entrance": {
+            "kind": "door",
+            "place": {
+              "relation": "attachedTo",
+              "target": "facade",
+              "face": "front",
+              "vertical": "bottom"
+            }
+          },
+          "westWindow": {
+            "kind": "window",
+            "place": {
+              "relation": "attachedTo",
+              "target": "facade",
+              "face": "front",
+              "align": "start"
+            }
+          },
+          "eastWindow": {
+            "kind": "window",
+            "place": {
+              "relation": "attachedTo",
+              "target": "facade",
+              "face": "front",
+              "align": "end"
+            }
+          },
+          "schoolName": {
+            "prefab": "sign",
+            "text": "विद्यालय",
+            "place": {
+              "relation": "attachedTo",
+              "target": "facade",
+              "face": "front",
+              "vertical": "top"
+            }
+          },
+          "porch": {
+            "kind": "platform",
+            "size": {
+              "width": 2,
+              "height": 0.2,
+              "depth": 1.2
+            },
+            "finish": "cream",
+            "place": {
+              "relation": "inFrontOf",
+              "target": "facade",
+              "gap": 0.5
+            }
+          },
+          "notice": {
+            "prefab": "sign",
+            "text": "आज विज्ञान मेला",
+            "place": {
+              "relation": "near",
+              "target": "finish",
+              "side": "left",
+              "gap": 0.5
+            }
+          },
+          "rest": {
+            "prefab": "bench",
+            "place": {
+              "relation": "near",
+              "target": "right",
+              "side": "behind",
+              "gap": 0.2
+            }
+          },
+          "garden": {
+            "kind": "tree",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "left",
+              "gap": 0.4
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 90,
+    "characters": {
+      "meera": {
+        "appearance": "casual",
+        "expression": "worried"
+      },
+      "kabir": {
+        "appearance": "office",
+        "expression": "neutral"
+      }
+    },
+    "scenes": [
+      {
+        "id": "school-courtyard",
+        "setting": "schoolyard",
+        "startFrame": 0,
+        "endFrame": 90,
+        "axis": [
+          "meera",
+          "kabir"
+        ],
+        "characters": {
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "kabir": {
+            "stance": {
+              "type": "sit",
+              "seat": "rest",
+              "floor": "ground"
+            }
+          }
+        },
+        "beats": [
+          {
+            "id": "arrive",
+            "startFrame": 0,
+            "endFrame": 30,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "walk",
+                "path": "toMeeting"
+              }
+            ]
+          },
+          {
+            "id": "notice",
+            "startFrame": 30,
+            "endFrame": 55,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "point",
+                "target": "notice"
+              },
+              {
+                "actor": "kabir",
+                "type": "gesture",
+                "name": "nod"
+              }
+            ]
+          }
+        ],
+        "cues": [],
+        "shots": [
+          {
+            "id": "arrival",
+            "type": "establishing",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 0,
+            "endFrame": 30
+          },
+          {
+            "id": "meeting",
+            "type": "twoShot",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 30,
+            "endFrame": 60
+          },
+          {
+            "id": "information",
+            "type": "objectFocus",
+            "subject": "notice",
+            "startFrame": 60,
+            "endFrame": 90
+          }
+        ]
+      }
+    ]
+  }
+}

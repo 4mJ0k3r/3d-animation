@@ -1,4 +1,5 @@
 import OFFICE_FIXTURE from '../../../examples/office-idea.story.json';
+import STREET_FIXTURE from '../../../examples/street-meeting.story.json';
 import { CartoonEngine } from '../engine';
 import { createStory } from '../story/player';
 import { prepareStoryAudio } from '../story/audio-assets';
@@ -110,7 +111,7 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
     frame: frames[i],
     png: all[0][i].png
   });
-  for (const kind of ['landscape', 'clinic', 'office'] as const) {
+  for (const kind of ['landscape', 'clinic', 'office', 'street'] as const) {
     const engine = new CartoonEngine(document.createElement('canvas'), kind === 'landscape' ? 640 : 360, kind === 'landscape' ? 360 : 640, {
       quality: 'software-safe'
     });
@@ -172,7 +173,7 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
           }]
         }
       };
-      const compiled = compileStoryDocument(kind === 'clinic' ? clinic : kind === 'office' ? OFFICE_FIXTURE : source.document),
+      const compiled = compileStoryDocument(kind === 'clinic' ? clinic : kind === 'office' ? OFFICE_FIXTURE : kind === 'street' ? STREET_FIXTURE : source.document),
         family = await prepareStoryFont(engine),
         audio = await prepareStoryAudio(engine, compiled.timeline),
         captions = await createCaptionLayout({

@@ -5,10 +5,12 @@ import type { CompiledStoryDocument } from './document';
 import { buildOffice, buildClinic } from './environment-builders';
 import type { EnvironmentBuilder } from './environment-builders';
 import { buildStreet } from './street';
+import { buildConstruction } from './construction-builder';
 import { placeProps } from './prefabs';
 import type { EnvironmentPreset } from './environment-registry';
 import { storyFail } from '../story/types';
 const BUILDERS: Readonly<Record<EnvironmentPreset, EnvironmentBuilder>> = Object.freeze({
+  custom: buildConstruction,
   office: buildOffice,
   clinic: buildClinic,
   street: buildStreet

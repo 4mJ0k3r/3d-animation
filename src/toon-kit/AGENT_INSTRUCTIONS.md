@@ -252,3 +252,16 @@ Keep the two-active-actor limit, four-prop limit, guarded whole-story preflight,
 software-safe rendering, concurrency 1, memory admission/abort limits, workspace
 temp isolation and engine ownership unchanged. Existing audio and story examples
 remain unchanged. Stop at Phase 6A; Phase 6B is not authorized.
+
+
+## Phase 6B: composable custom scenes
+
+Phase 6B authorizes `preset:custom` and bounded structural construction. Read
+`authoring/CONSTRUCTION.md`; use kind/prefab, semantic relations, safe generated
+anchors and existing cinematic/story APIs. Do not hardcode script-specific
+presets, coordinates, shaders, geometry callbacks or imported assets. Review
+structured overlap/attachment/path/framing diagnostics rather than bypassing
+them. Keep two active actors, four layouts, construction resource limits and
+all existing production memory, concurrency, readiness and workspace-temp
+safeguards. Structures are static, paths level and straight; decorative doors
+are not navigation portals. Stop at Phase 6B; no Phase 6C is authorized.

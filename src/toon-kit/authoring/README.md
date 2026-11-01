@@ -311,3 +311,12 @@ entries. Builders reuse engine-owned primitives, static semantic targets and
 existing story/director evaluation. Compound props register all physical parts
 with the existing stage; separately registered attachments retain their own
 bounds and visibility ownership. Engine disposal owns generated resources.
+
+
+## Phase 6B: composable custom construction
+
+Use `preset:"custom"` with bounded `composition.ground` and `composition.items`
+to build unique settings from structures and existing prefabs. See the concise
+[JSON contract, relationships, anchors and limits](CONSTRUCTION.md), with complete
+school-courtyard and garden examples. This reuses the same compiler, cast,
+director, captions and guarded CLI. No school/garden preset or per-scene callback.

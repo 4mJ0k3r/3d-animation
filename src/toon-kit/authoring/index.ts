@@ -6,3 +6,6 @@ export { planStorySegments, compileStorySegment } from './segments';
 
 export { ENVIRONMENTS, PREFABS, environmentCatalog } from './environment-registry';
 export type { EnvironmentLayout, EnvironmentPreset, PrefabName } from './environment-registry';
+
+export { STRUCTURES, CONSTRUCTION_LIMITS, planConstruction } from './construction';
+export type { Construction, ConstructionItem, Placement, StructureKind } from './construction';

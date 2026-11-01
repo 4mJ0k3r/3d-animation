@@ -1,0 +1,213 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "garden": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "grass"
+        },
+        "items": {
+          "plaza": {
+            "kind": "floor",
+            "size": {
+              "width": 6,
+              "depth": 6
+            },
+            "finish": "cream",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "gap": 0.5
+            }
+          },
+          "plinth": {
+            "kind": "platform",
+            "size": {
+              "width": 3,
+              "height": 0.4,
+              "depth": 2
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 1.5
+            }
+          },
+          "centerpiece": {
+            "prefab": "planter",
+            "finish": "stone",
+            "place": {
+              "relation": "onTopOf",
+              "target": "plinth"
+            }
+          },
+          "pillar": {
+            "kind": "column",
+            "size": {
+              "width": 0.4,
+              "height": 2.5,
+              "depth": 0.4
+            },
+            "finish": "white",
+            "place": {
+              "relation": "beside",
+              "target": "plinth",
+              "side": "left",
+              "gap": 0.5
+            }
+          },
+          "border": {
+            "kind": "barrier",
+            "facing": "right",
+            "place": {
+              "relation": "beside",
+              "target": "plinth",
+              "side": "right",
+              "gap": 0.5
+            }
+          },
+          "westTree": {
+            "kind": "tree",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "left",
+              "align": "start",
+              "gap": 0.6
+            }
+          },
+          "eastTree": {
+            "kind": "tree",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "right",
+              "align": "start",
+              "gap": 0.6
+            }
+          },
+          "notice": {
+            "prefab": "sign",
+            "finish": "navy",
+            "text": "सार्वजनिक उद्यान",
+            "place": {
+              "relation": "near",
+              "target": "finish",
+              "side": "left",
+              "gap": 0.6
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 90,
+    "characters": {
+      "meera": {
+        "appearance": "casual",
+        "expression": "worried"
+      },
+      "kabir": {
+        "appearance": "office",
+        "expression": "neutral"
+      }
+    },
+    "scenes": [
+      {
+        "id": "garden-plaza",
+        "setting": "garden",
+        "startFrame": 0,
+        "endFrame": 90,
+        "axis": [
+          "meera",
+          "kabir"
+        ],
+        "characters": {
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "kabir": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "beats": [
+          {
+            "id": "arrive",
+            "startFrame": 0,
+            "endFrame": 30,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "walk",
+                "path": "toMeeting"
+              }
+            ]
+          },
+          {
+            "id": "notice",
+            "startFrame": 30,
+            "endFrame": 55,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "point",
+                "target": "notice"
+              },
+              {
+                "actor": "kabir",
+                "type": "gesture",
+                "name": "nod"
+              }
+            ]
+          }
+        ],
+        "cues": [],
+        "shots": [
+          {
+            "id": "arrival",
+            "type": "establishing",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 0,
+            "endFrame": 30
+          },
+          {
+            "id": "meeting",
+            "type": "twoShot",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 30,
+            "endFrame": 60
+          },
+          {
+            "id": "information",
+            "type": "objectFocus",
+            "subject": "notice",
+            "startFrame": 60,
+            "endFrame": 90
+          }
+        ]
+      }
+    ]
+  }
+}
