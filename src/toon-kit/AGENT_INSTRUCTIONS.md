@@ -265,3 +265,9 @@ them. Keep two active actors, four layouts, construction resource limits and
 all existing production memory, concurrency, readiness and workspace-temp
 safeguards. Structures are static, paths level and straight; decorative doors
 are not navigation portals. Stop at Phase 6B; no Phase 6C is authorized.
+
+
+Phase 6C-A exception: custom layouts can opt into one third static contact role
+via composition.thirdActor.at (see authoring/CONSTRUCTION.md). Keep the 28-mesh
+three-actor cap and existing 64-proxy budget; never expand curated layout capacity
+or change rigs/director/renderer/audio/timelines. Stop after 6C-A, not 6C-B/6D.

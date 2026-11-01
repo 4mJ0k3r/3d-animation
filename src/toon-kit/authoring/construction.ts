@@ -8,6 +8,7 @@ export const CONSTRUCTION_LIMITS = freezeData({
   structures: 18,
   props: 6,
   meshes: 40,
+  threeActorMeshes: 28,
   triangles: 12000,
   materials: 24,
   textures: 6,
@@ -109,6 +110,8 @@ export interface ConstructionItem {
   readonly place: Placement;
 }
 export interface Construction {
+  /** Opt-in third contact role at a generated item.front or seat.approach mark. */
+  readonly thirdActor?: Readonly<{at:string}>;
   readonly ground: Readonly<{
     width: number;
     depth: number;
@@ -195,8 +198,10 @@ export function planConstruction(input: unknown) {
   keys(input, ['preset', 'composition']);
   const layout = input as EnvironmentLayout;
   if (layout.preset !== 'custom') fail('INVALID_CONSTRUCTION', 'Select preset:custom');
-  keys(layout.composition, ['ground', 'items']);
+  keys(layout.composition, ['ground', 'items', 'thirdActor']);
   const c = layout.composition!;
+  if(c.thirdActor!==undefined){keys(c.thirdActor,['at']);if(typeof c.thirdActor.at!=='string'||!/^\w[\w-]*\.(front|approach)$/.test(c.thirdActor.at))fail('THIRD_ACTOR_PLACEMENT','thirdActor.at must name a generated item.front or seat.approach mark');}
+  const meshLimit=c.thirdActor?CONSTRUCTION_LIMITS.threeActorMeshes:CONSTRUCTION_LIMITS.meshes;
   keys(c.ground, ['width', 'depth', 'finish']);
   const width = number(c.ground.width, 10, 20, 'ground.width'),
     depth = number(c.ground.depth, 10, 20, 'ground.depth');
@@ -257,7 +262,7 @@ export function planConstruction(input: unknown) {
     screen: 3,
     planter: 2
   }[s.prefab] : ['tree', 'window', 'door'].includes(s.kind!) ? 2 : 1), 0);
-  if (meshes > CONSTRUCTION_LIMITS.meshes) fail('CONSTRUCTION_BUDGET', 'Construction needs ' + meshes + ' meshes; maximum is ' + CONSTRUCTION_LIMITS.meshes);
+  if (meshes > meshLimit) fail('CONSTRUCTION_BUDGET', 'Construction needs ' + meshes + ' meshes; maximum is ' + meshLimit + (c.thirdActor?' with three actors':''));
   const resolved = new Map<string, PlannedItem>(),
     active = new Set<string>();
   const groundBox: Box = {
@@ -350,13 +355,13 @@ export function planConstruction(input: unknown) {
   for (let i = 0; i < items.length; i++) for (let j = i + 1; j < items.length; j++) if (overlap(items[i].box, items[j].box)) fail('STRUCTURAL_OVERLAP', `${items[i].id} intersects ${items[j].id}; change relation, align or gap`);
   const clear = (p: V) => p[0] - .65 >= groundBox.min[0] && p[0] + .65 <= groundBox.max[0] && p[2] - .65 >= groundBox.min[2] && p[2] + .65 <= groundBox.max[2] && !items.some(i => i.spec.kind !== 'floor' && overlap(body(p), i.box));
   // Exact line-vs-expanded-AABB test on a level plane, not a navigation solver.
-  const clearPath = (a: V, b: V) => !items.some(item => {
-    if (item.box.max[1] <= .001) return false;
+  const clearPath = (a: V, b: V, extra: readonly Box[] = []) => ![...items.map(i=>i.box),...extra].some(box => {
+    if (box.max[1] <= .001) return false;
     let lo = 0,
       hi = 1;
     for (const k of [0, 2]) {
-      const min = item.box.min[k] - .65,
-        max = item.box.max[k] + .65,
+      const min = box.min[k] - .65,
+        max = box.max[k] + .65,
         d = b[k] - a[k];
       if (Math.abs(d) < 1e-9) {
         if (a[k] < min || a[k] > max) return false;
@@ -378,7 +383,7 @@ export function planConstruction(input: unknown) {
       finish: [...markers.finish],
       right: [...markers.right]
     },
-    roles: Record<string, 'left' | 'right'> = {
+    roles: Record<string, 'left' | 'right' | 'third'> = {
       entry: 'left',
       finish: 'left',
       right: 'right',
@@ -419,6 +424,27 @@ export function planConstruction(input: unknown) {
       }
     }
   }
+  if(c.thirdActor){
+    const at=c.thirdActor.at,anchor=marks[at];
+    if(!anchor||Object.hasOwn(specs,'third'))fail('THIRD_ACTOR_PLACEMENT','Choose a clear generated ground mark and reserve the name third');
+    const seatId=at.endsWith('.approach')?at.slice(0,-9):undefined;
+    let reserved=body(anchor);
+    const seatEnvelope=(item:PlannedItem)=>move(oriented({min:[-.75,0,-.15],max:[.75,3.3,1.4]},item.turn),item.position);
+    if(seatId){
+      const seat=resolved.get(seatId)!;
+      const contact=seatEnvelope(seat);
+      reserved={min:reserved.min.map((v,i)=>Math.min(v,contact.min[i])) as V,max:reserved.max.map((v,i)=>Math.max(v,contact.max[i])) as V};
+    }
+    if(items.some(i=>i.id!==seatId&&i.spec.kind!=='floor'&&overlap(reserved,i.box))||['entry','finish','right'].some(id=>overlap(reserved,body(marks[id]))))fail('THIRD_ACTOR_PLACEMENT','Third contact space intersects scenery or the existing lanes; move the chosen item or select another clear mark');
+    // Reuse the existing swept-AABB clearance for the new static reservation.
+    if([0,2].some(k=>reserved.min[k]<groundBox.min[k]||reserved.max[k]>groundBox.max[k]))fail('THIRD_ACTOR_PLACEMENT','Third contact space must fit inside the ground');
+    if(!clearPath(marks.entry,marks.finish,[reserved]))fail('THIRD_ACTOR_PLACEMENT','Third contact space blocks toMeeting; choose another mark');
+    for(const id of Object.keys(marks))if(id!==at&&overlap(reserved,body(marks[id]))){delete marks[id];delete roles[id];}
+    for(let i=seats.length-1;i>=0;i--)if(seats[i]!==seatId&&overlap(reserved,seatEnvelope(resolved.get(seats[i])!))){delete roles[seats[i]];seats.splice(i,1);}
+    for(const [id,[from,to]]of Object.entries(paths))if(!marks[from]||!marks[to]||to===at||!clearPath(marks[from],marks[to],[reserved])){delete paths[id];delete roles[id];}
+    marks.third=[...anchor];roles.third=roles[at]='third';
+    if(seatId)roles[seatId]='third';
+  }
   const normalized: EnvironmentLayout = {
     preset: 'custom',
     composition: {
@@ -427,11 +453,13 @@ export function planConstruction(input: unknown) {
         depth,
         finish: c.ground.finish ?? 'sand'
       },
-      items: specs
+      items: specs,
+      ...(c.thirdActor?{thirdActor:{at:c.thirdActor.at}}:{})
     }
   };
   return freezeData({
     layout: normalized,
+    meshLimit,
     items,
     ground: {
       width,

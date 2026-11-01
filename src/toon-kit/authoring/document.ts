@@ -46,7 +46,9 @@ export function compileStoryDocument(input: unknown) {
       scene: scene.id
     });
     const slots = environmentCatalog(layouts[scene.setting]);
-    if (Object.keys(scene.characters).length !== 2) storyFail('LAYOUT_CAPACITY', 'Curated layouts support two active actors per scene', {
+    const customThird=layouts[scene.setting].preset==='custom'&&!!layouts[scene.setting].composition?.thirdActor;
+    const count=Object.keys(scene.characters).length;
+    if (count<2||count>(customThird?3:2)) storyFail('LAYOUT_CAPACITY', 'Use two actors, or opt into custom composition.thirdActor for up to three', {
       scene: scene.id
     });
     const requireName = (name: unknown, allowed: readonly string[], kind: string) => {
@@ -71,6 +73,7 @@ export function compileStoryDocument(input: unknown) {
       if (a.type === 'stand' || a.type === 'sit') support(a);else if (a.type === 'walk') requireName(a.path, slots.paths, 'walking path');else if (a.type === 'look' || a.type === 'point') target(a.target);
     }
     const camera = (shot: SemanticCameraPlan) => {
+      if(shot.type==='twoShot'&&shot.subjects?.length!==2)storyFail('INVALID_SUBJECT','twoShot requires exactly two specified actors',{scene:scene.id});
       if (shot.type === 'objectFocus') {
         requireName(shot.subject, slots.props, 'camera prop');
         if (shot.region !== undefined && shot.region !== 'full') storyFail('UNKNOWN_SLOT', 'Curated starters expose objectFocus region:"full"', {
@@ -102,7 +105,7 @@ export function compileStoryDocument(input: unknown) {
         const s = state.poses[actor].stance,
           a = 'action' in s ? s.action : s,
           role = slots.roles[a.type==='sit'?a.seat:a.type==='walk'?a.path:a.type==='stand'?a.at:''];
-        if (used.has(role)) storyFail('SLOT_OCCUPIED', 'Use distinct left/right semantic lanes for two active actors; swap roles only at a cut', {
+        if (used.has(role)) storyFail('SLOT_OCCUPIED', 'Use distinct available interaction roles; the third role requires custom composition.thirdActor', {
           scene: scene.id,
           actor,
           frame

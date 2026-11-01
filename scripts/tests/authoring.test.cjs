@@ -584,3 +584,41 @@ test('custom exterior camera space is optional, validated and preserves scene-lo
   for(const external of [false,true]){const stage=createStage(e,{...o,...(external?{cameraSpace:b.cameraSpace}:{})});stage.bind(p.cast);const snap=stage.snapshot(p.applyFrame(0).cast);assert.equal(snap.visibility.zone.forward,external?20:6);assert.equal(snap.visibility.zone.origin[0],20);stage.dispose();}p.dispose();
  }finally{e.dispose();}
 });
+
+
+const threeActors=()=>JSON.parse(fs.readFileSync('examples/custom-three-actors.story.json','utf8'));
+test('three-actor custom opt-in normalizes a third contact role and preserves strict two-shot semantics',()=>{
+ const d=threeActors(),c=D.compileStoryDocument(d),plan=D.planConstruction(c.document.layouts.meeting);
+ assert.equal(plan.meshLimit,28);assert.equal(plan.catalog.roles.third,'third');assert.equal(plan.catalog.roles.guestSeat,'third');assert.equal(plan.catalog.roles['guestSeat.approach'],'third');assert.ok(!plan.catalog.paths.includes('to:guestSeat'));
+ assert.ok(Object.isFrozen(c.document.layouts.meeting.composition.thirdActor));assert.deepEqual(D.compileStorySegment(c,0).document.layouts,c.document.layouts);
+ const cases=[
+ [x=>delete x.layouts.meeting.composition.thirdActor,'LAYOUT_CAPACITY'],
+ [x=>x.layouts.meeting.composition.thirdActor.at='right','THIRD_ACTOR_PLACEMENT'],
+ [x=>x.layouts.meeting.composition.thirdActor.at='absent.front','THIRD_ACTOR_PLACEMENT'],
+ [x=>x.story.scenes[0].characters.tara.stance={type:'stand',at:'entry'},'SLOT_OCCUPIED'],
+ [x=>x.story.scenes[0].shots[0].subjects.push('kabir'),'INVALID_SUBJECT'],
+ [x=>{x.story.characters.extra={appearance:'casual'};x.story.scenes[0].characters.extra={stance:{type:'stand',at:'third'}};},'LAYOUT_CAPACITY'],
+ [x=>{x.layouts.meeting.composition.items.guestSeat.place={relation:'near',target:'entry',side:'behind',gap:.4};},'THIRD_ACTOR_PLACEMENT']
+ ];for(const [edit,code]of cases){const raw=threeActors();edit(raw);bad(()=>D.compileStoryDocument(raw),code);}
+ for(const preset of ['office','clinic','street']){const raw=threeActors();raw.layouts.meeting={preset};bad(()=>D.compileStoryDocument(raw),'LAYOUT_CAPACITY');}
+});
+test('third role reservation prunes overlapping marks and enforces the unchanged 64-proxy resource budget',()=>{
+ const raw=threeActors(),plan=D.planConstruction(raw.layouts.meeting);assert.ok(!plan.catalog.marks.includes('guestSeat.front'));
+ const crowded={preset:'custom',composition:{ground:{width:20,depth:20},thirdActor:{at:'seat.approach'},items:{seat:{prefab:'bench',place:{relation:'alongBoundary',boundary:'left'}}}}};
+ for(let i=0;i<17;i++)crowded.composition.items['window'+i]={kind:'window',place:{relation:'alongBoundary',boundary:'back'}};
+ bad(()=>D.planConstruction(crowded),'CONSTRUCTION_BUDGET');assert.equal(D.CONSTRUCTION_LIMITS.meshes,40);assert.equal(D.CONSTRUCTION_LIMITS.threeActorMeshes,28);
+});
+test('three-actor cast contacts, pointing, gaze, gestures and camera are deterministic and dispose once',()=>{
+ const {createStory}=require('../../out/character-tests/toon-kit/story/player'),{createStage}=require('../../out/character-tests/toon-kit/staging/stage');let baseline;
+ for(let instance=0;instance<2;instance++){
+  const e=owner(),raw=threeActors();delete raw.layouts.meeting.composition.items.notice.text;
+  try{
+   const c=D.compileStoryDocument(raw),b=D.createStoryEnvironments(e,c).meeting,p=createStory(e,{timeline:c.timeline,settings:{meeting:b}});try{p.prepare();}catch(error){throw new Error(JSON.stringify(error.diagnostic));}
+   const sequence=[0,23,7,23,0],values=sequence.map(f=>JSON.parse(JSON.stringify(p.applyFrame(f))));assert.deepEqual(values[0],values[4]);assert.deepEqual(values[1],values[3]);if(baseline)assert.deepEqual(values,baseline);baseline=values;
+   assert.equal(Object.keys(p.cast.actors).length,3);assert.deepEqual(p.applyFrame(7).cast.contacts.tara.feet,{left:'floor',right:'floor'});assert.deepEqual(p.applyFrame(20).cast.contacts.tara.feet,{left:'floor',right:'floor'});
+   const stage=createStage(e,{root:b.root,floor:b.floor,axis:c.timeline.plan.scenes[0].axis,cameraSpace:b.cameraSpace});stage.bind(p.cast);for(const [id,prop]of Object.entries(b.props))stage.registerProp(id,prop);
+   const snap=stage.snapshot(p.applyFrame(7).cast);assert.equal(Object.keys(snap.actors).length,3);assert.ok(snap.visibility.proxies.length<=64);assert.equal(snap.visibility.proxies.filter(x=>x.owner==='tara').length,12);stage.dispose();
+   const resources=new Set();e.scene.traverse(o=>{if(o instanceof T.Mesh){resources.add(o.geometry);for(const m of Array.isArray(o.material)?o.material:[o.material]){resources.add(m);for(const v of Object.values(m))if(v instanceof T.Texture)resources.add(v);}}});const counts=new Map();for(const r of resources){counts.set(r,0);r.addEventListener('dispose',()=>counts.set(r,counts.get(r)+1));}p.dispose();p.dispose();e.dispose();e.dispose();for(const count of counts.values())assert.equal(count,1);
+  }finally{e.dispose();}
+ }
+});

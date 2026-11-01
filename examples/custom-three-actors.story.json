@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "meeting": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "paving"
+        },
+        "thirdActor": {
+          "at": "guestSeat.approach"
+        },
+        "items": {
+          "backdrop": {
+            "kind": "wall",
+            "size": {
+              "width": 8,
+              "height": 3.2
+            },
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "notice": {
+            "prefab": "sign",
+            "text": "नमस्ते",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 1
+            }
+          },
+          "guestSeat": {
+            "prefab": "bench",
+            "place": {
+              "relation": "near",
+              "target": "entry",
+              "side": "left",
+              "gap": 1
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 24,
+    "characters": {
+      "meera": {
+        "appearance": "casual",
+        "expression": "happy"
+      },
+      "kabir": {
+        "appearance": "office"
+      },
+      "tara": {
+        "appearance": "patient",
+        "expression": "happy"
+      }
+    },
+    "scenes": [
+      {
+        "id": "three-friends",
+        "setting": "meeting",
+        "startFrame": 0,
+        "endFrame": 24,
+        "axis": [
+          "meera",
+          "tara"
+        ],
+        "characters": {
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "kabir": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          },
+          "tara": {
+            "stance": {
+              "type": "sit",
+              "seat": "guestSeat",
+              "floor": "ground"
+            }
+          }
+        },
+        "beats": [
+          {
+            "id": "greeting",
+            "startFrame": 0,
+            "endFrame": 10,
+            "actions": [
+              {
+                "actor": "tara",
+                "type": "point",
+                "target": {
+                  "actor": "meera",
+                  "anchor": "head"
+                },
+                "hand": "left"
+              },
+              {
+                "actor": "kabir",
+                "type": "gesture",
+                "name": "nod"
+              },
+              {
+                "actor": "meera",
+                "type": "expression",
+                "name": "happy"
+              }
+            ]
+          },
+          {
+            "id": "gaze",
+            "startFrame": 0,
+            "endFrame": 24,
+            "actions": [
+              {
+                "actor": "tara",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "stand",
+            "startFrame": 12,
+            "endFrame": 24,
+            "actions": [
+              {
+                "actor": "tara",
+                "type": "stand",
+                "at": "third"
+              }
+            ]
+          },
+          {
+            "id": "wave",
+            "startFrame": 14,
+            "endFrame": 23,
+            "actions": [
+              {
+                "actor": "tara",
+                "type": "gesture",
+                "name": "wave",
+                "hand": "left"
+              }
+            ]
+          }
+        ],
+        "cues": [],
+        "shots": [
+          {
+            "id": "pair",
+            "type": "twoShot",
+            "subjects": [
+              "meera",
+              "tara"
+            ],
+            "startFrame": 0,
+            "endFrame": 12
+          },
+          {
+            "id": "reaction",
+            "type": "closeUp",
+            "subject": "tara",
+            "startFrame": 12,
+            "endFrame": 24
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -10,6 +10,7 @@ import { compileStoryDocument } from './document';
 import type { CompiledStoryDocument } from './document';
 /** Optional bounded check; two sequential contexts inside the one guarded browser. */
 export async function verifyAuthoredStory(parent: CartoonEngine, source: CompiledStoryDocument, offset = 0, layoutOrder: readonly string[] = Object.keys(source.document.layouts)) {
+  const threeActors=source.timeline.plan.scenes.some(s=>Object.keys(s.characters).length===3);
   const results: {
       name: string;
       pass: boolean;
@@ -28,7 +29,7 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
     last = source.timeline.plan.durationInFrames - 1;
   const frames = [0, Math.min(80, last), Math.min(20, last), Math.min(80, last), 0, ...Array.from(new Set(source.timeline.plan.scenes.flatMap(s => [s.startFrame, s.endFrame - 1, ...s.shots.flatMap(sh => [sh.startFrame, sh.endFrame - 1])]))).filter(f => f !== 0).slice(0, 10), last];
   for (let instance = 0; instance < 2; instance++) {
-    const engine = new CartoonEngine(document.createElement('canvas'), 360, 640, {
+    const engine = new CartoonEngine(document.createElement('canvas'), threeActors?parent.renderer.domElement.width:360, threeActors?parent.renderer.domElement.height:640, {
       quality: 'software-safe'
     });
     parent.registerCleanup(() => engine.dispose());
@@ -37,8 +38,8 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
         family = await prepareStoryFont(engine),
         audio = await prepareStoryAudio(engine, compiled.timeline),
         captions = await createCaptionLayout({
-          width: 360,
-          height: 640,
+          width: engine.renderer.domElement.width,
+          height: engine.renderer.domElement.height,
           words: compiled.timeline.captionWords,
           fontSize: 22,
           fontFamily: `"${family}"`,
@@ -69,10 +70,13 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
         return fn.apply(gl, args);
       };
       const samples = [];
+      let activeCounts=true;
       try {
         for (const f of frames) {
+          const pose=player.applyFrame(f);
+          activeCounts&&=Object.values(pose.cast.poses).filter(p=>p.root.visible).length===Object.keys(compiled.timeline.sample(f).scene.characters).length;
           const state = JSON.stringify({
-            pose: player.applyFrame(f),
+            pose,
             word: captionAt(captions, f),
             audio: compiled.timeline.sample(f).audio
           });
@@ -89,6 +93,7 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
         for (const [k, fn] of Object.entries(originals)) (gl as unknown as Record<string, Function>)[k] = fn;
       }
       all.push(samples);
+      if(threeActors)record('active three-actor cast '+instance,activeCounts);
       record('frame order ' + instance, JSON.stringify(samples[0]) === JSON.stringify(samples[4]) && JSON.stringify(samples[1]) === JSON.stringify(samples[3]));
       record('warm allocations ' + instance, allocations === 0, {
         allocations
@@ -111,7 +116,7 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
     frame: frames[i],
     png: all[0][i].png
   });
-  for (const kind of ['landscape', 'clinic', 'office', 'street'] as const) {
+  for (const kind of (threeActors?[]:['landscape', 'clinic', 'office', 'street'] as const)) {
     const engine = new CartoonEngine(document.createElement('canvas'), kind === 'landscape' ? 640 : 360, kind === 'landscape' ? 360 : 640, {
       quality: 'software-safe'
     });

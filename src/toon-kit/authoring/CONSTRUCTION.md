@@ -126,3 +126,21 @@ Use `node scripts/verify-construction.cjs` to reproduce both from scratch;
 `stills` only re-extracts existing outputs. FFmpeg/ffprobe must be available.
 Every render uses the guarded launcher sequentially; do not bypass production
 memory admission, swangle, concurrency 1, preflight or workspace temp isolation.
+
+
+## Phase 6C-A: opt-in third actor
+
+Custom layouts may add `composition.thirdActor:{"at":"guestSeat.approach"}`
+(or a clear `item.front`). This reserves a third contact role and exposes the
+standing alias `third`; a selected seat.approach also assigns its seat to that
+role. Use existing stand/sit, expression, gesture, look and point actions for any
+actor. Roles are not tied to actor IDs. Overlapping marks/seats/paths are removed;
+invalid reservations reject with THIRD_ACTOR_PLACEMENT. Name `third` is reserved
+only in this mode. Existing layouts and default custom layouts remain two-actor.
+
+Three-actor mode caps environment geometry at 28 meshes (default remains 40),
+leaving 36 actor proxies inside the unchanged 64-proxy limit. TwoShot takes
+exactly two subjects; single-subject shots may target any actor. No third-lane
+walking, new transitions or camera types are introduced. Existing visibility
+limits still apply, including region limits for establishing shots with gestures.
+See [custom-three-actors.story.json](../../../examples/custom-three-actors.story.json).

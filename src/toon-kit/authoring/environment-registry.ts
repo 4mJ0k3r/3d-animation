@@ -5,7 +5,7 @@ import { planConstruction } from './construction';
 import type { Construction } from './construction';
 export type EnvironmentPreset = 'office' | 'clinic' | 'street' | 'custom';
 export type PrefabName = 'chair' | 'bench' | 'table' | 'sign' | 'screen' | 'planter';
-type Role = 'left' | 'right';
+type Role = 'left' | 'right' | 'third';
 export interface EnvironmentLayout {
   readonly preset: EnvironmentPreset;
   readonly composition?: Construction;

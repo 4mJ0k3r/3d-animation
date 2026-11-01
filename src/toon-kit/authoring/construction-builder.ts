@@ -157,7 +157,7 @@ export const buildConstruction: EnvironmentBuilder = (engine, p, name, index, la
     materials: materials.size,
     textures: textures.size
   };
-  for (const [key, value] of Object.entries(measurements)) if (value > CONSTRUCTION_LIMITS[key as keyof typeof measurements]) storyFail('CONSTRUCTION_BUDGET', `${key}: ${value} exceeds ${CONSTRUCTION_LIMITS[key as keyof typeof measurements]}; simplify the composition`);
+  for (const [key,value] of Object.entries(measurements)){const limit=key==='meshes'?plan.meshLimit:CONSTRUCTION_LIMITS[key as keyof typeof measurements];if(value>limit)storyFail('CONSTRUCTION_BUDGET',`${key}: ${value} exceeds ${limit}; simplify the composition`);}
   root.userData.construction = Object.freeze(measurements);
   engine.track(root);
   return {
