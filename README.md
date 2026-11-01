@@ -1,5 +1,7 @@
 # 3D Animation
 
+For incoming coding agents, read [PROJECT_HANDOFF.md](PROJECT_HANDOFF.md) first.
+
 A TypeScript animation project built with Remotion, React, and Three.js.
 The reusable `toon-kit` includes characters, scene staging, camera direction,
 and structured story timelines.
