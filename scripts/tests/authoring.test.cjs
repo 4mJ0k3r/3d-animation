@@ -387,3 +387,45 @@ test('derived preflight report cannot overwrite the input plan',async()=>{
  try{await assert.rejects(require('../story.cjs').runAuthoredStory({command:'validate',plan,report:path.join(dir,'report.json'),output:path.join(dir,'video.mp4')}),e=>e.diagnostic?.code==='OUTPUT_PATH');assert.ok(fs.readFileSync(plan,'utf8').includes('workspace'));}
  finally{assert.equal(fs.realpathSync(dir),dir);assert.ok(dir.startsWith(path.resolve('out')+path.sep));fs.rmSync(dir,{recursive:true});}
 });
+
+test('board content is bounded plain Hindi/English data and survives canonical/segment compilation',()=>{
+ const d=example();d.layouts.workspace.displays={board:{text:'टीम बैठक\nकल सुबह १० बजे'}};
+ const c=D.compileStoryDocument(d);assert.deepEqual(c.document.layouts.workspace.displays,d.layouts.workspace.displays);assert.ok(Object.isFrozen(c.document.layouts.workspace.displays.board));
+ assert.deepEqual(D.compileStorySegment(c,0).document.layouts.workspace.displays,c.document.layouts.workspace.displays);
+ d.layouts.workspace.displays.board.text='changed';assert.equal(c.document.layouts.workspace.displays.board.text,'टीम बैठक\nकल सुबह १० बजे');
+ for(const text of ['', 'W'.repeat(161),'a\nb\nc\nd\ne','a\tbad']){const x=example();x.layouts.workspace.displays={board:{text}};bad(()=>D.compileStoryDocument(x),'INVALID_DISPLAY_TEXT');}
+ for(const text of ['🙂','中文','\u200d']){const x=example();x.layouts.workspace.displays={board:{text}};bad(()=>D.compileStoryDocument(x),'DISPLAY_UNSUPPORTED_GLYPH');}
+ for(const displays of [{poster:{text:'hello'}},{board:{text:'hello',html:true}}]){const x=example();x.layouts.workspace.displays=displays;bad(()=>D.compileStoryDocument(x));}
+});
+
+test('boundary posture warnings use final held actions and remain order-independent',()=>{
+ const d=JSON.parse(fs.readFileSync('examples/long-story.json','utf8'));delete d.story.audio;
+ for(const scene of d.story.scenes){scene.beats=[];scene.cues=[];}
+ d.story.scenes[0].characters.arun.stance={type:'sit',seat:'chair',floor:'ground'};
+ const c=D.compileStoryDocument(d),warning=c.warnings.find(w=>w.code==='POSTURE_CUT');
+ assert.equal(warning.actor,'arun');assert.equal(warning.frame,270);assert.equal(warning.target.from,'seated');assert.equal(warning.target.to,'standing');assert.ok(warning.message.includes('not animated'));
+ assert.deepEqual(c.warnings,D.compileStoryDocument(d).warnings);
+ d.story.scenes[0].shots=[{...d.story.scenes[0].shots[0],endFrame:240},{...d.story.scenes[0].shots[0],id:'stand-cut',startFrame:240}];
+ d.story.scenes[0].beats=[{id:'authored-contact-cut',startFrame:240,endFrame:270,actions:[{actor:'arun',type:'stand',at:'right'}]}];
+ assert.equal(D.compileStoryDocument(d).warnings.filter(w=>w.code==='POSTURE_CUT').length,0);
+ // An instantaneous stand command at the boundary is still a posture cut, not animation.
+ d.story.scenes[0].beats=[];d.story.scenes[1].beats=[{id:'instant',startFrame:270,endFrame:280,actions:[{actor:'arun',type:'stand',at:'right'}]}];
+ assert.ok(D.compileStoryDocument(d).warnings.some(w=>w.code==='POSTURE_CUT'));
+ d.story.scenes[0].characters.arun.stance={type:'stand',at:'right'};d.story.scenes[1].characters.arun.stance={type:'sit',seat:'chair',floor:'ground'};d.story.scenes[1].beats=[];
+ assert.equal(D.compileStoryDocument(d).warnings.find(w=>w.code==='POSTURE_CUT').target.to,'seated');
+});
+test('display materials require a loaded font, preserve shaping tokens and are independently owned/disposed',()=>{
+ const prior=global.document,drawn=[];
+ const ctx={font:'',textAlign:'',textBaseline:'',fillRect:()=>{},fillText:s=>drawn.push(s),measureText(s){return {width:Array.from(s).length*parseFloat(this.font.split(' ')[1])*.6,actualBoundingBoxAscent:60,actualBoundingBoxDescent:20};}};
+ const fonts=new Set();fonts.check=()=>true;
+ global.document={fonts,createElement:()=>({width:0,height:0,getContext:()=>ctx})};
+ const a=owner(),b=owner();try{
+  const d=example();d.layouts.workspace.displays={board:{text:'टीम बैठक\nकल सुबह १० बजे'}};const c=D.compileStoryDocument(d);
+  bad(()=>D.createStoryEnvironments(a,c),'FONT_UNAVAILABLE');fonts.add({family:D.STORY_FONT.family,status:'loaded'});
+  const first=D.createStoryEnvironments(a,c).workspace.props.board,second=D.createStoryEnvironments(b,c).workspace.props.board;
+  assert.equal(first.material.map.colorSpace,T.SRGBColorSpace);assert.equal(first.material.map.generateMipmaps,false);assert.equal(first.material.map.image.width,1024);assert.equal(first.material.map.image.height,704);
+  assert.notEqual(first.material.map,second.material.map);assert.ok(drawn.includes('टीम बैठक'));assert.ok(drawn.includes('कल सुबह १० बजे'));
+  let disposed=0;first.material.map.addEventListener('dispose',()=>disposed++);a.dispose();a.dispose();assert.equal(disposed,1);
+  const dense=example();dense.layouts.workspace.displays={board:{text:'W'.repeat(160)}};bad(()=>D.createStoryEnvironments(b,D.compileStoryDocument(dense)),'DISPLAY_TEXT_TOO_DENSE');
+ }finally{a.dispose();b.dispose();if(prior===undefined)delete global.document;else global.document=prior;}
+});

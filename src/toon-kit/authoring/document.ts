@@ -14,6 +14,7 @@ export interface StoryDocument {
   readonly font: 'noto-sans-devanagari';
   readonly layouts: Readonly<Record<string, {
     readonly preset: 'office' | 'clinic';
+    readonly displays?: Readonly<{board?: Readonly<{text: string}>}>;
   }>>;
   readonly story: StoryPlan;
 }
@@ -48,8 +49,18 @@ export function compileStoryDocument(input: unknown) {
   if (!d.layouts || typeof d.layouts !== 'object' || Array.isArray(d.layouts) || !Object.keys(d.layouts).length || Object.keys(d.layouts).length > 4) storyFail('UNSUPPORTED_LAYOUT', 'Declare 1..4 named layouts using office or clinic');
   for (const [name, layout] of Object.entries(d.layouts)) {
     if (!name.trim() || name.length > 128 || ['__proto__', 'prototype', 'constructor', 'stage'].includes(name)) storyFail('INVALID_DOCUMENT', 'Invalid layout name');
-    keys(layout, ['preset']);
+    keys(layout, ['preset','displays']);
     if (!Object.hasOwn(LAYOUTS, layout.preset)) storyFail('UNSUPPORTED_LAYOUT', `Unknown layout ${layout.preset}; choose office or clinic`);
+    if (layout.displays !== undefined) {
+      keys(layout.displays, layout.preset === 'office' ? ['board'] : []);
+      if (layout.displays.board !== undefined) {
+        keys(layout.displays.board, ['text']);
+        const text = layout.displays.board.text;
+        if (typeof text !== 'string' || !text.trim() || Array.from(text).length > 160 || /[\u0000-\u0009\u000b-\u001f\u007f]/u.test(text) || text.split('\n').length > 4) storyFail('INVALID_DISPLAY_TEXT', 'Use 1..160 characters of plain text, up to four lines; no control characters');
+        // Repertoire of the pinned Noto font: no OS-dependent emoji/script fallback.
+        if (/[^\n\u0020-\u007e\u0900-\u097f\u200c-\u200d\u2013-\u2014\u2018-\u2019\u201c-\u201d\u2022\u2026\u20b9]/u.test(text) || !text.replace(/[\u200c\u200d]/gu,'').trim()) storyFail('DISPLAY_UNSUPPORTED_GLYPH', 'Use Hindi/Devanagari, English and supported punctuation; emoji/other scripts are not bundled');
+      }
+    }
   }
   if (Array.isArray(d.story?.scenes)) for (const scene of d.story.scenes) if (scene?.endFrame - scene?.startFrame > 600) storyFail('SEGMENT_BOUNDARY', 'Add an explicit scene cut within 600 frames; seamless cross-segment transitions are unsupported');
   const timeline = d.story?.durationInFrames > 600 ? compileOrchestrationStory(d.story) : compileStory(d.story);
@@ -136,7 +147,8 @@ export function compileStoryDocument(input: unknown) {
       },
       font: d.font,
       layouts: Object.fromEntries(Object.entries(d.layouts).sort(([a], [b]) => a.localeCompare(b)).map(([k, v]) => [k, {
-        preset: v.preset
+        preset: v.preset,
+        ...(v.displays === undefined ? {} : {displays: v.displays.board === undefined ? {} : {board:{text:v.displays.board.text}}})
       }])),
       story: timeline.plan
     }),

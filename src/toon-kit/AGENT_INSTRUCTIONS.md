@@ -231,3 +231,12 @@ camera visibility. Never skip preflight or lower memory/visibility limits to
 force a partial render; fix gaze/shot intentions or wait for VM memory recovery.
 The existing `chair` slot/contact API is unchanged. These Phase 5B corrections
 are approved; no other Phase 5 story features, effects, environments or TTS.
+
+## Phase 5D: displays and continuity
+
+Use layout `displays.board.text` for readable office board content and the existing
+objectFocus shot; never hand-build text geometry or change camera math. Read
+`authoring/README.md` for font/text bounds. Review `POSTURE_CUT` warnings; preserve
+posture across cuts or author deliberate contact cuts. Stand/sit remains instant,
+not a stand-up animation. All production/preflight safeguards remain mandatory.
+No further story features, effects, environments, TTS or transition system.

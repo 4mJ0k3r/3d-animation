@@ -37,5 +37,18 @@ export function authoringWarnings(timeline: CompiledStory) {
       });
     }
   }
+  for (let i=1;i<timeline.plan.scenes.length;i++) {
+    const previous = timeline.plan.scenes[i-1], next = timeline.plan.scenes[i];
+    const before = timeline.sample(previous.endFrame-1), after = timeline.sample(next.startFrame);
+    for (const actor of Object.keys(next.characters).sort()) {
+      if (!Object.hasOwn(previous.characters,actor)) continue;
+      const a=before.poses[actor].stance,b=after.poses[actor].stance;
+      const from='action' in a?a.action:a,to='action' in b?b.action:b;
+      if ((from.type==='sit') === (to.type==='sit')) continue;
+      warnings.push({code:'POSTURE_CUT',severity:'warning',scene:next.id,shot:after.shot.id,actor,frame:next.startFrame,
+        target:{previousScene:previous.id,from:from.type==='sit'?'seated':'standing',to:to.type==='sit'?'seated':'standing'},
+        message:`${actor} changes from ${from.type==='sit'?'seated':'standing'} to ${to.type==='sit'?'seated':'standing'} at the cut from ${previous.id} to ${next.id}. Keep the same posture across the cut, or author an explicit stand/sit contact cut at a suitable earlier shot boundary. Stand/sit commands are instant contact changes, not animated stand-up/sit-down transitions. If this is an intentional time jump, review and accept this warning.`});
+    }
+  }
   return freezeData(warnings);
 }

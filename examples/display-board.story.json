@@ -1,0 +1,72 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "workspace": {
+      "preset": "office",
+      "displays": {
+        "board": {
+          "text": "टीम बैठक\nकल सुबह १० बजे"
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 30,
+    "characters": {
+      "meera": {
+        "appearance": "casual",
+        "expression": "worried"
+      },
+      "kabir": {
+        "appearance": "office",
+        "expression": "neutral"
+      }
+    },
+    "scenes": [
+      {
+        "id": "readable-board",
+        "setting": "workspace",
+        "startFrame": 0,
+        "endFrame": 30,
+        "axis": [
+          "meera",
+          "kabir"
+        ],
+        "characters": {
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            }
+          },
+          "kabir": {
+            "stance": {
+              "type": "sit",
+              "seat": "chair",
+              "floor": "ground"
+            }
+          }
+        },
+        "beats": [],
+        "cues": [],
+        "shots": [
+          {
+            "id": "display",
+            "type": "objectFocus",
+            "subject": "board",
+            "region": "full",
+            "startFrame": 0,
+            "endFrame": 30
+          }
+        ]
+      }
+    ]
+  }
+}

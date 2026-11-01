@@ -210,3 +210,36 @@ or use `closeUp`/`medium`/`objectFocus` cuts. This is a conservative warning, no
 proof a shot fails. Full camera/actor certification requires actual preparation.
 The generic office chair now has four legs and a backrest; its `chair` seat
 surface and existing contact API are unchanged.
+
+## Phase 5D: readable displays and posture continuity
+
+Optional, static display text belongs to a named layout:
+
+```json
+"layouts": {
+  "workspace": {
+    "preset": "office",
+    "displays": {"board": {"text": "टीम बैठक\nकल सुबह १० बजे"}}
+  }
+}
+```
+
+Use the existing `objectFocus` shot with `subject:"board"` to make it readable.
+No coordinates, materials or font configuration are needed. Currently only the
+registered office `board` supports this binding. Without it, the original bars
+remain. Text is literal (no HTML rendering, image embedding or remote assets), static for that layout, bounded
+to 160 characters and four wrapped lines. Hindi/Devanagari, English and supported
+punctuation use the pinned bundled font; emoji/other scripts reject instead of
+using host font fallbacks. Use `\n` for explicit line breaks. Preparation reports
+`DISPLAY_TEXT_TOO_DENSE` rather than shrinking below a readable size or clipping.
+The font loads before construction. One 1024x704 texture is created per configured
+display and disposed with its engine; no per-frame text allocation or new passes.
+Copy `examples/display-board.story.json` for the one-second worked example.
+
+`POSTURE_CUT` warns when an actor present in adjacent scenes changes between
+seated and standing/walking. It compares final evaluated support intentions with
+the next scene's initial intentions (including actions), not just scene defaults.
+Keep posture consistent, or place an explicit stand/sit contact cut earlier in
+the storyboard. Instant stand/sit commands do not animate a smooth transition;
+a command at the same boundary still warns. Intentional time jumps may be
+accepted after review. No poses are changed, and no stand-up animation is added.

@@ -5,14 +5,13 @@ import { createTargets, sceneMark, scenePoint, sceneSeat, createPaths, pathFromM
 import type { StorySettingBinding } from '../story/player';
 import { ClinicEnvironment } from '../../ClinicEnvironment';
 import type { CompiledStoryDocument } from './document';
+import { createDisplayMaterial } from './display';
 /** Curated geometry/slots from the approved clinic and office fixtures. No procedural generator. */
 export function createStoryEnvironments(engine: CartoonEngine, compiled: CompiledStoryDocument, layoutOrder: readonly string[] = Object.keys(compiled.document.layouts)) {
   setupCartoonLighting(engine.scene);
   const p = createPrimitiveFactory(engine),
     settings: Record<string, StorySettingBinding> = {};
-  for (const [name, {
-    preset
-  }] of Object.entries(compiled.document.layouts)) {
+  for (const [name, {preset, displays}] of Object.entries(compiled.document.layouts)) {
     const layoutIndex = layoutOrder.indexOf(name);
     if (layoutIndex < 0) throw new Error("Missing canonical layout order");
     if (preset === 'clinic') {
@@ -65,7 +64,8 @@ export function createStoryEnvironments(engine: CartoonEngine, compiled: Compile
         width: 1.6,
         height: 1.1,
         position: [-3, 2.7, .8],
-        color: '#206d80'
+        color: '#206d80',
+        ...(displays?.board ? {material:createDisplayMaterial(displays.board.text)} : {})
       }),
       chair = p.box({
         width: 1.1,
@@ -84,7 +84,7 @@ export function createStoryEnvironments(engine: CartoonEngine, compiled: Compile
     }
     const back = p.box({width:1.1,height:.9,depth:.12,position:[1,1.55,-.94],color:'#6b8e9c'});
     back.name = 'OfficeChairBack'; root.add(back);
-    for (let i = 0; i < 3; i++) root.add(p.box({
+    if (!displays?.board) for (let i = 0; i < 3; i++) root.add(p.box({
       width: .25 + i * .2,
       height: .09,
       depth: .02,
