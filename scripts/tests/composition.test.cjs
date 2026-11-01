@@ -18,3 +18,36 @@ test('malformed proxy and zone registrations reject instead of being treated as 
 test('changed scene proxies cannot silently reuse a visibility certificate',()=>{const f=setup();try{const d=f.director();d.prepare({sample:f.sample});f.clinic.environment.examinationTable.position.x+=.01;assert.throws(()=>d.applyFrame({frame:80,snapshot:f.sample(80)}),e=>e.diagnostic.code==='COMPOSITION_CHANGED');}finally{f.engine.dispose();}});
 test('required geometric regions stay inside normalized image/caption band and headroom improves',()=>{const f=setup();try{const d=f.director();d.prepare({sample:f.sample});for(const frame of [0,20,42,43,74,75,100,113,114,137,149]){const s=f.sample(frame),c=d.evaluate({frame,snapshot:s}),desc=d.describe(frame);assert.ok(D.projectedBoundsFit(desc.protectedBounds,c));if(frame<43){const p=D.createProjection(c),top=Math.min(...Object.values(s.actors).map(a=>p.rect(a.regions.head).top));assert.ok(top<.2&&top>=.03);}}}finally{f.engine.dispose();}});
 test('registered occluders follow scene membership and inherited visibility',()=>{const f=setup(),mesh=new T.Mesh(new T.BoxGeometry(.2,.2,.2),new T.MeshBasicMaterial()),group=new T.Group();try{f.engine.scene.add(group);group.add(mesh);f.engine.track(mesh);f.stage.registerOccluder('membership',mesh);const present=()=>f.sample(0).visibility.proxies.some(p=>p.id==='prop.membership');assert.equal(present(),true);group.visible=false;assert.equal(present(),false);group.visible=true;assert.equal(present(),true);mesh.removeFromParent();assert.equal(present(),false);group.add(mesh);assert.equal(present(),true);}finally{f.engine.dispose();}});
+test('shared certificates are exact, smaller than full strings and still reject oversized preparations', () => {
+  const Cert = require('../../out/character-tests/toon-kit/direction/certificates');
+  const f = setup();
+  try {
+    const d = f.director(), store = Cert.createCertificateStore(D.COMPOSITION_LIMITS.maxSignatureBytes);
+    let fullBytes = 0;
+    const frames = [];
+    for (let frame = 0; frame < 150; frame++) {
+      const data = {main: D.compactVisibilityFrame(d.timeline.select(frame), f.sample(frame)), endpoints: []};
+      frames.push(data);
+      fullBytes += JSON.stringify(data).length * 2;
+      store.add(frame, data);
+    }
+    // exact: every certified frame matches itself and differs from every other distinct frame
+    for (let frame = 0; frame < 150; frame++) assert.ok(store.matches(frame, frames[frame]));
+    for (const [a, b] of [[0, 80], [42, 43], [113, 114]]) assert.equal(store.matches(a, frames[b]), JSON.stringify(frames[a]) === JSON.stringify(frames[b]));
+    const moved = JSON.parse(JSON.stringify(frames[80])); moved.main.proxies[0].center[0] += 1e-9;
+    assert.equal(store.matches(80, moved), false, 'a single changed coordinate fails the certificate');
+    const reordered = JSON.parse(JSON.stringify(frames[80])); reordered.main.proxies.reverse();
+    assert.equal(store.matches(80, reordered), false, 'proxy order is part of the certificate');
+    assert.equal(store.matches(999, frames[0]), false);
+    // accounting counts retained pieces plus references, and is below the old full-string total
+    const {bytes, frames: count} = store.stats();
+    assert.equal(count, 150); assert.ok(bytes < fullBytes, `${bytes} < ${fullBytes}`);
+    // a budget that the shared data cannot fit rejects with a structured diagnostic
+    const small = Cert.createCertificateStore(Math.floor(bytes / 2));
+    assert.throws(() => frames.forEach((data, frame) => small.add(frame, data)), e => e instanceof D.DirectionError && e.diagnostic.code === 'PREPARATION_BUDGET' && e.diagnostic.details.limitBytes === Math.floor(bytes / 2) && e.diagnostic.details.retainedBytes > e.diagnostic.details.limitBytes && Number.isInteger(e.diagnostic.frame));
+    // the director reports the shared accounting
+    d.prepare({sample: f.sample});
+    const stats = d.preparationStats();
+    assert.equal(stats.certifiedFrames, 150); assert.equal(stats.signatureBytes, bytes); assert.ok(stats.uniqueCertificatePieces > 0);
+  } finally {f.engine.dispose();}
+});

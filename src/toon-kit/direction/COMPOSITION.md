@@ -89,7 +89,12 @@ captions, malformed proxies, excessive budgets and unsupported transforms fail.
    Candidate declaration order does not change the winner.
 
 `COMPOSITION_LIMITS` is deeply immutable: six candidates, 64 proxies/frame,
-12 required regions, nine samples/region, 16 MiB serialized certificates.
+12 required regions, nine samples/region, 16 MiB of retained certificates.
+Certificates are exact per-frame lists of serialized pieces (one per field/array
+item); identical pieces such as static scenery proxies are stored once and shared
+(direction/certificates.ts). Retained bytes = unique pieces x 2 bytes/char plus
+8 bytes per reference. Exceeding the budget rejects with `PREPARATION_BUDGET`
+(details: retainedBytes, limitBytes, certifiedFrames, uniquePieces).
 Worst-case proxy testing is O(frames × 6 × 12 × 9 × 64), with early rejection.
 Each actual prepared clip has a bounded collection of compact frames, not full
 rig snapshots. Runtime compares its exact compact certificate and applies one

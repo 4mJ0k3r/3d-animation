@@ -11,6 +11,7 @@ import type { CompositionOptions, CompactVisibilityFrame } from './visibility-ty
 import { compactVisibilityFrame, planVisibleShot, COMPOSITION_LIMITS } from './composition';
 import { prepareCameraMotion, evaluateCameraMotion, motionTarget } from './motion';
 import type { PreparedMotion } from './motion';
+import { createCertificateStore } from './certificates';
 export function applyCameraState(camera: T.PerspectiveCamera, state: CameraState) {
   const vector = (v: readonly number[], length: number) => Array.isArray(v) && v.length === length && v.every(Number.isFinite);
   if (!state || !vector(state.position, 3) || !vector(state.quaternion, 4) || !vector(state.up, 3) || !vector(state.scale, 3) || state.scale.some(v => v !== 1) || ![state.fov, state.aspect, state.near, state.far, state.zoom, state.focus, state.filmGauge, state.filmOffset].every(Number.isFinite) || state.fov <= 0 || state.fov >= 180 || state.aspect <= 0 || state.near <= 0 || state.far <= state.near || state.zoom <= 0 || state.filmGauge <= 0 || state.focus <= 0 || state.view !== null || !Number.isInteger(state.layers) || Math.abs(Math.hypot(...state.quaternion) - 1) > 1e-6 || Math.abs(Math.hypot(...state.up) - 1) > 1e-6) directionFail('INVALID_CAMERA_STATE', 'Complete finite perspective camera state required');
@@ -104,7 +105,7 @@ export function createDirector(engine: CartoonEngine, options: {
       endpoints
     };
   };
-  const signatures = new Map<number, string>();
+  const signatures = createCertificateStore(COMPOSITION_LIMITS.maxSignatureBytes);
   let ready = false,
     busy = false,
     dead = false;
@@ -147,7 +148,6 @@ export function createDirector(engine: CartoonEngine, options: {
       const visibilityFrames = new Map<string, CompactVisibilityFrame[]>();
       const endpointFrames = new Map<string, CompactVisibilityFrame[][]>();
       const panTargets = new Map<string, readonly Vec3[]>();
-      let signatureBytes = 0;
       const compact = (b: Bounds): Bounds => ({
         min: b.min,
         max: b.max
@@ -172,10 +172,7 @@ export function createDirector(engine: CartoonEngine, options: {
               endpointFrames.set(shot.id, pair);
             }
             if (shot.motion?.type === 'pan' && frame === shot.startFrame) panTargets.set(shot.id, [motionTarget(s, shot.motion.from), motionTarget(s, shot.motion.to)]);
-            const signature = JSON.stringify(data);
-            signatureBytes += signature.length * 2;
-            if (signatureBytes > COMPOSITION_LIMITS.maxSignatureBytes) directionFail('PREPARATION_BUDGET', 'Visibility certificates exceed memory budget');
-            signatures.set(frame, signature);
+            signatures.add(frame, data);
           }
           boxes.set(shot.id, compact(old ? unionBounds([old, b]) : b));
           if (!directions.has(shot.id)) {
@@ -269,7 +266,7 @@ export function createDirector(engine: CartoonEngine, options: {
       const shot = timeline.select(frame),
         plan = plans.get(shot.id)!;
       const current = shotBounds(shot, snapshot);
-      if (options.composition && JSON.stringify(frameData(shot, snapshot)) !== signatures.get(frame)) directionFail('COMPOSITION_CHANGED', 'Current visibility state differs from certified preparation; prepare a new director', {
+      if (options.composition && !signatures.matches(frame, frameData(shot, snapshot))) directionFail('COMPOSITION_CHANGED', 'Current visibility state differs from certified preparation; prepare a new director', {
         shotId: shot.id,
         frame
       });
@@ -305,9 +302,10 @@ export function createDirector(engine: CartoonEngine, options: {
       if (!ready) directionFail('NOT_PREPARED', 'Director not prepared');
       return freezeData({
         sampleCount: options.durationInFrames + 1,
-        signatureBytes: [...signatures.values()].reduce((n, s) => n + s.length * 2, 0),
+        signatureBytes: signatures.stats().bytes,
+        uniqueCertificatePieces: signatures.stats().uniquePieces,
         candidateCount: [...plans.values()].reduce((n, p) => n + (p.composition?.candidateCount ?? 0), 0),
-        certifiedFrames: signatures.size,
+        certifiedFrames: signatures.stats().frames,
         motionChecks: [...plans.values()].reduce((n, p) => n + (p.motion?.checks ?? 0), 0),
         motionEndpointCandidates: [...plans.values()].reduce((n, p) => n + (p.motion?.endpointCandidates ?? 0), 0)
       });
