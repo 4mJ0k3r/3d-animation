@@ -15,6 +15,8 @@ async function runProductionRender(job = {}) {
   for (const key of Object.keys(job)) if (!allowed.has(key)) throw new Error(`Unsupported production override: ${key}`);
   if(job.mode && !['render','cli','audit','benchmark'].includes(job.mode)) throw new Error('Invalid render mode');
   const root = path.resolve(__dirname, '..');
+  const authoringLock = path.join(root, '.remotion-tmp', 'authoring.lock');
+  if (fs.existsSync(authoringLock) && JSON.parse(fs.readFileSync(authoringLock)).id !== process.env.TOON_AUTHORING_OWNER) throw new Error('An authoring job owns the production pipeline; wait for it to finish');
   const memoryGuard = createMemoryGuard(policy);
   const admission = memoryGuard.admission();
   if (!admission.admitted) {

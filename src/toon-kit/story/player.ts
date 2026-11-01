@@ -41,6 +41,8 @@ export function createStory(engine: CartoonEngine, options: {
   settings: Readonly<Record<string, StorySettingBinding>>;
   captions?: CaptionLayout;
   audio?: PreparedStoryAudio;
+  /** Internal orchestration offset; timeline and camera remain segment-local. */
+  globalFrameOffset?: number;
 }) {
   options = {
     ...options,
@@ -55,6 +57,9 @@ export function createStory(engine: CartoonEngine, options: {
     }]))
   };
   const timeline = options.timeline;
+  const offset = options.globalFrameOffset ?? 0;
+  if (!Number.isInteger(offset) || offset < 0 || offset > 1800) storyFail('INVALID_FRAME_OFFSET', 'Use a bounded nonnegative integer global offset');
+  if (timeline.plan.durationInFrames > 600) storyFail('STORY_BUDGET', 'Render a compiled story segment, never a long orchestration timeline');
   if (timeline.audio.clips.length && !options.audio) storyFail('AUDIO_NOT_PREPARED', 'Audio stories require prepareStoryAudio(engine,timeline) before createStory');
   options.audio?.assertReady(timeline, engine);
   const stages = new Map<string, ReturnType<typeof createStage>>(),
@@ -166,8 +171,8 @@ export function createStory(engine: CartoonEngine, options: {
         details: a.path
       });
       r = walkAlong(paths.path(a.path), {
-        startFrame: v.startFrame,
-        endFrame: v.endFrame - 1,
+        startFrame: v.startFrame + offset,
+        endFrame: v.endFrame - 1 + offset,
         ...(a.strideScale === undefined ? {} : {
           strideScale: a.strideScale
         })
@@ -186,8 +191,8 @@ export function createStory(engine: CartoonEngine, options: {
         ...(v.from ? {
           from: target(scene, v.from)
         } : {}),
-        startFrame: v.startFrame,
-        endFrame: v.startFrame + n
+        startFrame: v.startFrame + offset,
+        endFrame: v.startFrame + n + offset
       }) : lookAt(target(scene, v.action.target));
     } else r = lookAt(target(scene, v as StoryTarget));
     if (typeof v === 'object') gazeCache.set(v, r);
@@ -199,8 +204,8 @@ export function createStory(engine: CartoonEngine, options: {
     if (v.action.type !== 'expression') storyFail('INVALID_ACTION', 'Invalid expression clip');
     const n = v.action.transitionFrames!,
       r = n ? blendExpression(v.from as import('../characters/face').ExpressionName, v.action.name, {
-        startFrame: v.startFrame,
-        endFrame: v.startFrame + n
+        startFrame: v.startFrame + offset,
+        endFrame: v.startFrame + n + offset
       }) : v.action.name;
     faceCache.set(v, r);
     return r;
@@ -209,8 +214,8 @@ export function createStory(engine: CartoonEngine, options: {
     if (gestureCache.has(c)) return gestureCache.get(c)!;
     const a = c.action,
       o = {
-        startFrame: c.startFrame,
-        endFrame: c.endFrame - 1,
+        startFrame: c.startFrame + offset,
+        endFrame: c.endFrame - 1 + offset,
         ...('intensity' in a && a.intensity !== undefined ? {
           intensity: a.intensity
         } : {}),
@@ -244,12 +249,12 @@ export function createStory(engine: CartoonEngine, options: {
         fade = Math.min(8, Math.floor((c.endFrame - c.startFrame - 2) / 2));
       reactCache.set(c, {
         incoming: blendExpression(from, face, {
-          startFrame: c.startFrame,
-          endFrame: c.startFrame + fade
+          startFrame: c.startFrame + offset,
+          endFrame: c.startFrame + fade + offset
         }),
         outgoing: blendExpression(face, from, {
-          startFrame: c.endFrame - 1 - fade,
-          endFrame: c.endFrame - 1
+          startFrame: c.endFrame - 1 - fade + offset,
+          endFrame: c.endFrame - 1 + offset
         }),
         face,
         fromEnd: c.startFrame + fade,
@@ -285,7 +290,7 @@ export function createStory(engine: CartoonEngine, options: {
       r.visible = r === b.root;
     });
     const state = cast!.evaluate({
-      frame: globalFrame,
+      frame: globalFrame + offset,
       fps: timeline.plan.fps,
       poses: input.poses
     });
@@ -393,7 +398,7 @@ export function createStory(engine: CartoonEngine, options: {
             frame: c.startFrame
           });
           const a = cast!.evaluate({
-              frame: c.startFrame,
+              frame: c.startFrame + offset,
               fps: timeline.plan.fps,
               poses: {
                 ...now.poses,
@@ -404,7 +409,7 @@ export function createStory(engine: CartoonEngine, options: {
               }
             }).poses[id].root,
             b = cast!.evaluate({
-              frame: c.startFrame,
+              frame: c.startFrame + offset,
               fps: timeline.plan.fps,
               poses: now.poses
             }).poses[id].root;

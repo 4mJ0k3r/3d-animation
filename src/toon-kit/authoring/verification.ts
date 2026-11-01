@@ -7,7 +7,7 @@ import { prepareStoryFont } from './font';
 import { compileStoryDocument } from './document';
 import type { CompiledStoryDocument } from './document';
 /** Optional bounded check; two sequential contexts inside the one guarded browser. */
-export async function verifyAuthoredStory(parent: CartoonEngine, source: CompiledStoryDocument) {
+export async function verifyAuthoredStory(parent: CartoonEngine, source: CompiledStoryDocument, offset = 0, layoutOrder: readonly string[] = Object.keys(source.document.layouts)) {
   const results: {
       name: string;
       pass: boolean;
@@ -31,7 +31,7 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
     });
     parent.registerCleanup(() => engine.dispose());
     try {
-      const compiled = compileStoryDocument(source.document),
+      const compiled = source,
         family = await prepareStoryFont(engine),
         audio = await prepareStoryAudio(engine, compiled.timeline),
         captions = await createCaptionLayout({
@@ -44,8 +44,9 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
           bottom: 48
         }, engine.signal),
         player = createStory(engine, {
+          globalFrameOffset: offset,
           timeline: compiled.timeline,
-          settings: createStoryEnvironments(engine, compiled),
+          settings: createStoryEnvironments(engine, compiled, layoutOrder),
           captions,
           audio
         });
@@ -183,8 +184,9 @@ export async function verifyAuthoredStory(parent: CartoonEngine, source: Compile
           strokeWidth: 1
         }, engine.signal),
         player = createStory(engine, {
+          globalFrameOffset: offset,
           timeline: compiled.timeline,
-          settings: createStoryEnvironments(engine, compiled),
+          settings: createStoryEnvironments(engine, compiled, kind === 'clinic' ? undefined : layoutOrder),
           captions,
           audio
         });

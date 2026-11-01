@@ -6,17 +6,19 @@ import type { StorySettingBinding } from '../story/player';
 import { ClinicEnvironment } from '../../ClinicEnvironment';
 import type { CompiledStoryDocument } from './document';
 /** Curated geometry/slots from the approved clinic and office fixtures. No procedural generator. */
-export function createStoryEnvironments(engine: CartoonEngine, compiled: CompiledStoryDocument) {
+export function createStoryEnvironments(engine: CartoonEngine, compiled: CompiledStoryDocument, layoutOrder: readonly string[] = Object.keys(compiled.document.layouts)) {
   setupCartoonLighting(engine.scene);
   const p = createPrimitiveFactory(engine),
     settings: Record<string, StorySettingBinding> = {};
-  for (const [index, [name, {
+  for (const [name, {
     preset
-  }]] of Object.entries(compiled.document.layouts).entries()) {
+  }] of Object.entries(compiled.document.layouts)) {
+    const layoutIndex = layoutOrder.indexOf(name);
+    if (layoutIndex < 0) throw new Error("Missing canonical layout order");
     if (preset === 'clinic') {
       const room = new ClinicEnvironment();
       room.stageUniversalPortrait();
-      room.group.position.x = index * 20;
+      room.group.position.x = layoutIndex * 20;
       engine.scene.add(room.group);
       room.group.updateWorldMatrix(true, true);
       engine.track(room.group);
@@ -42,7 +44,7 @@ export function createStoryEnvironments(engine: CartoonEngine, compiled: Compile
     }
     const root = new T.Group();
     root.name = 'Office:' + name;
-    root.position.x = index * 20;
+    root.position.x = layoutIndex * 20;
     engine.scene.add(root);
     const floor = p.box({
         width: 14,

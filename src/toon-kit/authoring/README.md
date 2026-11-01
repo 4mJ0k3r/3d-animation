@@ -44,7 +44,7 @@ dialogue/caption cues, shots, and optional Phase 4B audio assets/clips/alignment
 - All intervals are absolute integer frames, `[startFrame,endFrame)`. Scenes and
   shots cover the duration; independent character channels may overlap, conflicting
   gestures may not. Support changes obey existing cut/continuity constraints.
-- Budget stays **600 frames**, integer fps 1..60, up to four named layouts/scenes,
+- Single-render budget stays **600 frames**, integer fps 1..60, up to four named layouts/scenes,
   eight global characters and 256 caption words. Curated scenes have **two active
   actors**, occupying distinct roles. Other SDK users retain the general rig APIs.
 - Viewports: 720×1280, 1280×720, 1080×1920, 1920×1080. Prefer 720p on Muse.
@@ -119,4 +119,73 @@ The included original story is a **silent, captioned** office story, with explic
 estimated captions. No TTS provider, speech recognition or NLP runs in Toon-Kit.
 
 Run `npm run typecheck`, `npm run test:authoring`, `npm run test:memory` serially
-after SDK changes. No Phase 4C-B/5, long-video orchestration or budget extension.
+after SDK changes. Approved Phase 4C-B orchestration follows below; no Phase 5.
+
+## Phase 4C-B: 30–60-second stories
+
+The same JSON envelope/command now accepts up to **1800 frames at 30 fps**.
+Start from `examples/long-story.json` (27 seconds, three scenes). All timings stay
+**global**, including beats, shots, audio placement/trims and word alignments.
+Muse does not compute offsets or invoke FFmpeg. No new JSON fields are required.
+
+```sh
+npm run story -- validate --plan=examples/long-story.json
+npm run story -- render --plan=examples/long-story.json --output=out/long-story.mp4 --report=out/long-story-report.json
+# Interrupted? Run the exact same command again.
+```
+
+The launcher renders **one complete scene per segment**, sequentially, each <=600
+frames, one software WebGL browser/worker at a time. Put explicit hard scene cuts
+within that budget. A single long scene or seamless cross-segment camera/acting
+transition is rejected; no action/motion is sliced or baked. Existing certificate,
+GPU, memory, concurrency and temp limits still apply (a complex 600-frame scene
+can hit the unchanged 16 MiB certificate limit; shorten it at a meaningful cut).
+Short <=600-frame stories retain their existing single-render/audio path.
+Long orchestration has at most **8 logical scenes**; use six 300-frame scenes
+for a minute. Each renderer still receives one scene within the original
+4-scene/600-frame and 16 MiB certificate limits. The 4-layout/8-character/128-cue/
+256-word bounds and the short compiler's 4-scene limit are unchanged.
+
+Install **full FFmpeg and ffprobe on PATH** for segmented renders (the renderer
+still uses its pinned bundled FFmpeg). The launcher verifies needed filters,
+source audio metadata/duration and records the selected tool versions/hashes.
+Video is concatenated using stream copy; audio is decoded/mixed on one 48 kHz
+stereo sample clock and AAC-encoded **once**, preserving intentional silence,
+trims, gain and overlaps. There is no independently encoded segment audio to
+introduce boundary padding. Caption display retains global word intervals and
+punch phase even across a cut; local safety certification clips only reservations.
+Supplied word timestamps remain supplied; estimated captions remain estimates.
+
+`out/long-story.mp4.segments/manifest.json` plus completed MP4s/reports are durable
+workspace recovery artifacts, bounded to 512 MiB. Input plan bytes, source code,
+lockfile, policy, tool versions/binaries, font and audio contents must match.
+Never edit a manifest. Missing/tampered completed segments or changed inputs
+require a **new output path**; completed work is preserved. The authoring lock
+reserves the guarded pipeline between segments and through assembly. Linux
+memory admission runs before each renderer/assembly process; existing low-memory
+abort monitoring stays enabled. Temporary compiler/browser files stay under
+`.remotion-tmp` and are cleaned by their owners. SIGKILL/stale locks still need
+operator inspection; never automatically delete a live lock.
+
+Only a completely validated final MP4 is atomically published to the output path.
+Failures return nonzero; an older successful output can remain at that path.
+Recovery segments are retained after success; remove their directory manually
+only when no job is active and recovery is no longer needed. There is no remote
+cache, parallel render, automatic TTS/ASR or Phase 5 orchestration.
+
+The original “Quiet Radio” fixture is a fictional silent-caption story with an
+original continuous **non-speech test signal**, not generated/recorded narration.
+It deliberately spans both cuts to detect audio gaps. The text is authored or
+explicitly estimated, with no claim of speech synchronization.
+
+SDK integrations continue to call `runAuthoredStory()` from `scripts/story.cjs`.
+`planStorySegments(compiled)` returns global half-open intervals;
+`compileStorySegment(compiled,index)` delegates local visual evaluation to the
+existing compiler/cast/director. These are orchestration helpers, not a second
+animation clock. Never pass a long data-only compiled timeline to `createStory`.
+
+Reproduce the original signal-boundary check after rendering the example:
+`node scripts/verify-long-story.cjs out/long-story.mp4`. It verifies exact video/
+audio stream duration and zero sample shift around 9s/18s. AAC can expose a codec
+padding tail after decoding beyond the MP4 presentation duration; this is reported
+separately, not counted as timeline content or an inter-segment gap.

@@ -1,4 +1,4 @@
-import { compileStory } from '../story/compiler';
+import { compileStory, compileOrchestrationStory } from '../story/compiler';
 import type { StoryPlan, StoryTarget, StorySupport } from '../story/types';
 import { storyFail } from '../story/types';
 import { freezeData } from '../characters/pose';
@@ -50,7 +50,9 @@ export function compileStoryDocument(input: unknown) {
     keys(layout, ['preset']);
     if (!Object.hasOwn(LAYOUTS, layout.preset)) storyFail('UNSUPPORTED_LAYOUT', `Unknown layout ${layout.preset}; choose office or clinic`);
   }
-  const timeline = compileStory(d.story);
+  if (Array.isArray(d.story?.scenes)) for (const scene of d.story.scenes) if (scene?.endFrame - scene?.startFrame > 600) storyFail('SEGMENT_BOUNDARY', 'Add an explicit scene cut within 600 frames; seamless cross-segment transitions are unsupported');
+  const timeline = d.story?.durationInFrames > 600 ? compileOrchestrationStory(d.story) : compileStory(d.story);
+  for (const scene of timeline.plan.scenes) if (scene.endFrame - scene.startFrame > 600) storyFail('SEGMENT_BOUNDARY', 'Each scene must fit 600 frames; add an explicit scene cut. Seamless cross-segment moves are unsupported', {scene:scene.id});
   for (const [actor, c] of Object.entries(timeline.plan.characters)) if (c.proportions !== undefined || c.scale !== undefined && c.scale !== 1) storyFail('UNSUPPORTED_BODY', 'Curated starters use default body proportions/scale; omit proportions and scale', {
     actor
   });

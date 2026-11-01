@@ -10,7 +10,7 @@ execFileSync(process.execPath, [path.join(path.dirname(require.resolve('typescri
   stdio: 'inherit',
   windowsHide: true
 });
-execFileSync(process.execPath, ['--test', '--test-concurrency=1', 'scripts/tests/authoring.test.cjs', 'scripts/tests/story.test.cjs', 'scripts/tests/story-audio.test.cjs'], {
+execFileSync(process.execPath, ['--test', '--test-concurrency=1', 'scripts/tests/authoring.test.cjs', 'scripts/tests/story-segments.test.cjs', 'scripts/tests/story.test.cjs', 'scripts/tests/story-audio.test.cjs'], {
   cwd: root,
   stdio: 'inherit',
   windowsHide: true

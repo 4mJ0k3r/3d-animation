@@ -13,20 +13,29 @@ import { compileStoryDocument } from './document';
 import type { CompiledStoryDocument } from './document';
 import { createStoryEnvironments } from './starters';
 import { prepareStoryFont } from './font';
+import { compileStorySegment, planStorySegments } from './segments';
+import type { CaptionWord } from '../captions';
 export const AuthoredStory: React.FC<{
   document: unknown;
   verify?: boolean;
+  segmentIndex?: number;
 }> = props => {
-  const compiled = React.useMemo(() => compileStoryDocument(props.document), [props.document]);
+  const source = React.useMemo(() => compileStoryDocument(props.document), [props.document]);
+  const compiled = React.useMemo(() => props.segmentIndex === undefined ? source : compileStorySegment(source, props.segmentIndex), [source, props.segmentIndex]);
+  if (compiled.timeline.plan.durationInFrames > 600) throw new Error('Use the guarded story CLI for segmented stories');
+  const offset = props.segmentIndex === undefined ? 0 : planStorySegments(source)[props.segmentIndex].startFrame;
   const key = React.useMemo(() => JSON.stringify(compiled.document), [compiled]);
-  return <StorySession key={key} compiled={compiled} verify={props.verify} />;
+  return <StorySession key={key} compiled={compiled} verify={props.verify} offset={offset} displayWords={source.timeline.captionWords} layoutOrder={Object.keys(source.document.layouts)} />;
 };
 const StorySession: React.FC<{
   compiled: CompiledStoryDocument;
   verify?: boolean;
+  offset: number;
+  layoutOrder: readonly string[];
+  displayWords: readonly CaptionWord[];
 }> = ({
   compiled,
-  verify
+  verify, offset, displayWords, layoutOrder
 }) => {
   const {
       width,
@@ -35,6 +44,7 @@ const StorySession: React.FC<{
     frame = useCurrentFrame();
   const [ready, setReady] = React.useState<{
       captions: CaptionLayout;
+      display: CaptionLayout;
       audio: PreparedStoryAudio;
     } | null>(null),
     commit = React.useRef<(() => void) | null>(null),
@@ -53,19 +63,21 @@ const StorySession: React.FC<{
       try {
         const family = await prepareStoryFont(engine),
           audio = await prepareStoryAudio(engine, compiled.timeline),
-          captions = await engine.wait(createCaptionLayout({
+          display = await engine.wait(createCaptionLayout({
             width,
             height,
-            words: compiled.timeline.captionWords,
+            words: displayWords,
             fontSize: Math.min(width * 64 / 1080, height * .068),
             fontFamily: `"${family}"`,
             strokeWidth: Math.min(width * 4 / 1080, 2),
             bottom: Math.max(height * 96 / 1920, 48)
           }, engine.signal));
+        const captions: CaptionLayout = {...display, words: display.words.filter(w => w.startFrame < offset + compiled.timeline.plan.durationInFrames && w.endFrame > offset).map(w=>({...w,startFrame:Math.max(offset,w.startFrame)-offset,endFrame:Math.min(offset+compiled.timeline.plan.durationInFrames,w.endFrame)-offset}))};
         await engine.wait(new Promise<void>(resolve => {
           commit.current = resolve;
           setReady({
             captions,
+            display,
             audio
           });
         }));
@@ -73,12 +85,13 @@ const StorySession: React.FC<{
           const {
             verifyAuthoredStory
           } = await import('./verification');
-          await verifyAuthoredStory(engine, compiled);
+          await verifyAuthoredStory(engine, compiled, offset, layoutOrder);
         }
         const start = performance.now();
         player.current = createStory(engine, {
+          globalFrameOffset: offset,
           timeline: compiled.timeline,
-          settings: createStoryEnvironments(engine, compiled),
+          settings: createStoryEnvironments(engine, compiled, layoutOrder),
           captions,
           audio
         });
@@ -125,9 +138,9 @@ const StorySession: React.FC<{
       player.current!.applyFrame(f);
       evalMs.current = performance.now() - t;
       if (ready) {
-        const expected = captionAt(ready.captions, f),
+        const expected = captionAt(ready.display, f+offset),
           span = document.querySelector('[data-authored-captions] span');
         if (span?.textContent !== (expected?.text ?? undefined)) throw new Error('Authored caption/frame mismatch');
       }
-    }} />{ready && <><StoryAudio prepared={ready.audio} /><div data-authored-captions><ToonCaptions layout={ready.captions} sourceFrame={frame} /></div></>}</div>;
+    }} />{ready && <><StoryAudio prepared={ready.audio} /><div data-authored-captions><ToonCaptions layout={ready.display} sourceFrame={frame+offset} /></div></>}</div>;
 };

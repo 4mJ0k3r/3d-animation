@@ -203,8 +203,21 @@ office/clinic, two active actors in distinct semantic roles, default body dimens
 Use documented marks/seats/path/props; unsupported actions/layouts must fail visibly.
 The bundled pinned OFL Noto Sans Devanagari font must pass integrity/readiness
 before caption measurement; never substitute Windows fonts or estimated speech sync.
-Keep the 600-frame budget. Run test:authoring and test:memory serially; optional
+Keep the 600-frame per-render budget. Run test:authoring and test:memory serially; optional
 --verify=true runs bounded checks inside the one guarded production browser.
 All prior memory admission/abort, concurrency 1, software-safe/swangle, temp and
-ownership safeguards remain mandatory. No Phase 4C-B/5, TTS, ASR, NLP or long-video
-orchestration is authorized.
+ownership safeguards remain mandatory. Phase 4C-B bounded orchestration follows below; no Phase 5, TTS, ASR or NLP is authorized.
+
+## Phase 4C-B: bounded long stories
+
+Use the same story CLI and global JSON timing; up to 1800 frames at 30fps, scenes
+<=600 frames, at most 8 logical scenes (six 300-frame scenes for a minute),
+explicit hard scene cuts only. One scene/segment, sequential guarded
+rendering; no parallel browsers or lowered certificate/memory limits. Read
+`authoring/README.md` before resuming a job. Keep the <=600-frame short path.
+Full FFmpeg + ffprobe on PATH is required for guarded stream-copy assembly and
+one global audio mix. Never encode/mux independent segment AAC tracks or invent
+speech timings. Never edit manifests, bypass fingerprints/locks, overwrite user
+assets, delete active recovery data or report an incomplete output as success.
+Preserve completed segments on failure. All original Linux admission/abort and
+workspace-temp safeguards remain mandatory. Stop at 4C-B; no Phase 5.

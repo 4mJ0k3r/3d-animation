@@ -1,0 +1,331 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "workspace": {
+      "preset": "office"
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 810,
+    "characters": {
+      "rhea": {
+        "appearance": "casual"
+      },
+      "arun": {
+        "appearance": "office"
+      }
+    },
+    "scenes": [
+      {
+        "id": "quiet-radio",
+        "setting": "workspace",
+        "startFrame": 0,
+        "endFrame": 270,
+        "axis": [
+          "rhea",
+          "arun"
+        ],
+        "characters": {
+          "rhea": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            },
+            "expression": "worried"
+          },
+          "arun": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            },
+            "expression": "neutral"
+          }
+        },
+        "beats": [
+          {
+            "id": "respond",
+            "startFrame": 90,
+            "endFrame": 150,
+            "actions": [
+              {
+                "actor": "arun",
+                "type": "gesture",
+                "name": "nod"
+              }
+            ]
+          },
+          {
+            "id": "share",
+            "startFrame": 180,
+            "endFrame": 240,
+            "actions": [
+              {
+                "actor": "rhea",
+                "type": "gesture",
+                "name": "explain"
+              }
+            ]
+          }
+        ],
+        "shots": [
+          {
+            "id": "team",
+            "type": "twoShot",
+            "subjects": [
+              "rhea",
+              "arun"
+            ],
+            "startFrame": 0,
+            "endFrame": 270
+          }
+        ],
+        "cues": [
+          {
+            "id": "setup",
+            "kind": "caption",
+            "language": "en",
+            "text": "The radio is quiet.",
+            "startFrame": 12,
+            "endFrame": 75,
+            "mode": "words",
+            "timing": "estimated"
+          },
+          {
+            "id": "response",
+            "kind": "caption",
+            "language": "en",
+            "text": "Can we fix it?",
+            "startFrame": 100,
+            "endFrame": 170,
+            "mode": "words",
+            "timing": "estimated"
+          },
+          {
+            "id": "cross-cut",
+            "kind": "caption",
+            "language": "hi",
+            "text": "सुनो!",
+            "startFrame": 264,
+            "endFrame": 282,
+            "mode": "line"
+          }
+        ]
+      },
+      {
+        "id": "small-adjustment",
+        "setting": "workspace",
+        "startFrame": 270,
+        "endFrame": 540,
+        "axis": [
+          "rhea",
+          "arun"
+        ],
+        "characters": {
+          "rhea": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            },
+            "expression": "explaining"
+          },
+          "arun": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            },
+            "expression": "neutral"
+          }
+        },
+        "beats": [
+          {
+            "id": "respond",
+            "startFrame": 360,
+            "endFrame": 420,
+            "actions": [
+              {
+                "actor": "arun",
+                "type": "gesture",
+                "name": "nod"
+              }
+            ]
+          },
+          {
+            "id": "share",
+            "startFrame": 450,
+            "endFrame": 510,
+            "actions": [
+              {
+                "actor": "rhea",
+                "type": "gesture",
+                "name": "explain"
+              }
+            ]
+          }
+        ],
+        "shots": [
+          {
+            "id": "team",
+            "type": "twoShot",
+            "subjects": [
+              "rhea",
+              "arun"
+            ],
+            "startFrame": 270,
+            "endFrame": 540
+          }
+        ],
+        "cues": [
+          {
+            "id": "setup",
+            "kind": "caption",
+            "language": "en",
+            "text": "One small adjustment.",
+            "startFrame": 282,
+            "endFrame": 345,
+            "mode": "words",
+            "timing": "estimated"
+          },
+          {
+            "id": "response",
+            "kind": "caption",
+            "language": "en",
+            "text": "Together, try again.",
+            "startFrame": 370,
+            "endFrame": 440,
+            "mode": "words",
+            "timing": "estimated"
+          },
+          {
+            "id": "cross-cut",
+            "kind": "caption",
+            "language": "hi",
+            "text": "अब सुनो!",
+            "startFrame": 534,
+            "endFrame": 552,
+            "mode": "line"
+          }
+        ]
+      },
+      {
+        "id": "clear-signal",
+        "setting": "workspace",
+        "startFrame": 540,
+        "endFrame": 810,
+        "axis": [
+          "rhea",
+          "arun"
+        ],
+        "characters": {
+          "rhea": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            },
+            "expression": "happy"
+          },
+          "arun": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            },
+            "expression": "happy"
+          }
+        },
+        "beats": [
+          {
+            "id": "respond",
+            "startFrame": 630,
+            "endFrame": 690,
+            "actions": [
+              {
+                "actor": "arun",
+                "type": "gesture",
+                "name": "nod"
+              }
+            ]
+          },
+          {
+            "id": "share",
+            "startFrame": 720,
+            "endFrame": 780,
+            "actions": [
+              {
+                "actor": "rhea",
+                "type": "gesture",
+                "name": "wave"
+              }
+            ]
+          }
+        ],
+        "shots": [
+          {
+            "id": "team",
+            "type": "twoShot",
+            "subjects": [
+              "rhea",
+              "arun"
+            ],
+            "startFrame": 540,
+            "endFrame": 810
+          }
+        ],
+        "cues": [
+          {
+            "id": "setup",
+            "kind": "caption",
+            "language": "en",
+            "text": "A clear signal!",
+            "startFrame": 552,
+            "endFrame": 615,
+            "mode": "words",
+            "timing": "estimated"
+          },
+          {
+            "id": "response",
+            "kind": "caption",
+            "language": "en",
+            "text": "Teamwork works.",
+            "startFrame": 640,
+            "endFrame": 710,
+            "mode": "words",
+            "timing": "estimated"
+          },
+          {
+            "id": "ending",
+            "kind": "caption",
+            "language": "hi",
+            "text": "साथ में बेहतर!",
+            "startFrame": 730,
+            "endFrame": 800,
+            "mode": "line"
+          }
+        ]
+      }
+    ],
+    "audio": {
+      "assets": {
+        "signal": {
+          "src": "audio/long-story-signal.wav",
+          "durationInSeconds": 27
+        }
+      },
+      "clips": [
+        {
+          "id": "test-signal",
+          "kind": "narration",
+          "asset": "signal",
+          "startFrame": 0,
+          "endFrame": 810,
+          "volume": 0.3
+        }
+      ]
+    }
+  }
+}

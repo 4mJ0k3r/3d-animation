@@ -73,11 +73,11 @@ function target(t: unknown, scene: StoryScene) {
   if (!Object.hasOwn(scene.characters, p.actor) || p.anchor !== undefined && !['head', 'pelvis', 'leftWrist', 'rightWrist'].includes(p.anchor)) storyFail('INVALID_TARGET', 'Actor targets must name an active actor and supported semantic anchor');
 }
 const channels = (a: StoryAction) => ['stand', 'sit', 'walk'].includes(a.type) ? ['stance'] : a.type === 'look' ? ['gaze'] : a.type === 'expression' ? ['expression'] : a.type === 'react' ? ['gesture', 'expression'] : ['gesture'];
-function compile(input: StoryPlan) {
+function compile(input: StoryPlan, frameBudget: number = STORY_LIMITS.frames, sceneBudget: number = STORY_LIMITS.scenes) {
   const plan = jsonCopy(input);
   keys(plan, ['version', 'fps', 'durationInFrames', 'characters', 'scenes', 'audio']);
-  if (plan.version !== 1 || !Number.isInteger(plan.fps) || plan.fps < 1 || plan.fps > 60 || !Number.isInteger(plan.durationInFrames) || plan.durationInFrames < 1 || plan.durationInFrames > STORY_LIMITS.frames) storyFail('INVALID_TIMEBASE', 'Version 1 uses integer absolute frames, fps 1..60 and duration 1..600');
-  if (!obj(plan.characters) || Object.keys(plan.characters).length < 1 || Object.keys(plan.characters).length > STORY_LIMITS.characters || !Array.isArray(plan.scenes) || !plan.scenes.length || plan.scenes.length > STORY_LIMITS.scenes) storyFail('STORY_BUDGET', 'Use 1..8 characters and 1..4 scenes');
+  if (plan.version !== 1 || !Number.isInteger(plan.fps) || plan.fps < 1 || plan.fps > 60 || !Number.isInteger(plan.durationInFrames) || plan.durationInFrames < 1 || plan.durationInFrames > frameBudget) storyFail('INVALID_TIMEBASE', 'Invalid absolute frame timebase or bounded story duration');
+  if (!obj(plan.characters) || Object.keys(plan.characters).length < 1 || Object.keys(plan.characters).length > STORY_LIMITS.characters || !Array.isArray(plan.scenes) || !plan.scenes.length || plan.scenes.length > sceneBudget) storyFail('STORY_BUDGET', `Use 1..8 characters and 1..${sceneBudget} scenes`);
   for (const [id, c] of Object.entries(plan.characters)) {
     name(id);
     keys(c, ['appearance', 'proportions', 'expression', 'scale']);
@@ -348,3 +348,12 @@ export function compileStory(input: StoryPlan) {
   }
 }
 export type CompiledStory = ReturnType<typeof compileStory>;
+/** Data-only orchestration validation. Never pass this long timeline to a renderer. */
+export function compileOrchestrationStory(input: StoryPlan): CompiledStory {
+  if (input?.fps !== 30) storyFail('INVALID_TIMEBASE', 'Segmented stories require 30 fps');
+  try { return compile(input, 1800, 8); }
+  catch (e) {
+    if (e instanceof StoryError) throw e;
+    storyFail('INVALID_SCHEMA', 'Malformed structured story plan', {details:String(e)});
+  }
+}

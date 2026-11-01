@@ -56,6 +56,8 @@ async function main() {
     } = require(path.join(compiledDir, 'toon-kit', 'authoring', 'font.js')),
     compiled = compileStoryDocument(data);
   const files = require('./story-authoring-assets.cjs').validateAuthoredAssets(compiled, path.join(root, 'public'), STORY_FONT);
+  const {planStorySegments} = require(path.join(compiledDir, 'toon-kit', 'authoring', 'segments.js'));
+  const segments = planStorySegments(compiled);
   const result = {
     valid: true,
     scope: 'Schema, semantic slots and local-file integrity; decode/framing certified in render preparation',
@@ -65,6 +67,7 @@ async function main() {
     layouts: compiled.document.layouts,
     captionTiming: compiled.timeline.captionTiming,
     audioAssets: files.length,
+    segments,
     font: {
       src: STORY_FONT.src,
       sha256: STORY_FONT.sha256
@@ -74,7 +77,9 @@ async function main() {
   if (job.command === 'render') {
     await new Promise(setImmediate);
     if (cancelled) fail('AUTHORING_CANCELLED', 'Cancelled before rendering');
-    await require('./render.cjs').runProductionRender({
+    if(result.frames > 600) {
+      result.orchestration = await require('./story-segments.cjs').renderSegments({job,compiled,files,planSHA256,planStorySegments,cancelled:()=>cancelled});
+    } else await require('./render.cjs').runProductionRender({
       entry: 'src/index.ts',
       composition: 'AuthoredStory',
       frames: result.frames,

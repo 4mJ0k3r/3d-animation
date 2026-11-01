@@ -87,6 +87,7 @@ async function runAuthoredStory(options) {
       cwd: root,
       env: {
         ...process.env,
+        TOON_AUTHORING_OWNER: id,
         TMPDIR: scratch,
         TMP: scratch,
         TEMP: scratch,

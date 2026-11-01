@@ -1,0 +1,1 @@
+Original analytic 220Hz non-speech test signal generated for Toon-Kit, 2026-11-01. Dedicated to the public domain under CC0-1.0. Not narration, TTS, or speech alignment. 27s, 8000Hz mono signed 16-bit PCM. Formula: round(6500*(0.65+0.25*sin(2*pi*0.5*t))*sin(2*pi*220*t)).
