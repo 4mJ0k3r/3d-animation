@@ -1,0 +1,708 @@
+{
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "workspace": {
+      "preset": "office",
+      "displays": {
+        "board": {
+          "text": "कल ऑफिस पिकनिक!"
+        }
+      }
+    }
+  },
+  "story": {
+    "characters": {
+      "arjun": {
+        "appearance": "office",
+        "expression": "neutral"
+      },
+      "naina": {
+        "appearance": "casual",
+        "expression": "worried"
+      }
+    },
+    "durationInFrames": 840,
+    "fps": 30,
+    "scenes": [
+      {
+        "axis": [
+          "naina",
+          "arjun"
+        ],
+        "beats": [
+          {
+            "actions": [
+              {
+                "actor": "naina",
+                "path": "toDesk",
+                "type": "walk"
+              }
+            ],
+            "endFrame": 60,
+            "id": "arrive-worried",
+            "startFrame": 0
+          },
+          {
+            "actions": [
+              {
+                "actor": "naina",
+                "name": "explain",
+                "type": "gesture"
+              },
+              {
+                "actor": "naina",
+                "target": {
+                  "actor": "arjun",
+                  "anchor": "head"
+                },
+                "type": "look"
+              },
+              {
+                "actor": "arjun",
+                "name": "worried",
+                "type": "expression"
+              }
+            ],
+            "endFrame": 210,
+            "id": "alarm",
+            "startFrame": 90
+          },
+          {
+            "actions": [
+              {
+                "actor": "arjun",
+                "name": "worried",
+                "type": "gesture"
+              },
+              {
+                "actor": "naina",
+                "name": "shrug",
+                "type": "gesture"
+              }
+            ],
+            "endFrame": 270,
+            "id": "dread",
+            "startFrame": 220
+          }
+        ],
+        "characters": {
+          "arjun": {
+            "expression": "neutral",
+            "stance": {
+              "floor": "ground",
+              "seat": "chair",
+              "type": "sit"
+            }
+          },
+          "naina": {
+            "expression": "worried",
+            "stance": {
+              "at": "entry",
+              "type": "stand"
+            }
+          }
+        },
+        "cues": [
+          {
+            "endFrame": 120,
+            "id": "khabar",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "speaker": "naina",
+            "startFrame": 12,
+            "text": "अरे अर्जुन, बुरी खबर!",
+            "timing": "supplied",
+            "alignmentId": "naina_01-estimated-words"
+          },
+          {
+            "endFrame": 188,
+            "id": "nikal-raha",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "speaker": "naina",
+            "startFrame": 125,
+            "text": "बॉस सबको निकाल रहा है!",
+            "timing": "supplied",
+            "alignmentId": "naina_02-estimated-words"
+          }
+        ],
+        "endFrame": 280,
+        "id": "buri-khabar",
+        "setting": "workspace",
+        "shots": [
+          {
+            "endFrame": 90,
+            "id": "arrival",
+            "startFrame": 0,
+            "subject": "naina",
+            "type": "fullBody"
+          },
+          {
+            "endFrame": 280,
+            "id": "do-chinta",
+            "startFrame": 90,
+            "subjects": [
+              "naina",
+              "arjun"
+            ],
+            "type": "twoShot"
+          }
+        ],
+        "startFrame": 0
+      },
+      {
+        "axis": [
+          "naina",
+          "arjun"
+        ],
+        "beats": [
+          {
+            "actions": [
+              {
+                "actor": "arjun",
+                "name": "surprised",
+                "type": "react"
+              },
+              {
+                "actor": "naina",
+                "target": {
+                  "actor": "arjun",
+                  "anchor": "head"
+                },
+                "type": "look"
+              }
+            ],
+            "endFrame": 395,
+            "id": "shock",
+            "startFrame": 295
+          },
+          {
+            "actions": [
+              {
+                "actor": "naina",
+                "hand": "auto",
+                "target": "board",
+                "type": "point"
+              },
+              {
+                "actor": "naina",
+                "name": "explaining",
+                "type": "expression"
+              }
+            ],
+            "endFrame": 480,
+            "id": "sach",
+            "startFrame": 405
+          },
+          {
+            "actions": [
+              {
+                "actor": "arjun",
+                "name": "nod",
+                "type": "gesture"
+              },
+              {
+                "actor": "arjun",
+                "name": "happy",
+                "type": "expression"
+              },
+              {
+                "actor": "naina",
+                "name": "happy",
+                "type": "expression"
+              }
+            ],
+            "endFrame": 550,
+            "id": "samjha",
+            "startFrame": 490
+          }
+        ],
+        "characters": {
+          "arjun": {
+            "expression": "neutral",
+            "stance": {
+              "floor": "ground",
+              "seat": "chair",
+              "type": "sit"
+            }
+          },
+          "naina": {
+            "expression": "worried",
+            "stance": {
+              "at": "finish",
+              "type": "stand"
+            }
+          }
+        },
+        "cues": [
+          {
+            "endFrame": 367,
+            "id": "kya",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "speaker": "arjun",
+            "startFrame": 295,
+            "text": "क्या? सबको निकाल रहा है?",
+            "timing": "supplied",
+            "alignmentId": "arjun_01-estimated-words"
+          },
+          {
+            "endFrame": 477,
+            "id": "picnic",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "speaker": "naina",
+            "startFrame": 405,
+            "text": "ऑफिस से निकालकर पिकनिक पर!",
+            "timing": "supplied",
+            "alignmentId": "naina_03-estimated-words"
+          }
+        ],
+        "endFrame": 560,
+        "id": "hairani-aur-sach",
+        "setting": "workspace",
+        "shots": [
+          {
+            "endFrame": 400,
+            "id": "jhatka",
+            "motion": {
+              "amount": "subtle",
+              "type": "pushIn"
+            },
+            "startFrame": 280,
+            "subject": "arjun",
+            "type": "reaction"
+          },
+          {
+            "endFrame": 485,
+            "id": "ishara",
+            "startFrame": 400,
+            "subjects": [
+              "naina",
+              "arjun"
+            ],
+            "type": "twoShot"
+          },
+          {
+            "endFrame": 560,
+            "id": "saboot",
+            "region": "full",
+            "startFrame": 485,
+            "subject": "board",
+            "type": "objectFocus"
+          }
+        ],
+        "startFrame": 280
+      },
+      {
+        "axis": [
+          "naina",
+          "arjun"
+        ],
+        "beats": [
+          {
+            "actions": [
+              {
+                "actor": "arjun",
+                "name": "excited",
+                "type": "gesture"
+              },
+              {
+                "actor": "arjun",
+                "target": {
+                  "actor": "naina",
+                  "anchor": "head"
+                },
+                "type": "look"
+              },
+              {
+                "actor": "naina",
+                "name": "nod",
+                "type": "gesture"
+              }
+            ],
+            "endFrame": 665,
+            "id": "rahat",
+            "startFrame": 575
+          },
+          {
+            "actions": [
+              {
+                "actor": "naina",
+                "name": "explain",
+                "type": "gesture"
+              },
+              {
+                "actor": "arjun",
+                "name": "excited",
+                "type": "react"
+              }
+            ],
+            "endFrame": 760,
+            "id": "mazaak",
+            "startFrame": 680
+          },
+          {
+            "actions": [
+              {
+                "actor": "naina",
+                "name": "wave",
+                "type": "gesture"
+              },
+              {
+                "actor": "naina",
+                "target": "audience",
+                "type": "look"
+              },
+              {
+                "actor": "arjun",
+                "name": "wave",
+                "type": "gesture"
+              },
+              {
+                "actor": "arjun",
+                "target": "audience",
+                "type": "look"
+              }
+            ],
+            "endFrame": 830,
+            "id": "alvida",
+            "startFrame": 770
+          }
+        ],
+        "characters": {
+          "arjun": {
+            "expression": "happy",
+            "stance": {
+              "floor": "ground",
+              "seat": "chair",
+              "type": "sit"
+            }
+          },
+          "naina": {
+            "expression": "happy",
+            "stance": {
+              "at": "finish",
+              "type": "stand"
+            }
+          }
+        },
+        "cues": [
+          {
+            "endFrame": 650,
+            "id": "oh",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "speaker": "arjun",
+            "startFrame": 570,
+            "text": "ओह! तो यह वाला निकालना था!",
+            "timing": "supplied",
+            "alignmentId": "arjun_02-estimated-words"
+          },
+          {
+            "endFrame": 830,
+            "id": "ant",
+            "kind": "caption",
+            "language": "hi",
+            "mode": "words",
+            "startFrame": 690,
+            "text": "गलतफहमी खत्म, पिकनिक पक्की!",
+            "timing": "estimated"
+          }
+        ],
+        "endFrame": 840,
+        "id": "hansi-piknik",
+        "setting": "workspace",
+        "shots": [
+          {
+            "endFrame": 680,
+            "id": "rahat-shot",
+            "startFrame": 560,
+            "subjects": [
+              "naina",
+              "arjun"
+            ],
+            "type": "twoShot"
+          },
+          {
+            "endFrame": 765,
+            "id": "hasi",
+            "startFrame": 680,
+            "subject": "naina",
+            "type": "closeUp"
+          },
+          {
+            "endFrame": 840,
+            "id": "finale",
+            "startFrame": 765,
+            "subjects": [
+              "naina",
+              "arjun"
+            ],
+            "type": "twoShot"
+          }
+        ],
+        "startFrame": 560
+      }
+    ],
+    "version": 1,
+    "audio": {
+      "assets": {
+        "naina_01": {
+          "src": "audio/phase5e/naina_01.mp3",
+          "durationInSeconds": 3.631
+        },
+        "naina_02": {
+          "src": "audio/phase5e/naina_02.mp3",
+          "durationInSeconds": 2.115875
+        },
+        "arjun_01": {
+          "src": "audio/phase5e/arjun_01.mp3",
+          "durationInSeconds": 2.429375
+        },
+        "naina_03": {
+          "src": "audio/phase5e/naina_03.mp3",
+          "durationInSeconds": 2.429375
+        },
+        "arjun_02": {
+          "src": "audio/phase5e/arjun_02.mp3",
+          "durationInSeconds": 2.690563
+        }
+      },
+      "clips": [
+        {
+          "id": "naina_01",
+          "kind": "dialogue",
+          "asset": "naina_01",
+          "speaker": "naina",
+          "startFrame": 12,
+          "endFrame": 120,
+          "trimBeforeFrames": 0,
+          "volume": 1
+        },
+        {
+          "id": "naina_02",
+          "kind": "dialogue",
+          "asset": "naina_02",
+          "speaker": "naina",
+          "startFrame": 125,
+          "endFrame": 188,
+          "trimBeforeFrames": 0,
+          "volume": 1
+        },
+        {
+          "id": "arjun_01",
+          "kind": "dialogue",
+          "asset": "arjun_01",
+          "speaker": "arjun",
+          "startFrame": 295,
+          "endFrame": 367,
+          "trimBeforeFrames": 0,
+          "volume": 1
+        },
+        {
+          "id": "naina_03",
+          "kind": "dialogue",
+          "asset": "naina_03",
+          "speaker": "naina",
+          "startFrame": 405,
+          "endFrame": 477,
+          "trimBeforeFrames": 0,
+          "volume": 1
+        },
+        {
+          "id": "arjun_02",
+          "kind": "dialogue",
+          "asset": "arjun_02",
+          "speaker": "arjun",
+          "startFrame": 570,
+          "endFrame": 650,
+          "trimBeforeFrames": 0,
+          "volume": 1
+        }
+      ],
+      "alignments": [
+        {
+          "alignmentId": "naina_01-estimated-words",
+          "clip": "naina_01",
+          "text": "अरे अर्जुन, बुरी खबर!",
+          "language": "hi",
+          "speaker": "naina",
+          "words": [
+            {
+              "text": "अरे",
+              "startSeconds": 0.1,
+              "endSeconds": 0.58
+            },
+            {
+              "text": "अर्जुन,",
+              "startSeconds": 0.85,
+              "endSeconds": 1.92
+            },
+            {
+              "text": "बुरी",
+              "startSeconds": 2.1,
+              "endSeconds": 2.3
+            },
+            {
+              "text": "खबर!",
+              "startSeconds": 2.4,
+              "endSeconds": 3.3
+            }
+          ]
+        },
+        {
+          "alignmentId": "naina_02-estimated-words",
+          "clip": "naina_02",
+          "text": "बॉस सबको निकाल रहा है!",
+          "language": "hi",
+          "speaker": "naina",
+          "words": [
+            {
+              "text": "बॉस",
+              "startSeconds": 0,
+              "endSeconds": 0.27
+            },
+            {
+              "text": "सबको",
+              "startSeconds": 0.27,
+              "endSeconds": 0.74
+            },
+            {
+              "text": "निकाल",
+              "startSeconds": 0.86,
+              "endSeconds": 1.25
+            },
+            {
+              "text": "रहा",
+              "startSeconds": 1.25,
+              "endSeconds": 1.6
+            },
+            {
+              "text": "है!",
+              "startSeconds": 1.6,
+              "endSeconds": 1.84
+            }
+          ]
+        },
+        {
+          "alignmentId": "arjun_01-estimated-words",
+          "clip": "arjun_01",
+          "text": "क्या? सबको निकाल रहा है?",
+          "language": "hi",
+          "speaker": "arjun",
+          "words": [
+            {
+              "text": "क्या?",
+              "startSeconds": 0,
+              "endSeconds": 0.46
+            },
+            {
+              "text": "सबको",
+              "startSeconds": 0.88,
+              "endSeconds": 1.14
+            },
+            {
+              "text": "निकाल",
+              "startSeconds": 1.26,
+              "endSeconds": 1.62
+            },
+            {
+              "text": "रहा",
+              "startSeconds": 1.62,
+              "endSeconds": 1.9
+            },
+            {
+              "text": "है?",
+              "startSeconds": 1.9,
+              "endSeconds": 2.11
+            }
+          ]
+        },
+        {
+          "alignmentId": "naina_03-estimated-words",
+          "clip": "naina_03",
+          "text": "ऑफिस से निकालकर पिकनिक पर!",
+          "language": "hi",
+          "speaker": "naina",
+          "words": [
+            {
+              "text": "ऑफिस",
+              "startSeconds": 0,
+              "endSeconds": 0.45
+            },
+            {
+              "text": "से",
+              "startSeconds": 0.45,
+              "endSeconds": 0.65
+            },
+            {
+              "text": "निकालकर",
+              "startSeconds": 0.65,
+              "endSeconds": 1.26
+            },
+            {
+              "text": "पिकनिक",
+              "startSeconds": 1.41,
+              "endSeconds": 1.69
+            },
+            {
+              "text": "पर!",
+              "startSeconds": 1.81,
+              "endSeconds": 2.07
+            }
+          ]
+        },
+        {
+          "alignmentId": "arjun_02-estimated-words",
+          "clip": "arjun_02",
+          "text": "ओह! तो यह वाला निकालना था!",
+          "language": "hi",
+          "speaker": "arjun",
+          "words": [
+            {
+              "text": "ओह!",
+              "startSeconds": 0.115,
+              "endSeconds": 0.548
+            },
+            {
+              "text": "तो",
+              "startSeconds": 0.917,
+              "endSeconds": 1.1
+            },
+            {
+              "text": "यह",
+              "startSeconds": 1.1,
+              "endSeconds": 1.3
+            },
+            {
+              "text": "वाला",
+              "startSeconds": 1.3,
+              "endSeconds": 1.55
+            },
+            {
+              "text": "निकालना",
+              "startSeconds": 1.55,
+              "endSeconds": 2.04
+            },
+            {
+              "text": "था!",
+              "startSeconds": 2.04,
+              "endSeconds": 2.322
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "version": 1,
+  "video": {
+    "height": 1280,
+    "width": 720
+  }
+}
