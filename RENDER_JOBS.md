@@ -98,3 +98,93 @@ fingerprinted manifest resumes them. Changing the engine changes the job ID.
 On Linux, the existing memory admission requires at least 2.5 GiB MemAvailable
 and aborts below 1 GiB. These limits are unchanged; wait for memory rather than
 lowering them.
+
+## Private relay (Phase 7B-A)
+
+This optional transport lets Muse submit a job and fetch its MP4 through **one
+private S3-compatible bucket**, so nothing is copied by hand. There is no public
+endpoint and the worker opens no ports: both machines make outbound HTTPS
+requests to the bucket only. Muse never polls. Only the single trusted worker
+runs `worker`.
+
+```sh
+# Muse (Linux VM)
+npm run job -- package --plan=examples/name.story.json --out=out/jobs-outbox
+npm run job -- submit --job=out/jobs-outbox/<jobId>    # -> RELAY_SUBMITTED {jobId,...}
+npm run job -- status --job=<jobId>                    # PENDING | INCOMPLETE | COMPLETED | BLOCKED | FAILED
+npm run job -- fetch  --job=<jobId> [--out=out/relay/<jobId>]
+npm run job -- submit --job=out/jobs-outbox/<jobId> --retry=true   # request another attempt after FAILED
+
+# Worker (Windows)
+npm run job -- worker                                  # process at most one job, then exit
+npm run job -- worker --job=<jobId>                    # process a specific job
+npm run job -- worker --poll=true --interval=60 --max-jobs=10 --max-minutes=60
+```
+
+Exit codes for `status`/`fetch`: 0 COMPLETED and verified, 3 PENDING or
+INCOMPLETE, 2 BLOCKED, 1 FAILED or NOT_FOUND. A video is reported COMPLETED only
+after its SHA-256 matches both `result.json` and the `.sha256` file. A mismatched
+download is deleted.
+
+### Bucket layout
+
+```
+<prefix>/pending/<jobId>/manifest.json, story.json, assets/...   # the Phase 7A package
+<prefix>/pending/<jobId>/READY.json     # written last: submissionId + file list with checksums
+<prefix>/results/<jobId>/video.mp4, video.mp4.sha256
+<prefix>/results/<jobId>/result.json    # written last; it is the completion marker
+```
+
+- **Submit:** verifies the package, uploads only files whose size and checksum
+  differ, then writes `READY.json`. Rerunning after an interruption resumes, and
+  an identical submission uploads nothing.
+- **Worker:** handles the oldest READY job that has no result, or a resubmitted
+  one; BLOCKED jobs are retried after 10 minutes. It downloads into private
+  scratch under `.remotion-tmp/relay-<uuid>/` and checks every file against
+  `READY.json` and the Phase 7A manifest. Then it calls the existing `job run`,
+  re-verifies the MP4 and publishes the video and checksum before `result.json`.
+  FAILED and BLOCKED results never include a video. A network error leaves the
+  job pending.
+- **Single worker:** `.remotion-tmp/relay-worker.lock` enforces one worker, on
+  top of the existing render-job, authoring and production locks.
+- **Nothing is deleted from the bucket.** Use a storage lifecycle rule if you
+  want old jobs removed.
+- **Uploads are single signed PUTs** with the SHA-256 payload hash, so the store
+  rejects corrupted bodies. Videos are limited to 512 MiB.
+
+### Configuration
+
+Set these environment variables, or put the same values in a gitignored
+`.toonkit-relay.json` at the repository root (keys `endpoint`, `region`,
+`bucket`, `prefix`, `pathStyle`, `accessKeyId`, `secretAccessKey`; `chmod 600`
+on Linux). You can point to a different file with `TOONKIT_RELAY_CONFIG`.
+
+| Variable | Example |
+|---|---|
+| `TOONKIT_RELAY_ENDPOINT` | `https://<account>.r2.cloudflarestorage.com` (https required) |
+| `TOONKIT_RELAY_REGION` | `auto` (R2) or the AWS region |
+| `TOONKIT_RELAY_BUCKET` | `toonkit-jobs` (private) |
+| `TOONKIT_RELAY_PREFIX` | `toonkit` (default) |
+| `TOONKIT_RELAY_PATH_STYLE` | `true` (default); `false` for virtual-host style |
+| `TOONKIT_RELAY_ACCESS_KEY_ID`, `TOONKIT_RELAY_SECRET_ACCESS_KEY` | scoped key pair |
+
+Secrets are never printed, published or written into results.
+
+### Setup
+
+1. **Create the bucket yourself.** It must be one private bucket, with public
+   access off and no public URL. No code here creates buckets or accounts.
+2. **Create scoped credentials.** Use object read and write on that bucket only,
+   with no admin or delete rights. The ideal is two keys, one for Muse and one
+   for the worker, each limited to the bucket (and to the prefix where the
+   provider supports it).
+3. **Use the same engine on both machines.** Muse and the worker check out the
+   same commit and run `npm ci`. The worker also needs Node 24 and a full
+   FFmpeg/ffprobe on PATH.
+4. **Configure each machine** with the variables above. On Muse, keep the
+   config file `chmod 600`.
+5. **Run the worker.** For a single run use `npm run job -- worker`. For
+   unattended use run `--poll=true` with bounded `--max-minutes`, for example
+   from Windows Task Scheduler every hour.
+6. **On Muse,** run `submit`, then later `status`, then `fetch`. Muse never
+   loops on `status`.

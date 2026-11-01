@@ -301,3 +301,7 @@ Phase 7A: portable render jobs. Use `npm run job -- package|verify|run` (see
 RENDER_JOBS.md). Packages carry only story JSON, referenced public/audio files and
 a checksummed manifest; the worker reuses `story render` and every production
 guard. No server, upload, polling or cloud transport. Stop after 7A.
+
+Phase 7B-A: optional private relay (RENDER_JOBS.md). Muse may run only `job
+submit`, `job status` and `job fetch`, never `job worker` or a polling loop.
+Never print, commit or invent relay credentials. Stop after 7B-A.

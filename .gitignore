@@ -2,3 +2,5 @@ node_modules/
 .remotion-tmp/
 out/
 public/audio/jobs/
+.toonkit-relay.json
+.env

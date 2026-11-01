@@ -71,9 +71,11 @@ function audioSources(story) {
     return a.src;
   });
 }
+/** True only for portable forward-slash relative paths with no empty, '.', '..' or drive segments. */
+const safeRelative = (rel) => typeof rel === 'string' && rel.length > 0 && rel.length <= 512 && !rel.includes('\\') && !rel.includes('\0') && !path.isAbsolute(rel) && !/^[A-Za-z]:/.test(rel) && !rel.split('/').some(s => !s || s === '.' || s === '..');
 /** Resolve a forward-slash relative path strictly inside a directory, rejecting links. */
 function strictInside(dir, rel) {
-  if (typeof rel !== 'string' || !rel || rel.includes('\\') || rel.includes('\0') || path.isAbsolute(rel) || /^[A-Za-z]:/.test(rel) || rel.split('/').some(s => !s || s === '.' || s === '..')) fail('JOB_PATH', 'Unsafe package path: ' + JSON.stringify(rel));
+  if (!safeRelative(rel)) fail('JOB_PATH', 'Unsafe package path: ' + JSON.stringify(rel));
   const full = path.join(dir, ...rel.split('/'));
   let p = dir;
   for (const part of rel.split('/')) {
@@ -304,16 +306,27 @@ async function runJob({job, verify = false}) {
     }
   }
 }
-module.exports = {packageJob, verifyJob, runJob, engineDigest, jobIdOf, LIMITS, FORMAT, VERSION};
+module.exports = {packageJob, verifyJob, runJob, engineDigest, jobIdOf, safeRelative, fileSha, JOB_ID, LIMITS, FORMAT, VERSION};
 if (require.main === module) {
   const [command, ...rest] = process.argv.slice(2), args = {};
-  const usage = 'Usage: node scripts/render-job.cjs package --plan=examples/name.story.json --out=<dir> | verify --job=<dir> | run --job=<dir> [--verify=true]';
+  const usage = 'Usage: node scripts/render-job.cjs package --plan=examples/name.story.json --out=<dir> | verify --job=<dir> | run --job=<dir> [--verify=true] | submit --job=<dir> [--retry=true] | status --job=<jobId> | fetch --job=<jobId> [--out=<dir>] | worker [--job=<jobId>] [--poll=true --interval=60 --max-jobs=10 --max-minutes=60]';
   const print = (tag, v) => console.log(tag + ' ' + JSON.stringify(v));
   (async () => {
     for (const a of rest) {
-      const m = /^--(plan|out|job|verify)=(.+)$/.exec(a);
+      const m = /^--(plan|out|job|verify|retry|poll|interval|max-jobs|max-minutes)=(.+)$/.exec(a);
       if (!m || Object.hasOwn(args, m[1])) fail('JOB_ARGUMENT', 'Unknown/duplicate argument ' + a + '. ' + usage);
-      args[m[1]] = m[1] === 'verify' ? m[2] === 'true' : m[2];
+      args[m[1]] = ['verify', 'retry', 'poll'].includes(m[1]) ? m[2] === 'true' : ['interval', 'max-jobs', 'max-minutes'].includes(m[1]) ? Number(m[2]) : m[2];
+    }
+    if (['submit', 'status', 'fetch', 'worker'].includes(command)) {
+      const R = require('./relay.cjs'), cfg = R.loadConfig(), t = R.openTransport(cfg);
+      if (command === 'submit') {const r = await R.submit({job: args.job, retry: args.retry}, cfg, t); print('RELAY_SUBMITTED', {...r, relay: R.describeConfig(cfg)});}
+      else if (command === 'status' || command === 'fetch') {
+        const r = await R.fetchResult({job: args.job, out: args.out, download: command === 'fetch'}, cfg, t);
+        print('RELAY_STATUS', {jobId: r.jobId, status: r.status, verified: r.verified ?? false, video: r.video ?? null, outputSHA256: r.outputSHA256 ?? null, error: r.error ?? null, note: r.note ?? null});
+        process.exitCode = r.status === 'COMPLETED' ? 0 : r.status === 'PENDING' || r.status === 'INCOMPLETE' ? 3 : r.status === 'BLOCKED' ? 2 : 1;
+      } else if (args.poll) {const r = await R.workLoop({intervalSeconds: args.interval ?? 60, maxJobs: args['max-jobs'] ?? 10, maxMinutes: args['max-minutes'] ?? 60, verify: args.verify}, cfg, t, v => print('RELAY_WORKER', v)); print('RELAY_WORKER_DONE', r);}
+      else {const r = await R.workOnce({job: args.job, verify: args.verify}, cfg, t); print('RELAY_WORKER', r ? {jobId: r.jobId, status: r.status, outputSHA256: r.outputSHA256, error: r.error} : {idle: true}); if (r && r.status !== 'COMPLETED') process.exitCode = r.status === 'BLOCKED' ? 2 : 1;}
+      return;
     }
     if (command === 'package') {const r = await packageJob(args); print('RENDER_JOB_PACKAGED', {jobId: r.jobId, directory: r.directory, reused: r.reused, assets: r.manifest.assets.length, frames: r.manifest.output.frames});}
     else if (command === 'verify') {const r = verifyJob(args.job); const c = (() => {try {compatibility(r.manifest); return {compatible: true};} catch (e) {return {compatible: false, error: e.diagnostic};}})(); print('RENDER_JOB_VERIFIED', {jobId: r.manifest.jobId, assets: r.manifest.assets.length, frames: r.manifest.output.frames, ...c}); if (!c.compatible) process.exitCode = 2;}
