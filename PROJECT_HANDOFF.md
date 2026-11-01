@@ -211,6 +211,9 @@ feature. Recommended next task: inspect current code and design a bounded 6C-B
 proposal, then obtain an explicit implementation assignment. Do not start it as
 part of this documentation handoff.
 
+Phase 7A adds portable render jobs for rendering on a separate worker machine
+(manual transfer only). See [RENDER_JOBS.md](RENDER_JOBS.md).
+
 ## H. Verified command names and recovery
 
 Run from the repository root. Commands below were checked against package.json

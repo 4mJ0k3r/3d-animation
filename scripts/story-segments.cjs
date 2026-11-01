@@ -405,6 +405,8 @@ async function renderSegments({
 }
 module.exports = {
   renderSegments,
+  fileHash,
+  executable,
   probe,
   videoSignature,
   sourceDigest,

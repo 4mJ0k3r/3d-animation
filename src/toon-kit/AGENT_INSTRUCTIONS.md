@@ -296,3 +296,8 @@ shaders. Objects are static. Stop after 6E-A.
 Phase 6E-B exception: freestanding composite objects may be animated as whole
 units with existing `propAnimations`. No per-part, hinged or keyframed motion.
 Stop after 6E-B.
+
+Phase 7A: portable render jobs. Use `npm run job -- package|verify|run` (see
+RENDER_JOBS.md). Packages carry only story JSON, referenced public/audio files and
+a checksummed manifest; the worker reuses `story render` and every production
+guard. No server, upload, polling or cloud transport. Stop after 7A.
