@@ -5,6 +5,40 @@ import { buildPrefab } from './prefabs';
 import { createTargets, createPaths, sceneMark, scenePoint, sceneSeat, pathFromMarks, levelFloor } from '../characters';
 import type { TargetLibrary } from '../characters/cast-types';
 import { storyFail } from '../story/types';
+import { OBJECT_LIMITS } from './composite';
+import type { ObjectPlan } from './composite';
+import type { createPrimitiveFactory } from '../lib';
+
+/**
+ * Composite object parts use the same pooled primitive factory, toon materials and
+ * inherited outline policy as every other construction item. Unit geometry is
+ * scaled per part, so equal shapes share one pooled geometry.
+ */
+function buildObject(p: ReturnType<typeof createPrimitiveFactory>, plan: ObjectPlan) {
+  const root = new T.Group();
+  for (const part of plan.parts) {
+    const [w, h, d] = part.size, color = part.color;
+    let mesh: T.Mesh;
+    // Fixed low-poly segment counts keep cost predictable (see OBJECT_TRIANGLES).
+    if (part.shape === 'box') mesh = p.box({width: 1, height: 1, depth: 1, color});
+    else if (part.shape === 'roundedBox') {
+      mesh = p.roundedBox({width: w, height: h, depth: d, radius: Math.min(w, h, d) * .2, segments: 2, color});
+    } else if (part.shape === 'sphere') mesh = p.sphere({radius: .5, widthSegments: 16, heightSegments: 10, color});
+    else if (part.shape === 'cylinder') {
+      const grow = Math.max(1, part.taper);
+      mesh = p.cylinder({radiusTop: .5 * part.taper / grow, radiusBottom: .5 / grow, height: 1, radialSegments: 16, color});
+    } else {
+      const length = Math.round(Math.max(0, h / Math.min(w, d) - 1) * 20) / 20;
+      mesh = p.capsule({radius: .5, length, capSubdivisions: 4, radialSegments: 12, color});
+      mesh.scale.set(w, h / (1 + length), d);
+    }
+    if (part.shape === 'box' || part.shape === 'sphere' || part.shape === 'cylinder') mesh.scale.set(w, h, d);
+    mesh.position.fromArray(part.center);
+    mesh.name = 'ObjectPart:' + part.id;
+    root.add(mesh);
+  }
+  return root;
+}
 
 /** One-time geometry adapter for the pure construction plan. */
 export const buildConstruction: EnvironmentBuilder = (engine, p, name, index, layout) => {
@@ -43,7 +77,15 @@ export const buildConstruction: EnvironmentBuilder = (engine, p, name, index, la
       size: [w, h, d]
     } = item;
     let part: T.Group;
-    if (spec.prefab) {
+    if (item.object) {
+      part = buildObject(p, item.object);
+      let tris = 0;
+      part.traverse(o => {
+        if (o instanceof T.Mesh) tris += (o.geometry.index?.count ?? o.geometry.getAttribute('position').count) / 3;
+      });
+      if (tris > OBJECT_LIMITS.trianglesPerObject) storyFail('OBJECT_BUDGET', `${item.id}: ${tris} triangles exceeds ${OBJECT_LIMITS.trianglesPerObject}; use fewer rounded parts`);
+      entries[item.id] = scenePoint(part.getObjectByName('ObjectPart:' + item.object.focus)!);
+    } else if (spec.prefab) {
       const built = buildPrefab(p, spec.prefab, spec.finish, spec.text, item.mounted);
       part = built.root;
       entries[item.id] = built.seat ? sceneSeat(built.seat) : scenePoint(built.point);

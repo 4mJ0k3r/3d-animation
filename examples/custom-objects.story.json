@@ -1,0 +1,288 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "plaza": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "paving"
+        },
+        "items": {
+          "backdrop": {
+            "kind": "wall",
+            "size": {
+              "width": 9,
+              "height": 3.4
+            },
+            "finish": "brick",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "lamp": {
+            "object": {
+              "focus": "lantern",
+              "parts": {
+                "base": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.5,
+                    "height": 0.2
+                  },
+                  "finish": "charcoal"
+                },
+                "pole": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.12,
+                    "height": 2.6
+                  },
+                  "finish": "charcoal",
+                  "place": {
+                    "on": "base"
+                  }
+                },
+                "neck": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.22,
+                    "height": 0.15
+                  },
+                  "finish": "charcoal",
+                  "place": {
+                    "on": "pole"
+                  }
+                },
+                "lantern": {
+                  "shape": "sphere",
+                  "size": {
+                    "width": 0.55,
+                    "height": 0.6
+                  },
+                  "finish": "glow",
+                  "place": {
+                    "on": "neck"
+                  }
+                },
+                "hat": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.75,
+                    "height": 0.25
+                  },
+                  "taper": 0.3,
+                  "finish": "charcoal",
+                  "place": {
+                    "on": "lantern"
+                  }
+                }
+              }
+            },
+            "place": {
+              "relation": "near",
+              "target": "entry",
+              "side": "left",
+              "gap": 0.8
+            }
+          },
+          "beacon": {
+            "object": {
+              "focus": "dome",
+              "parts": {
+                "body": {
+                  "shape": "roundedBox",
+                  "size": {
+                    "width": 1,
+                    "height": 0.8,
+                    "depth": 0.7
+                  },
+                  "finish": "teal"
+                },
+                "panel": {
+                  "shape": "box",
+                  "size": {
+                    "width": 0.6,
+                    "height": 0.35,
+                    "depth": 0.04
+                  },
+                  "finish": "mint",
+                  "place": {
+                    "beside": "body",
+                    "side": "front"
+                  }
+                },
+                "dome": {
+                  "shape": "sphere",
+                  "size": {
+                    "width": 0.55,
+                    "height": 0.45
+                  },
+                  "finish": "glow",
+                  "place": {
+                    "on": "body"
+                  }
+                },
+                "antenna": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.05,
+                    "height": 0.6
+                  },
+                  "finish": "metal",
+                  "place": {
+                    "on": "dome"
+                  }
+                },
+                "tip": {
+                  "shape": "sphere",
+                  "size": {
+                    "width": 0.14,
+                    "height": 0.14
+                  },
+                  "finish": "red",
+                  "place": {
+                    "on": "antenna"
+                  }
+                },
+                "leftFin": {
+                  "shape": "capsule",
+                  "size": {
+                    "width": 0.18,
+                    "height": 0.6
+                  },
+                  "finish": "metal",
+                  "place": {
+                    "beside": "body",
+                    "side": "left",
+                    "align": "bottom"
+                  }
+                },
+                "rightFin": {
+                  "shape": "capsule",
+                  "size": {
+                    "width": 0.18,
+                    "height": 0.6
+                  },
+                  "finish": "metal",
+                  "place": {
+                    "beside": "body",
+                    "side": "right",
+                    "align": "bottom"
+                  }
+                }
+              }
+            },
+            "place": {
+              "relation": "near",
+              "target": "right",
+              "side": "right",
+              "gap": 0.8
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 24,
+    "characters": {
+      "meera": {
+        "appearance": "casual",
+        "expression": "happy"
+      },
+      "kabir": {
+        "appearance": "office"
+      }
+    },
+    "scenes": [
+      {
+        "id": "plaza-objects",
+        "setting": "plaza",
+        "startFrame": 0,
+        "endFrame": 24,
+        "axis": [
+          "meera",
+          "kabir"
+        ],
+        "characters": {
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "kabir": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "beats": [
+          {
+            "id": "point-lamp",
+            "startFrame": 8,
+            "endFrame": 16,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "point",
+                "target": "lamp"
+              }
+            ]
+          },
+          {
+            "id": "watch-beacon",
+            "startFrame": 8,
+            "endFrame": 24,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "look",
+                "target": "beacon"
+              }
+            ]
+          }
+        ],
+        "cues": [],
+        "shots": [
+          {
+            "id": "pair",
+            "type": "twoShot",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 0,
+            "endFrame": 8
+          },
+          {
+            "id": "lamp-focus",
+            "type": "objectFocus",
+            "subject": "lamp",
+            "startFrame": 8,
+            "endFrame": 16
+          },
+          {
+            "id": "beacon-focus",
+            "type": "objectFocus",
+            "subject": "beacon",
+            "startFrame": 16,
+            "endFrame": 24
+          }
+        ]
+      }
+    ]
+  }
+}

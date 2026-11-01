@@ -8,4 +8,6 @@ export { ENVIRONMENTS, PREFABS, environmentCatalog } from './environment-registr
 export type { EnvironmentLayout, EnvironmentPreset, PrefabName } from './environment-registry';
 
 export { STRUCTURES, CONSTRUCTION_LIMITS, planConstruction } from './construction';
+export { OBJECT_LIMITS, OBJECT_SHAPES, OBJECT_FINISHES, planObject } from './composite';
+export type { CompositeObject, ObjectPart, PartPlacement } from './composite';
 export type { Construction, ConstructionItem, Placement, StructureKind } from './construction';

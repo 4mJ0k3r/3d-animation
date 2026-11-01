@@ -287,3 +287,8 @@ Phase 6D-B exception: scenes may declare `effects` (`impactFlash`, `dustPuff`) a
 layout prop or ground mark, per authoring/README.md. Effect objects are built once,
 reset and assigned from the absolute frame after prop animation; transparent unlit
 materials, no new passes, shaders, particles or randomness. Stop after 6D-B, not 6E.
+
+Phase 6E-A exception: custom-layout items may declare `object` (named primitive
+parts placed with on/beside/centeredOn), per authoring/CONSTRUCTION.md. Build them
+only through JSON; no per-object TypeScript, coordinates, imported meshes or
+shaders. Objects are static. Stop after 6E-A.

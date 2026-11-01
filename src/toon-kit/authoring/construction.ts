@@ -3,6 +3,8 @@ import { storyFail } from '../story/types';
 import { PREFABS } from './environment-registry';
 import type { EnvironmentLayout, PrefabName } from './environment-registry';
 import { validateDisplayText } from './display-content';
+import { planObject, OBJECT_LIMITS } from './composite';
+import type { CompositeObject, ObjectPlan } from './composite';
 export const CONSTRUCTION_LIMITS = freezeData({
   items: 24,
   structures: 18,
@@ -99,6 +101,8 @@ export type Placement = {
 export interface ConstructionItem {
   readonly kind?: StructureKind;
   readonly prefab?: PrefabName;
+  /** Phase 6E-A: composite object built from named primitive parts. */
+  readonly object?: CompositeObject;
   readonly size?: Readonly<{
     width?: number;
     height?: number;
@@ -134,6 +138,7 @@ export interface PlannedItem {
   turn: number;
   mounted: boolean;
   depth: number;
+  object?: ObjectPlan;
 }
 function fail(code: string, message: string): never {
   return storyFail(code, message);
@@ -210,13 +215,19 @@ export function planConstruction(input: unknown) {
   const specs: Record<string, ConstructionItem> = {};
   let structures = 0,
     props = 0,
-    textures = 0;
+    textures = 0,
+    objects = 0;
+  const objectPlans: Record<string, ObjectPlan> = {};
   for (const id of Object.keys(c.items).sort()) {
     if (!safe(id)) fail('INVALID_CONSTRUCTION_ID', 'Use a safe unique item ID, distinct from built-in anchors: ' + id);
     const s = c.items[id];
-    keys(s, ['kind', 'prefab', 'size', 'facing', 'finish', 'text', 'place']);
-    if (s.kind === undefined === (s.prefab === undefined)) fail('INVALID_CONSTRUCTION', id + ': choose exactly one kind or prefab');
-    if (s.kind !== undefined) {
+    keys(s, ['kind', 'prefab', 'object', 'size', 'facing', 'finish', 'text', 'place']);
+    if ([s.kind, s.prefab, s.object].filter(v => v !== undefined).length !== 1) fail('INVALID_CONSTRUCTION', id + ': choose exactly one kind, prefab or object');
+    if (s.object !== undefined) {
+      if (++objects > OBJECT_LIMITS.objects) fail('OBJECT_BUDGET', `Use at most ${OBJECT_LIMITS.objects} composite objects per layout`);
+      if (s.size !== undefined || s.finish !== undefined || s.text !== undefined) fail('INVALID_OBJECT', id + ': set size and finish on each object part; objects have no text');
+      objectPlans[id] = planObject(id, s.object);
+    } else if (s.kind !== undefined) {
       if (!Object.hasOwn(STRUCTURES, s.kind)) fail('UNKNOWN_STRUCTURE', id + ': choose ' + Object.keys(STRUCTURES).join(', '));
       structures++;
       if (s.finish !== undefined) option(s.finish, ['cream', 'brick', 'slate', 'white', 'wood'], id + '.finish');
@@ -261,7 +272,7 @@ export function planConstruction(input: unknown) {
     sign: 3,
     screen: 3,
     planter: 2
-  }[s.prefab] : ['tree', 'window', 'door'].includes(s.kind!) ? 2 : 1), 0);
+  }[s.prefab] : s.object ? Object.keys(s.object.parts).length : ['tree', 'window', 'door'].includes(s.kind!) ? 2 : 1), 0);
   if (meshes > meshLimit) fail('CONSTRUCTION_BUDGET', 'Construction needs ' + meshes + ' meshes; maximum is ' + meshLimit + (c.thirdActor?' with three actors':''));
   const resolved = new Map<string, PlannedItem>(),
     active = new Set<string>();
@@ -281,7 +292,10 @@ export function planConstruction(input: unknown) {
       attachmentDepth = 0;
     const size: V = spec.kind ? STRUCTURES[spec.kind].size.map((v, i) => number(spec.size?.[(['width', 'height', 'depth'] as const)[i]] ?? v, STRUCTURES[spec.kind!].min[i], STRUCTURES[spec.kind!].max[i], id + '.size')) as V : [0, 0, 0];
     if (spec.kind === 'column' && size[0] !== size[2] || spec.kind === 'tree' && size[0] !== size[2]) fail('INVALID_DIMENSION', id + ': width and depth must match');
-    const local = spec.prefab ? prefabBox(spec.prefab, mounted) : {
+    const local = objectPlans[id] ? {
+      min: [...objectPlans[id].local.min] as V,
+      max: [...objectPlans[id].local.max] as V
+    } : spec.prefab ? prefabBox(spec.prefab, mounted) : {
       min: [-size[0] / 2, spec.kind === 'floor' ? -size[1] : 0, -size[2] / 2] as V,
       max: [size[0] / 2, spec.kind === 'floor' ? 0 : size[1], size[2] / 2] as V
     };
@@ -316,7 +330,7 @@ export function planConstruction(input: unknown) {
         const [rx, rz] = rotate(x, z, parent.turn);
         position = [parent.position[0] + rx, parent.position[1] + y, parent.position[2] + rz];
       } else if (p.relation === 'onTopOf') {
-        if (!['platform', 'block', 'table'].includes(parent.spec.kind ?? parent.spec.prefab ?? '') || !['column', 'block', 'planter', 'sign', 'screen'].includes(spec.kind ?? spec.prefab ?? '')) fail('INVALID_ATTACHMENT', id + ': top support must be platform/block/table; child column/block/planter/sign/screen');
+        if (!['platform', 'block', 'table'].includes(parent.spec.kind ?? parent.spec.prefab ?? '') || !['column', 'block', 'planter', 'sign', 'screen', 'object'].includes(spec.kind ?? spec.prefab ?? (spec.object ? 'object' : ''))) fail('INVALID_ATTACHMENT', id + ': top support must be platform/block/table; child column/block/planter/sign/screen/object');
         attachmentDepth = parent.depth + 1;
         position = [align(parent.box, b, 0), parent.box.max[1] - b.min[1], align(parent.box, b, 2)];
         if (b.max[0] - b.min[0] > parent.box.max[0] - parent.box.min[0] || b.max[2] - b.min[2] > parent.box.max[2] - parent.box.min[2]) fail('INVALID_ATTACHMENT', id + ': child footprint exceeds top support');
@@ -340,7 +354,10 @@ export function planConstruction(input: unknown) {
       position,
       turn,
       mounted,
-      depth: attachmentDepth
+      depth: attachmentDepth,
+      ...(objectPlans[id] ? {
+        object: objectPlans[id]
+      } : {})
     };
     resolved.set(id, item);
     active.delete(id);

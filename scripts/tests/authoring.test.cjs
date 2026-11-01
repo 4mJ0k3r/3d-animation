@@ -907,3 +907,108 @@ test('effects: reused objects follow the animated prop, hide when inactive, are 
     } finally {e.dispose();}
   }
 });
+
+const objectsExample = () => JSON.parse(fs.readFileSync('examples/custom-objects.story.json', 'utf8'));
+test('composite objects: schema, placement, depth, size and budget rules reject with actionable diagnostics', () => {
+  const c = D.compileStoryDocument(objectsExample()), plan = D.planConstruction(c.document.layouts.plaza);
+  const lamp = plan.items.find(i => i.id === 'lamp').object, beacon = plan.items.find(i => i.id === 'beacon').object;
+  assert.equal(lamp.parts.length, 5); assert.equal(beacon.parts.length, 7); assert.equal(lamp.focus, 'lantern');
+  const byId = (o, id) => o.parts.find(p => p.id === id);
+  assert.ok(Math.abs(byId(lamp, 'pole').center[1] - (.2 + 1.3)) < 1e-12, 'on stacks on the parent top');
+  assert.ok(Math.abs(byId(beacon, 'panel').center[2] - (.35 + .02)) < 1e-12, 'beside front touches the parent face');
+  assert.ok(Math.abs(byId(beacon, 'leftFin').center[0] + (.5 + .09)) < 1e-12 && Math.abs(byId(beacon, 'leftFin').center[1] - .3) < 1e-12, 'beside left, bottom-aligned');
+  assert.equal(lamp.local.min[1], 0);
+  for (const id of ['lamp', 'beacon']) {assert.ok(plan.catalog.points.includes(id) && plan.catalog.props.includes(id)); assert.ok(plan.catalog.marks.includes(id + '.front'));}
+  // declaration order cannot change the plan
+  const shuffled = objectsExample(), parts = shuffled.layouts.plaza.composition.items.beacon.object.parts;
+  shuffled.layouts.plaza.composition.items.beacon.object.parts = Object.fromEntries(Object.entries(parts).reverse());
+  assert.deepEqual(D.planConstruction(D.compileStoryDocument(shuffled).document.layouts.plaza).items, plan.items);
+  const P = (extra) => ({shape: 'box', size: {width: .3, height: .3}, ...extra});
+  const withObject = (object, itemExtra = {}) => {const d = objectsExample(); d.layouts.plaza.composition.items.beacon = {object, place: {relation: 'near', target: 'right', side: 'right', gap: .8}, ...itemExtra}; d.story.scenes[0].shots[2].subject = 'lamp'; d.story.scenes[0].beats[1].actions[0].target = 'lamp'; return d;};
+  const cases = [
+    [withObject({parts: {a: P({shape: 'cone'})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P({position: [0, 1, 0]})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P(), b: P({place: {on: 'a', offset: [0, .1, 0]}})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P({size: {width: 4, height: .3}})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P({finish: 'neon'})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P({taper: .5})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P(), b: P({place: {beside: 'a', side: 'up'}})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P()}}, {finish: 'wood'}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P(), b: P()}}), 'OBJECT_PLACEMENT'],
+    [withObject({parts: {a: P({place: {on: 'b'}}), b: P({place: {on: 'a'}})}}), 'OBJECT_PLACEMENT'],
+    [withObject({parts: {a: P(), b: P({place: {on: 'ghost'}})}}), 'OBJECT_PLACEMENT'],
+    [withObject({parts: {a: P(), b: P({place: {on: 'a'}}), c: P({place: {on: 'b'}}), d: P({place: {on: 'c'}}), e: P({place: {on: 'd'}}), f: P({place: {on: 'e'}})}}), 'OBJECT_PLACEMENT'],
+    [withObject({parts: {a: P({size: {width: .3, height: .2}}), b: P({size: {width: .3, height: 1}, place: {beside: 'a', side: 'left', align: 'top'}})}}), 'OBJECT_PLACEMENT'],
+    [withObject({parts: {a: P(), focusless: P({place: {on: 'a'}})}, focus: 'nope'}), 'OBJECT_PLACEMENT'],
+    [withObject({parts: Object.fromEntries(Array.from({length: 9}, (_, i) => ['p' + i, i ? P({place: {on: 'p' + (i > 3 ? 3 : i - 1)}}) : P()]))}), 'OBJECT_BUDGET'],
+    [withObject({parts: {a: P({size: {width: 3, height: 3}}), b: P({size: {width: 3, height: 3}, place: {on: 'a'}})}}), 'OBJECT_BUDGET'],
+    [withObject({parts: Object.fromEntries(Array.from({length: 8}, (_, i) => ['p' + i, {shape: 'roundedBox', size: {width: .3, height: .3}, ...(i ? {place: {beside: 'p0', side: ['left', 'right', 'front', 'back'][i % 4], gap: i > 4 ? .5 : 0}} : {})}]))}), 'OBJECT_BUDGET'],
+    [withObject({parts: {a: P()}}, {kind: 'block'}), 'INVALID_CONSTRUCTION'],
+    [withObject({parts: {a: P()}}, {place: {relation: 'attachedTo', target: 'backdrop', face: 'front'}}), 'INVALID_ATTACHMENT']
+  ];
+  cases.forEach(([doc, code], i) => {try {D.compileStoryDocument(doc);} catch (error) {assert.equal(error.diagnostic?.code, code, `case ${i}: ${JSON.stringify(error.diagnostic)}`); assert.ok(error.diagnostic.message.length > 20); return;} assert.fail(`case ${i} should reject with ${code}`);});
+  // at most four composite objects per layout
+  const many = objectsExample(); for (let i = 0; i < 3; i++) many.layouts.plaza.composition.items['extra' + i] = {object: {parts: {a: P()}}, place: {relation: 'alongBoundary', boundary: 'front', align: ['start', 'center', 'end'][i]}};
+  bad(() => D.compileStoryDocument(many), 'OBJECT_BUDGET');
+  // composite objects stay static in this release
+  const anim = objectsExample(); anim.story.scenes[0].propAnimations = [{prop: 'beacon', type: 'lift', height: .2, startFrame: 0, endFrame: 8}];
+  bad(() => D.compileStoryDocument(anim), 'PROP_NOT_ANIMATABLE');
+  // effects can still target a composite object
+  const fx = objectsExample(); fx.story.scenes[0].effects = [{type: 'impactFlash', target: 'beacon', startFrame: 16}];
+  assert.ok(D.compileStoryDocument(fx));
+  // existing examples remain valid
+  for (const name of ['custom-school', 'custom-garden', 'custom-three-actors', 'custom-prop-animation', 'custom-effects', 'street-meeting', 'office-idea']) assert.ok(D.compileStoryDocument(JSON.parse(fs.readFileSync(`examples/${name}.story.json`, 'utf8'))), name);
+});
+
+test('composite objects: built from pooled primitives within estimates, targetable for gaze/point/camera, deterministic and disposed once', () => {
+  const {createStory} = require('../../out/character-tests/toon-kit/story/player'), {createStage} = require('../../out/character-tests/toon-kit/staging/stage');
+  let baseline;
+  for (let instance = 0; instance < 2; instance++) {
+    const e = owner();
+    try {
+      const c = D.compileStoryDocument(objectsExample()), b = D.createStoryEnvironments(e, c).plaza, plan = D.planConstruction(c.document.layouts.plaza);
+      for (const id of ['lamp', 'beacon']) {
+        const group = b.props[id], meshes = [], planned = plan.items.find(i => i.id === id).object;
+        group.traverse(o => {if (o instanceof T.Mesh) meshes.push(o);});
+        assert.equal(meshes.length, planned.parts.length, `${id}: one mesh per part`);
+        let tris = 0; for (const m of meshes) tris += (m.geometry.index?.count ?? m.geometry.getAttribute('position').count) / 3;
+        assert.ok(tris <= planned.triangles && tris <= D.OBJECT_LIMITS.trianglesPerObject, `${id}: ${tris} measured triangles within the ${planned.triangles} estimate`);
+        // planned layout equals built bounds (local to the item)
+        group.updateWorldMatrix(true, true);
+        const box = new T.Box3().setFromObject(group), inv = group.matrixWorld.clone().invert(), local = box.clone().applyMatrix4(inv);
+        assert.ok(Math.abs(local.min.y - planned.local.min[1]) < .02 && Math.abs(local.max.y - planned.local.max[1]) < .02, `${id}: built height matches plan`);
+        for (const m of meshes) assert.ok(m.material instanceof T.MeshToonMaterial && m.userData.outlineMode === undefined, 'existing toon materials and inherited outline policy');
+      }
+      const lampMeshes = []; b.props.lamp.traverse(o => {if (o instanceof T.Mesh) lampMeshes.push(o);});
+      const charcoal = lampMeshes.filter(m => m.name !== 'ObjectPart:lantern').map(m => m.material);
+      assert.equal(new Set(charcoal).size, 1, 'parts with the same finish share one pooled material');
+      const unitCylinders = lampMeshes.filter(m => ['ObjectPart:base', 'ObjectPart:pole', 'ObjectPart:neck'].includes(m.name)).map(m => m.geometry);
+      assert.equal(new Set(unitCylinders).size, 1, 'equal unit shapes share one pooled geometry');
+      const p = createStory(e, {timeline: c.timeline, settings: {plaza: b}});
+      try {p.prepare();} catch (error) {throw new Error(JSON.stringify(error.diagnostic));}
+      const stage = createStage(e, {root: b.root, floor: b.floor, axis: c.timeline.plan.scenes[0].axis, cameraSpace: b.cameraSpace});
+      stage.bind(p.cast); for (const [id, prop] of Object.entries(b.props)) stage.registerProp(id, prop);
+      const values = [];
+      for (const f of [23, 0, 12, 20, 12, 0, 23]) {
+        const r = p.applyFrame(f), snap = stage.snapshot(r.cast);
+        const lantern = b.props.lamp.getObjectByName('ObjectPart:lantern').getWorldPosition(new T.Vector3()), dome = b.props.beacon.getObjectByName('ObjectPart:dome').getWorldPosition(new T.Vector3());
+        if (f >= 8 && f < 16) assert.ok(Math.hypot(...r.cast.pointing.meera.targetWorld.map((v, i) => v - lantern.toArray()[i])) < 1e-9, 'pointing aims at the focus part');
+        if (f >= 16) {
+          const head = snap.actors.kabir.visibility.proxies.find(x => x.id === 'kabir.head').center, want = dome.clone().sub(new T.Vector3(...head)).normalize();
+          assert.ok(want.dot(new T.Vector3(...r.cast.gaze.kabir.desiredWorldDirection)) > .999, 'gaze aims at the focus part');
+        }
+        for (const id of ['lamp', 'beacon']) {const reg = snap.props[id].regions.full, world = new T.Box3().setFromObject(b.props[id]); assert.ok(reg.min.every((v, i) => v <= world.min.getComponent(i) + 1e-6) && reg.max.every((v, i) => v >= world.max.getComponent(i) - 1e-6), `${id}: camera focus region covers every part`);}
+        assert.ok(snap.visibility.proxies.length <= 64);
+        values.push(JSON.parse(JSON.stringify(r)));
+      }
+      assert.deepEqual(values[0], values[6]); assert.deepEqual(values[2], values[4]); assert.deepEqual(values[1], values[5]);
+      assert.equal(p.describe(12).shot.subject, 'lamp'); assert.equal(p.describe(20).shot.subject, 'beacon');
+      if (baseline) assert.deepEqual(values, baseline); baseline = values;
+      stage.dispose();
+      const resources = new Set(); e.scene.traverse(o => {if (o instanceof T.Mesh) {resources.add(o.geometry); for (const m of [o.material].flat()) {resources.add(m); for (const v of Object.values(m)) if (v instanceof T.Texture) resources.add(v);}}});
+      const counts = new Map(); for (const r of resources) {counts.set(r, 0); r.addEventListener('dispose', () => counts.set(r, counts.get(r) + 1));}
+      p.dispose(); p.dispose(); e.dispose(); e.dispose();
+      for (const count of counts.values()) assert.equal(count, 1);
+    } finally {e.dispose();}
+  }
+});

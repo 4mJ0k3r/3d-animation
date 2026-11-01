@@ -181,3 +181,47 @@ transform; meshes, materials and textures are reused, never rebuilt.
   `PROP_ANIMATION_BLOCKED`. There is no physics or collision simulation.
 
 Example: [custom-prop-animation.story.json](../../../examples/custom-prop-animation.story.json).
+
+
+## Phase 6E-A: composite objects
+
+A custom-layout item may declare `object` instead of `kind` or `prefab`. It is a
+normal construction item: placed with the same relations, one stable item ID for
+pointing, gaze, effects and `objectFocus`, overlap/path checks and budgets.
+
+```json
+"lamp": {
+  "object": {
+    "focus": "lantern",
+    "parts": {
+      "base":    {"shape": "cylinder", "size": {"width": 0.5, "height": 0.2}, "finish": "charcoal"},
+      "pole":    {"shape": "cylinder", "size": {"width": 0.12, "height": 2.6}, "finish": "charcoal", "place": {"on": "base"}},
+      "lantern": {"shape": "sphere", "size": {"width": 0.55, "height": 0.6}, "finish": "glow", "place": {"on": "pole"}},
+      "hat":     {"shape": "cylinder", "size": {"width": 0.75, "height": 0.25}, "taper": 0.3, "finish": "charcoal", "place": {"on": "lantern"}}
+    }
+  },
+  "place": {"relation": "near", "target": "entry", "side": "left", "gap": 0.8}
+}
+```
+
+- Shapes: `box`, `roundedBox`, `sphere` (ellipsoid when width/height/depth differ),
+  `cylinder` (optional `taper` 0.1..2 = top/base diameter), `capsule`.
+- `size`: `width` and `height` 0.04..3 m; `depth` defaults to `width`.
+- Exactly one part omits `place`; it stands on the ground at the object origin.
+  Other parts use `{"on": part}` (centered on its top), `{"centeredOn": part}`
+  (same center), or `{"beside": part, "side": "left|right|front|back",
+  "align": "bottom|middle|top", "gap": 0..0.5}` (touching that face).
+- Finishes: cream, white, wood, brick, slate, charcoal, metal, navy, teal, mint,
+  red, yellow, glow. `focus` names the pointing/gaze part (default: the root).
+- Limits: 4 objects per layout, 8 parts per object, part chains up to 4 levels
+  from the root, overall 3 x 4.5 x 3 m, an estimated 2500 triangles per object.
+  Each part is one mesh counted in the layout's 40 (or 28) mesh budget, so actor
+  visibility budgets are unchanged. Errors: `INVALID_OBJECT`, `OBJECT_PLACEMENT`,
+  `OBJECT_BUDGET`, plus the existing construction codes.
+- Objects can sit `onTopOf` a platform/block/table, not `attachedTo` a wall.
+  They are static: `propAnimations` reject them; effects may target them.
+- Parts reuse the pooled primitive factory and toon materials (one material per
+  finish, one geometry per unit shape) and inherit the existing outline policy.
+
+Example: [custom-objects.story.json](../../../examples/custom-objects.story.json)
+(a street lamp and a sci-fi beacon from the same API).
