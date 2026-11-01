@@ -292,3 +292,7 @@ Phase 6E-A exception: custom-layout items may declare `object` (named primitive
 parts placed with on/beside/centeredOn), per authoring/CONSTRUCTION.md. Build them
 only through JSON; no per-object TypeScript, coordinates, imported meshes or
 shaders. Objects are static. Stop after 6E-A.
+
+Phase 6E-B exception: freestanding composite objects may be animated as whole
+units with existing `propAnimations`. No per-part, hinged or keyframed motion.
+Stop after 6E-B.

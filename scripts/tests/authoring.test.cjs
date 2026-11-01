@@ -950,9 +950,13 @@ test('composite objects: schema, placement, depth, size and budget rules reject 
   // at most four composite objects per layout
   const many = objectsExample(); for (let i = 0; i < 3; i++) many.layouts.plaza.composition.items['extra' + i] = {object: {parts: {a: P()}}, place: {relation: 'alongBoundary', boundary: 'front', align: ['start', 'center', 'end'][i]}};
   bad(() => D.compileStoryDocument(many), 'OBJECT_BUDGET');
-  // composite objects stay static in this release
-  const anim = objectsExample(); anim.story.scenes[0].propAnimations = [{prop: 'beacon', type: 'lift', height: .2, startFrame: 0, endFrame: 8}];
-  bad(() => D.compileStoryDocument(anim), 'PROP_NOT_ANIMATABLE');
+  // the example animates the beacon as a whole; an object stacked on a support, or that support, stays static
+  assert.equal(c.timeline.plan.scenes[0].propAnimations.filter(a => a.prop === 'beacon').length, 3);
+  const stacked = objectsExample(); delete stacked.story.scenes[0].propAnimations; delete stacked.story.scenes[0].effects;
+  stacked.layouts.plaza.composition.items.plinth = {kind: 'block', size: {width: 1, height: .4, depth: 1}, place: {relation: 'alongBoundary', boundary: 'front', align: 'end'}};
+  stacked.layouts.plaza.composition.items.gadget = {object: {parts: {a: P()}}, place: {relation: 'onTopOf', target: 'plinth'}};
+  assert.ok(D.compileStoryDocument(stacked), 'static stacked objects remain valid');
+  for (const prop of ['gadget', 'plinth']) {const d = JSON.parse(JSON.stringify(stacked)); d.story.scenes[0].propAnimations = [{prop, type: 'lift', height: .2, startFrame: 0, endFrame: 8}]; bad(() => D.compileStoryDocument(d), 'PROP_NOT_ANIMATABLE');}
   // effects can still target a composite object
   const fx = objectsExample(); fx.story.scenes[0].effects = [{type: 'impactFlash', target: 'beacon', startFrame: 16}];
   assert.ok(D.compileStoryDocument(fx));
@@ -1008,6 +1012,66 @@ test('composite objects: built from pooled primitives within estimates, targetab
       const resources = new Set(); e.scene.traverse(o => {if (o instanceof T.Mesh) {resources.add(o.geometry); for (const m of [o.material].flat()) {resources.add(m); for (const v of Object.values(m)) if (v instanceof T.Texture) resources.add(v);}}});
       const counts = new Map(); for (const r of resources) {counts.set(r, 0); r.addEventListener('dispose', () => counts.set(r, counts.get(r) + 1));}
       p.dispose(); p.dispose(); e.dispose(); e.dispose();
+      for (const count of counts.values()) assert.equal(count, 1);
+    } finally {e.dispose();}
+  }
+});
+
+test('animated composite objects: all parts move with the root; gaze, camera region and effects follow; stale anchors and unsafe motion reject', () => {
+  // rule checks reuse the 6D-A prop-animation validator
+  const withAnim = (anims, edit) => {const d = objectsExample(); d.story.scenes[0].propAnimations = anims; if (edit) edit(d); return d;};
+  const cases = [
+    [withAnim([{prop: 'beacon', type: 'lift', height: .2, startFrame: 0, endFrame: 8}], d => {d.story.scenes[0].characters.kabir.stance = {type: 'stand', at: 'beacon.front'};}), 'PROP_ANIMATION_STALE_TARGET'],
+    [withAnim([{prop: 'beacon', type: 'slide', to: 'right', startFrame: 0, endFrame: 8}]), 'PROP_ANIMATION_BLOCKED'],
+    [withAnim([{prop: 'lamp', type: 'rotate', axis: 'x', degrees: 15, startFrame: 0, endFrame: 8}]), 'PROP_ANIMATION_BLOCKED'],
+    [withAnim([{prop: 'beacon', type: 'rotate', axis: 'y', degrees: 90, startFrame: 0, endFrame: 8}], d => {d.layouts.plaza.composition.items.crate = {kind: 'block', size: {width: .6, height: .6, depth: .6}, place: {relation: 'beside', target: 'beacon', side: 'right', gap: .05}};}), 'PROP_ANIMATION_BLOCKED'],
+    [withAnim([{prop: 'beacon', type: 'lift', height: .2, startFrame: 0, endFrame: 8, parts: ['dome']}]), 'INVALID_PROP_ANIMATION']
+  ];
+  cases.forEach(([doc, code], i) => {try {D.compileStoryDocument(doc);} catch (error) {assert.equal(error.diagnostic?.code, code, `case ${i}: ${JSON.stringify(error.diagnostic)}`); return;} assert.fail(`case ${i} should reject with ${code}`);});
+  const {createStory} = require('../../out/character-tests/toon-kit/story/player'), {createStage} = require('../../out/character-tests/toon-kit/staging/stage');
+  let baseline;
+  for (let instance = 0; instance < 2; instance++) {
+    const e = owner();
+    try {
+      const c = D.compileStoryDocument(objectsExample()), b = D.createStoryEnvironments(e, c).plaza, beacon = b.props.beacon, lamp = b.props.lamp;
+      const parts = []; beacon.traverse(o => {if (o instanceof T.Mesh) parts.push(o);});
+      const localOf = (m) => m.matrix.clone();
+      const restLocal = parts.map(localOf), restPos = beacon.position.toArray(), restYaw = beacon.rotation.y, lampRest = lamp.matrixWorld.clone();
+      const inventory = () => {const s = new Set(); e.scene.traverse(o => {if (o instanceof T.Mesh) {s.add(o.geometry); for (const m of [o.material].flat()) s.add(m);}}); return s;};
+      const p = createStory(e, {timeline: c.timeline, settings: {plaza: b}});
+      const before = inventory();
+      try {p.prepare();} catch (error) {throw new Error(JSON.stringify(error.diagnostic));}
+      const stage = createStage(e, {root: b.root, floor: b.floor, axis: c.timeline.plan.scenes[0].axis, cameraSpace: b.cameraSpace});
+      stage.bind(p.cast); for (const [id, prop] of Object.entries(b.props)) stage.registerProp(id, prop);
+      const flash = e.scene.getObjectByName('StoryEffects').children[0];
+      const values = [];
+      for (const f of [29, 0, 18, 21, 24, 15, 21, 29, 0]) {
+        const r = p.applyFrame(f), snap = stage.snapshot(r.cast);
+        // whole-object motion: every part keeps its construction-local transform
+        parts.forEach((m, i) => assert.ok(m.matrix.equals(restLocal[i]), `frame ${f}: part ${m.name} keeps its local transform`));
+        const dome = beacon.getObjectByName('ObjectPart:dome').getWorldPosition(new T.Vector3());
+        if (f < 16) {assert.deepEqual(beacon.position.toArray(), restPos); assert.equal(beacon.rotation.y, restYaw);}
+        if (f === 21) assert.ok(Math.abs(beacon.position.y - restPos[1] - .6) < 1e-12, 'lift peak');
+        if (f >= 26) {assert.ok(Math.abs(beacon.position.y - restPos[1]) < 1e-12); assert.ok(Math.abs(beacon.rotation.y - restYaw - Math.PI / 2) < 1e-12, 'rotate holds 90 degrees');}
+        assert.ok(lamp.matrixWorld.equals(lampRest), 'the static lamp never moves');
+        // gaze follows the current focus part once the look transition has finished
+        if (f >= 16) {const head = snap.actors.kabir.visibility.proxies.find(x => x.id === 'kabir.head').center; assert.ok(dome.clone().sub(new T.Vector3(...head)).normalize().dot(new T.Vector3(...r.cast.gaze.kabir.desiredWorldDirection)) > .999, `frame ${f}: gaze follows the moving dome`);}
+        // camera focus region is recomputed from the current transform and covers every part
+        const reg = snap.props.beacon.regions.full, world = new T.Box3().setFromObject(beacon);
+        assert.ok(reg.min.every((v, i) => v <= world.min.getComponent(i) + 1e-6) && reg.max.every((v, i) => v >= world.max.getComponent(i) - 1e-6), `frame ${f}: region covers the moved object`);
+        // the effect resolves the current object position
+        assert.equal(flash.visible, f >= 22 && f < 30);
+        if (flash.visible) {const center = world.getCenter(new T.Vector3()); assert.ok(Math.hypot(flash.position.x - center.x, flash.position.y - center.y) < 1e-9, `frame ${f}: flash at the current beacon`);}
+        values.push(JSON.parse(JSON.stringify({r, reg, beacon: beacon.matrixWorld.elements})));
+      }
+      assert.deepEqual(values[0], values[7]); assert.deepEqual(values[1], values[8]); assert.deepEqual(values[3], values[6]);
+      if (baseline) assert.deepEqual(values, baseline); baseline = values;
+      const after = inventory(); assert.equal(after.size, before.size); for (const x of after) assert.ok(before.has(x), 'no per-frame resource creation');
+      stage.dispose();
+      const counts = new Map(); for (const x of after) {counts.set(x, 0); x.addEventListener('dispose', () => counts.set(x, counts.get(x) + 1));}
+      p.dispose(); p.dispose();
+      assert.deepEqual(beacon.position.toArray(), restPos); assert.equal(beacon.rotation.y, restYaw);
+      e.dispose(); e.dispose();
       for (const count of counts.values()) assert.equal(count, 1);
     } finally {e.dispose();}
   }

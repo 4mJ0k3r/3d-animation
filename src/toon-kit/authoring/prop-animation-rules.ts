@@ -31,7 +31,6 @@ export function checkPropAnimations(scene: StoryScene, layout: EnvironmentLayout
   function animatable(id: string): string | undefined {
     const spec = specs[id];
     if (spec.kind !== undefined && spec.kind !== 'block') return 'structural ' + spec.kind + ' geometry is static';
-    if (spec.object !== undefined) return 'composite objects are static in this release';
     if (spec.place.relation === 'attachedTo' || spec.place.relation === 'onTopOf') return 'attached or stacked props follow their parent';
     for (const [other, o] of Object.entries(specs)) if (other !== id && (o.place.relation === 'attachedTo' || o.place.relation === 'onTopOf') && (o.place as {
       target?: string;

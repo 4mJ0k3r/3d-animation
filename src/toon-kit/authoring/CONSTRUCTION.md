@@ -219,7 +219,14 @@ pointing, gaze, effects and `objectFocus`, overlap/path checks and budgets.
   visibility budgets are unchanged. Errors: `INVALID_OBJECT`, `OBJECT_PLACEMENT`,
   `OBJECT_BUDGET`, plus the existing construction codes.
 - Objects can sit `onTopOf` a platform/block/table, not `attachedTo` a wall.
-  They are static: `propAnimations` reject them; effects may target them.
+  Effects may target them.
+- Phase 6E-B: a freestanding object animates as one unit with the existing
+  `propAnimations` (`slide`, `lift`, `rotate`); all parts keep their relative
+  layout. Gaze, pointing (at the focus part), `objectFocus` regions and effects
+  follow the current transform. Objects stacked `onTopOf` a support, and that
+  support, stay static (`PROP_NOT_ANIMATABLE`). The object's generated `.front`
+  mark and paths are rest snapshots (`PROP_ANIMATION_STALE_TARGET`). There is no
+  per-part animation.
 - Parts reuse the pooled primitive factory and toon materials (one material per
   finish, one geometry per unit shape) and inherit the existing outline policy.
 

@@ -195,7 +195,7 @@
   "story": {
     "version": 1,
     "fps": 30,
-    "durationInFrames": 24,
+    "durationInFrames": 30,
     "characters": {
       "meera": {
         "appearance": "casual",
@@ -210,7 +210,7 @@
         "id": "plaza-objects",
         "setting": "plaza",
         "startFrame": 0,
-        "endFrame": 24,
+        "endFrame": 30,
         "axis": [
           "meera",
           "kabir"
@@ -245,7 +245,7 @@
           {
             "id": "watch-beacon",
             "startFrame": 8,
-            "endFrame": 24,
+            "endFrame": 30,
             "actions": [
               {
                 "actor": "kabir",
@@ -279,7 +279,42 @@
             "type": "objectFocus",
             "subject": "beacon",
             "startFrame": 16,
-            "endFrame": 24
+            "endFrame": 30
+          }
+        ],
+        "propAnimations": [
+          {
+            "prop": "beacon",
+            "type": "lift",
+            "height": 0.6,
+            "startFrame": 16,
+            "endFrame": 21,
+            "easing": "easeInOut"
+          },
+          {
+            "prop": "beacon",
+            "type": "lift",
+            "height": 0,
+            "startFrame": 21,
+            "endFrame": 26,
+            "easing": "easeInOut"
+          },
+          {
+            "prop": "beacon",
+            "type": "rotate",
+            "axis": "y",
+            "degrees": 90,
+            "startFrame": 16,
+            "endFrame": 26,
+            "easing": "easeInOut"
+          }
+        ],
+        "effects": [
+          {
+            "type": "impactFlash",
+            "target": "beacon",
+            "startFrame": 22,
+            "intensity": "low"
           }
         ]
       }
