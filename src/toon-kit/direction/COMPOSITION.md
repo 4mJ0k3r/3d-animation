@@ -98,7 +98,7 @@ static camera; no candidate search or occlusion analysis occurs per render.
 Acceptance thresholds (normalized image units): face >=.77 (7/9), eyes 1,
 hand >=.8 (4/5), prop >=.88 (8/9); chart node requires 1. Samples must face the
 camera with normal dot/view length >.06. Minimum head height: establishing/
-fullBody .06, twoShot .10, medium .16, closeUp .24, reaction .20. Object focus
+fullBody .06, twoShot .10, groupShot .07, medium .16, closeUp .24, reaction .20. Object focus
 requires height .24 and area .08. Foreground non-subject heads closer than the
 subject may occupy at most .12 image area. Top/side margins .08/.045; caption
 gap .018. These are tested artistic acceptance limits, not pixel guarantees.

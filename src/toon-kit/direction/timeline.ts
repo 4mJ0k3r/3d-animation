@@ -12,13 +12,16 @@ export function compileShotTimeline(shots: readonly StaticShot[], durationInFram
       if (Object.keys(s).some(k => !['id', 'type', 'startFrame', 'endFrame', 'subject', 'subjects', 'region', 'view','allowAxisCrossing','motion'].includes(k))) directionFail('UNSUPPORTED_SHOT', 'Unknown shot option', {
         shotId: s.id
       });
-      if (!['establishing', 'twoShot', 'medium', 'fullBody', 'closeUp', 'reaction', 'objectFocus'].includes(s.type) || s.view !== undefined && !['front', 'threeQuarter', 'subjectFront'].includes(s.view)) directionFail('UNSUPPORTED_SHOT', 'Unsupported shot type/view', {
+      if (!['establishing', 'twoShot', 'groupShot', 'medium', 'fullBody', 'closeUp', 'reaction', 'objectFocus'].includes(s.type) || s.view !== undefined && !['front', 'threeQuarter', 'subjectFront'].includes(s.view)) directionFail('UNSUPPORTED_SHOT', 'Unsupported shot type/view', {
         shotId: s.id
       });
       if (!Number.isInteger(s.startFrame) || !Number.isInteger(s.endFrame) || s.startFrame < 0 || s.endFrame <= s.startFrame || s.endFrame > durationInFrames) directionFail('INVALID_RANGE', 'Invalid half-open frame interval', {
         shotId: s.id
       });
-      const multi = s.type === 'twoShot' || s.type === 'establishing';
+      const multi = s.type === 'twoShot' || s.type === 'groupShot' || s.type === 'establishing';
+      if (s.type === 'groupShot' && (!Array.isArray(s.subjects) || s.subjects.length !== 3)) directionFail('INVALID_SUBJECT', 'groupShot requires exactly three distinct named actors', {
+        shotId: s.id
+      });
       if (multi ? !!s.subject || !Array.isArray(s.subjects) || s.subjects.length < (s.type === 'twoShot' ? 2 : 1) || new Set(s.subjects).size !== s.subjects.length : typeof s.subject !== 'string' || !s.subject.trim() || s.subjects !== undefined) directionFail('INVALID_SUBJECT', 'Use subjects for group shots, subject for single shots', {
         shotId: s.id
       });

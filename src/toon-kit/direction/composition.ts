@@ -25,6 +25,7 @@ export const COMPOSITION_LIMITS = freezeData({
   minHead: {
     establishing: .06,
     twoShot: .10,
+    groupShot: .07,
     medium: .16,
     fullBody: .06,
     closeUp: .24,
@@ -94,7 +95,7 @@ export function compactVisibilityFrame(shot: StaticShot, s: CompositionSnapshot)
       fraction: type === 'face' ? COMPOSITION_LIMITS.faceVisible : COMPOSITION_LIMITS.eyesVisible,
       ...a.visibility.features[type]
     });
-    const hands = ['medium', 'reaction', 'twoShot'].includes(shot.type) ? a.visibility.activeHands.length ? a.visibility.activeHands : shot.type === 'medium' ? ['left', 'right'] as const : [] : [];
+    const hands = ['medium', 'reaction', 'twoShot', 'groupShot'].includes(shot.type) ? a.visibility.activeHands.length ? a.visibility.activeHands : shot.type === 'medium' ? ['left', 'right'] as const : [] : [];
     for (const side of hands) {
       const key = side + 'Hand' as 'leftHand' | 'rightHand';
       required.push({
@@ -115,7 +116,17 @@ export function compactVisibilityFrame(shot: StaticShot, s: CompositionSnapshot)
       ...a.visibility.features[side + 'Foot' as 'leftFoot']
     });
   }
-  if (required.length > COMPOSITION_LIMITS.maxRegions || s.visibility.proxies.length > COMPOSITION_LIMITS.maxProxies) directionFail('VISIBILITY_BUDGET', 'Region/proxy budget exceeded');
+  if (required.length > COMPOSITION_LIMITS.maxRegions || s.visibility.proxies.length > COMPOSITION_LIMITS.maxProxies) directionFail('VISIBILITY_BUDGET', 'Region/proxy budget exceeded', {
+    shotId: shot.id,
+    frame: s.frame,
+    details: {
+      regions: required.length,
+      maxRegions: COMPOSITION_LIMITS.maxRegions,
+      proxies: s.visibility.proxies.length,
+      maxProxies: COMPOSITION_LIMITS.maxProxies,
+      hint: 'Reduce simultaneous active hands in this shot, or cut to single-subject shots'
+    }
+  });
   const vector = (v: readonly number[]) => Array.isArray(v) && v.length === 3 && v.every(Number.isFinite),
     idsSeen = new Set<string>();
   for (const p of s.visibility.proxies) {
@@ -149,7 +160,13 @@ export function compactVisibilityFrame(shot: StaticShot, s: CompositionSnapshot)
     viewpoints: s.visibility.viewpoints
   };
 }
-export function fitCompositionCamera(shotId: string, b: Bounds, direction: T.Vector3, aspect: number, bottom: number): CameraState {
+/**
+ * `vertical:'center'` (groupShot only) centers the protected bounds inside the
+ * feasible vertical window. Wide groups in portrait frames otherwise sit flush
+ * at the top margin and push the fitted camera below the ground. Other shots
+ * keep the historical top-aligned, headroom-first placement exactly.
+ */
+export function fitCompositionCamera(shotId: string, b: Bounds, direction: T.Vector3, aspect: number, bottom: number, vertical: 'top' | 'center' = 'top'): CameraState {
   const q = new T.Quaternion().setFromRotationMatrix(new T.Matrix4().lookAt(direction, new T.Vector3(), new T.Vector3(0, 1, 0))),
     inv = q.clone().invert(),
     ps = corners(b).map(p => new T.Vector3(...p).applyQuaternion(inv));
@@ -165,7 +182,7 @@ export function fitCompositionCamera(shotId: string, b: Bounds, direction: T.Vec
     ly = Math.min(...ps.map(p => p.y + low * ty * p.z));
   const z = Math.max(Math.max(...ps.map(p => p.z)) + .1, (ux - lx) / ((right - left) * tx), (uy - ly) / ((top - low) * ty)),
     x = (ux - right * tx * z + lx - left * tx * z) / 2,
-    y = uy - top * ty * z;
+    y = vertical === 'center' ? (uy - top * ty * z + ly - low * ty * z) / 2 : uy - top * ty * z;
   return freezeData({
     shotId,
     position: new T.Vector3(x, y, z).applyQuaternion(q).toArray(),
@@ -309,7 +326,7 @@ export function planVisibleShot(shot: StaticShot, frames: readonly CompactVisibi
     if (bottom <= .25) directionFail('CAPTION_TOO_TALL', 'Caption leaves insufficient composition space', {
       shotId: shot.id
     });
-    const camera = fitCompositionCamera(shot.id, bounds, direction, aspect, bottom);
+    const camera = fitCompositionCamera(shot.id, bounds, direction, aspect, bottom, shot.type === 'groupShot' ? 'center' : 'top');
     let score = 0,
       minVisible = 1,
       minHead = 1,

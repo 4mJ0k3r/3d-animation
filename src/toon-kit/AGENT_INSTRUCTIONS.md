@@ -271,3 +271,8 @@ Phase 6C-A exception: custom layouts can opt into one third static contact role
 via composition.thirdActor.at (see authoring/CONSTRUCTION.md). Keep the 28-mesh
 three-actor cap and existing 64-proxy budget; never expand curated layout capacity
 or change rigs/director/renderer/audio/timelines. Stop after 6C-A, not 6C-B/6D.
+
+Phase 6C-B exception: `groupShot` (exactly three subjects, custom thirdActor layouts)
+reuses the existing director, visibility proxies and 64-proxy budget; only that shot
+type centers the camera vertically. The third actor stays static; no group
+conversation automation, walking lanes, new rigs or renderer changes. Stop after 6C-B, not 6D.

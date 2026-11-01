@@ -622,3 +622,92 @@ test('three-actor cast contacts, pointing, gaze, gestures and camera are determi
   }finally{e.dispose();}
  }
 });
+
+test('groupShot is a distinct exact-three semantic shot while twoShot and other validation stay strict', () => {
+  const T3 = ['meera', 'kabir', 'tara'], timeline = require('../../out/character-tests/toon-kit/direction/timeline');
+  const shot = (extra) => [{id: 'g', type: 'groupShot', startFrame: 0, endFrame: 10, ...extra}];
+  assert.equal(timeline.compileShotTimeline(shot({subjects: T3}), 10).shots[0].type, 'groupShot');
+  for (const extra of [{subjects: T3.slice(0, 2)}, {subjects: [...T3, 'x']}, {subjects: [T3[0], T3[0], T3[1]]}, {subject: 'meera'}, {subject: 'meera', subjects: T3}, {}]) {
+    assert.throws(() => timeline.compileShotTimeline(shot(extra), 10), e => e.diagnostic?.code === 'INVALID_SUBJECT', JSON.stringify(extra));
+  }
+  const shotsOf = (edit) => {const raw = threeActors(); edit(raw.story.scenes[0].shots.find(s => s.id === 'group')); return raw;};
+  const c = D.compileStoryDocument(threeActors());
+  assert.deepEqual(c.timeline.plan.scenes[0].shots.find(s => s.id === 'group').subjects, T3);
+  assert.ok(c.warnings.some(w => w.code === 'GROUP_SHOT_GAZE_RISK' && w.actor === 'kabir'));
+  // authoring: unknown, missing, duplicate and wrong-count subjects reject with structured diagnostics
+  bad(() => D.compileStoryDocument(shotsOf(s => {s.subjects = ['meera', 'kabir', 'ghost'];})), 'UNKNOWN_SLOT');
+  bad(() => D.compileStoryDocument(shotsOf(s => {s.subjects = ['meera', 'kabir'];})), 'INVALID_SHOTS');
+  bad(() => D.compileStoryDocument(shotsOf(s => {s.subjects = ['meera', 'kabir', 'kabir'];})), 'INVALID_SHOTS');
+  // without the custom thirdActor opt-in no scene can hold three actors, so no groupShot exists
+  const noThird = threeActors(); delete noThird.layouts.meeting.composition.thirdActor;
+  bad(() => D.compileStoryDocument(noThird), 'LAYOUT_CAPACITY');
+  // twoShot keeps its exactly-two rule
+  bad(() => D.compileStoryDocument(shotsOf(s => {s.type = 'twoShot';})), 'INVALID_SUBJECT');
+});
+
+test('groupShot frames all three faces inside the camera zone, with unchanged twoShot and top-aligned framing for other shots', () => {
+  const {createStory} = require('../../out/character-tests/toon-kit/story/player'), C = require('../../out/character-tests/toon-kit/direction/composition');
+  const e = owner(), raw = threeActors(); delete raw.layouts.meeting.composition.items.notice.text;
+  try {
+    const c = D.compileStoryDocument(raw), b = D.createStoryEnvironments(e, c).meeting, p = createStory(e, {timeline: c.timeline, settings: {meeting: b}});
+    try {p.prepare();} catch (error) {throw new Error(JSON.stringify(error.diagnostic));}
+    for (const frame of [24, 30, 41]) {
+      const d = p.describe(frame);
+      assert.equal(d.shot.type, 'groupShot');
+      const comp = d.direction.composition, cam = p.applyFrame(frame).camera;
+      assert.ok(comp.minVisible >= C.COMPOSITION_LIMITS.faceVisible, 'all three face/eye regions stay visible');
+      assert.ok(comp.minHead >= C.COMPOSITION_LIMITS.minHead.groupShot);
+      assert.ok(comp.candidateCount <= 6);
+      assert.ok(cam.position[1] >= .1 && cam.position[1] <= 5.7 && Math.abs(cam.position[2]) <= 20, 'camera inside the stage zone');
+    }
+    // every individual shot kind prepared for the third actor, plus the original two-shot
+    const kinds = c.timeline.plan.scenes[0].shots.map(s => `${s.type}:${s.subject ?? s.subjects.join('+')}`);
+    assert.deepEqual(kinds, ['twoShot:meera+tara', 'closeUp:tara', 'groupShot:meera+kabir+tara', 'medium:kabir', 'reaction:meera']);
+    assert.equal(p.describe(5).shot.type, 'twoShot');
+  } finally {e.dispose();}
+  const box = {min: [-3, 0, -1], max: [3, 2, 1]}, dir = new T.Vector3(0, .08, 1).normalize();
+  assert.deepEqual(C.fitCompositionCamera('x', box, dir, 9 / 16, .95), C.fitCompositionCamera('x', box, dir, 9 / 16, .95, 'top'));
+  const top = C.fitCompositionCamera('x', box, dir, 9 / 16, .95), mid = C.fitCompositionCamera('x', box, dir, 9 / 16, .95, 'center');
+  assert.deepEqual(top.quaternion, mid.quaternion); assert.ok(mid.position[1] > top.position[1]);
+});
+
+test('groupShot rejects unknown actors, visibility-budget overflow and impossible captions with structured diagnostics', () => {
+  const {createStage} = require('../../out/character-tests/toon-kit/staging/stage'), {createStory} = require('../../out/character-tests/toon-kit/story/player'), C = require('../../out/character-tests/toon-kit/direction/composition');
+  const e = owner(), raw = threeActors(); delete raw.layouts.meeting.composition.items.notice.text;
+  try {
+    const c = D.compileStoryDocument(raw), b = D.createStoryEnvironments(e, c).meeting, p = createStory(e, {timeline: c.timeline, settings: {meeting: b}});
+    p.prepare();
+    const stage = createStage(e, {root: b.root, floor: b.floor, axis: c.timeline.plan.scenes[0].axis, cameraSpace: b.cameraSpace});
+    stage.bind(p.cast); for (const [id, prop] of Object.entries(b.props)) stage.registerProp(id, prop);
+    const snap = stage.snapshot(p.applyFrame(30).cast), shot = {id: 'g', type: 'groupShot', subjects: ['meera', 'kabir', 'tara'], startFrame: 0, endFrame: 1};
+    const frame = C.compactVisibilityFrame(shot, snap);
+    assert.ok(frame.required.length <= C.COMPOSITION_LIMITS.maxRegions && snap.visibility.proxies.length <= 64);
+    assert.throws(() => C.compactVisibilityFrame({...shot, subjects: ['meera', 'kabir', 'ghost']}, snap), e2 => e2.diagnostic.code === 'MISSING_VISIBILITY' && e2.diagnostic.subject === 'ghost');
+    assert.throws(() => require('../../out/character-tests/toon-kit/direction/shots').shotBounds({...shot, subjects: ['meera', 'kabir', 'ghost']}, snap), e2 => e2.diagnostic.code === 'UNKNOWN_ACTOR');
+    const extra = Array.from({length: 65 - snap.visibility.proxies.length}, (_, i) => ({id: 'extra' + i, owner: 'room', kind: 'sphere', center: [20, 0, 20], radius: .1}));
+    assert.throws(() => C.compactVisibilityFrame(shot, {...snap, visibility: {...snap.visibility, proxies: [...snap.visibility.proxies, ...extra]}}),
+      e2 => e2.diagnostic.code === 'VISIBILITY_BUDGET' && e2.diagnostic.shotId === 'g' && e2.diagnostic.details.maxProxies === 64 && e2.diagnostic.details.proxies === 65);
+    const full = {words: [{text: 'X', startFrame: 0, endFrame: 100, rect: {left: 0, right: 1, top: 0, bottom: 1}}]};
+    assert.throws(() => C.planVisibleShot(shot, [frame], 9 / 16, {captions: full}), e2 => e2.diagnostic.code === 'CAPTION_TOO_TALL' || e2.diagnostic.code === 'NO_VALID_COMPOSITION');
+    stage.dispose();
+  } finally {e.dispose();}
+});
+
+test('groupShot cameras are frame-order independent across fresh engines and dispose every resource once', () => {
+  const {createStory} = require('../../out/character-tests/toon-kit/story/player'); let baseline;
+  for (let instance = 0; instance < 2; instance++) {
+    const e = owner(), raw = threeActors(); delete raw.layouts.meeting.composition.items.notice.text;
+    try {
+      const c = D.compileStoryDocument(raw), b = D.createStoryEnvironments(e, c).meeting, p = createStory(e, {timeline: c.timeline, settings: {meeting: b}});
+      p.prepare();
+      const values = [59, 30, 0, 41, 24, 30, 59, 0].map(f => JSON.parse(JSON.stringify(p.applyFrame(f))));
+      assert.deepEqual(values[1], values[5]); assert.deepEqual(values[0], values[6]); assert.deepEqual(values[2], values[7]);
+      if (baseline) assert.deepEqual(values, baseline); baseline = values;
+      const resources = new Set();
+      e.scene.traverse(o => {if (o instanceof T.Mesh) {resources.add(o.geometry); for (const m of Array.isArray(o.material) ? o.material : [o.material]) {resources.add(m); for (const v of Object.values(m)) if (v instanceof T.Texture) resources.add(v);}}});
+      const counts = new Map(); for (const r of resources) {counts.set(r, 0); r.addEventListener('dispose', () => counts.set(r, counts.get(r) + 1));}
+      p.dispose(); p.dispose(); e.dispose(); e.dispose();
+      for (const count of counts.values()) assert.equal(count, 1);
+    } finally {e.dispose();}
+  }
+});

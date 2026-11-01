@@ -140,7 +140,8 @@ only in this mode. Existing layouts and default custom layouts remain two-actor.
 
 Three-actor mode caps environment geometry at 28 meshes (default remains 40),
 leaving 36 actor proxies inside the unchanged 64-proxy limit. TwoShot takes
-exactly two subjects; single-subject shots may target any actor. No third-lane
+exactly two subjects; `groupShot` (Phase 6C-B) takes exactly the three actors and
+requires every face/eye region visible; single-subject shots may target any actor. No third-lane
 walking, new transitions or camera types are introduced. Existing visibility
 limits still apply, including region limits for establishing shots with gestures.
 See [custom-three-actors.story.json](../../../examples/custom-three-actors.story.json).

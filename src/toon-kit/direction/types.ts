@@ -30,7 +30,7 @@ export interface CompositionSnapshot {
     readonly to: Vec3;
   };
 }
-export type ShotType = 'establishing' | 'twoShot' | 'medium' | 'fullBody' | 'closeUp' | 'reaction' | 'objectFocus';
+export type ShotType = 'establishing' | 'twoShot' | 'groupShot' | 'medium' | 'fullBody' | 'closeUp' | 'reaction' | 'objectFocus';
 export interface StaticShot {
   readonly motion?: CameraMotion;
   readonly allowAxisCrossing?:boolean;

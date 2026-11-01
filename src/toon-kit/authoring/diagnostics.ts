@@ -1,6 +1,6 @@
 import type { CompiledStory } from '../story/compiler';
 import { freezeData } from '../characters/pose';
-export const FRAMING_HINT = 'A twoShot needs both faces visible: off-axis gaze toward a board, prop or another actor can make it impossible to frame. Aim actors toward audience during the twoShot, or cut to a closeUp/medium of the looking actor or an objectFocus shot of the target. Try a wider preset or shorter captions; never patch camera coordinates.';
+export const FRAMING_HINT = 'A twoShot (or groupShot, which needs all three faces) needs its faces visible: off-axis gaze toward a board, prop or another actor can make it impossible to frame. Aim actors toward audience during the twoShot, or cut to a closeUp/medium of the looking actor or an objectFocus shot of the target. Try a wider preset or shorter captions; never patch camera coordinates.';
 
 /** Static risk detection only; camera/constraint certification requires prepare(). */
 export function authoringWarnings(timeline: CompiledStory) {
@@ -15,7 +15,7 @@ export function authoringWarnings(timeline: CompiledStory) {
     message: string;
   }[] = [];
   for (const scene of timeline.plan.scenes) for (const shot of scene.shots) {
-    if (shot.type !== 'twoShot') continue;
+    if (shot.type !== 'twoShot' && shot.type !== 'groupShot') continue;
     const seen = new Set<string>();
     const frames = [shot.startFrame, ...scene.beats.flatMap(b => [b.startFrame, b.endFrame])].filter(f => f >= shot.startFrame && f < shot.endFrame).sort((a, b) => a - b);
     for (const frame of frames) for (const actor of shot.subjects ?? Object.keys(scene.characters)) {
@@ -26,7 +26,7 @@ export function authoringWarnings(timeline: CompiledStory) {
       if (seen.has(key)) continue;
       seen.add(key);
       warnings.push({
-        code: 'TWO_SHOT_GAZE_RISK',
+        code: shot.type === 'groupShot' ? 'GROUP_SHOT_GAZE_RISK' : 'TWO_SHOT_GAZE_RISK',
         severity: 'warning',
         scene: scene.id,
         shot: shot.id,

@@ -55,7 +55,7 @@
   "story": {
     "version": 1,
     "fps": 30,
-    "durationInFrames": 24,
+    "durationInFrames": 60,
     "characters": {
       "meera": {
         "appearance": "casual",
@@ -74,7 +74,7 @@
         "id": "three-friends",
         "setting": "meeting",
         "startFrame": 0,
-        "endFrame": 24,
+        "endFrame": 60,
         "axis": [
           "meera",
           "tara"
@@ -142,7 +142,7 @@
           {
             "id": "stand",
             "startFrame": 12,
-            "endFrame": 24,
+            "endFrame": 60,
             "actions": [
               {
                 "actor": "tara",
@@ -161,6 +161,56 @@
                 "type": "gesture",
                 "name": "wave",
                 "hand": "left"
+              }
+            ]
+          },
+          {
+            "id": "group-looks",
+            "startFrame": 24,
+            "endFrame": 42,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "look",
+                "target": {
+                  "actor": "meera",
+                  "anchor": "head"
+                }
+              },
+              {
+                "actor": "meera",
+                "type": "look",
+                "target": "audience"
+              },
+              {
+                "actor": "tara",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "kabir-points",
+            "startFrame": 28,
+            "endFrame": 40,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "point",
+                "target": "notice",
+                "hand": "right"
+              }
+            ]
+          },
+          {
+            "id": "meera-surprise",
+            "startFrame": 49,
+            "endFrame": 60,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "react",
+                "name": "surprised"
               }
             ]
           }
@@ -183,6 +233,31 @@
             "subject": "tara",
             "startFrame": 12,
             "endFrame": 24
+          },
+          {
+            "id": "group",
+            "type": "groupShot",
+            "subjects": [
+              "meera",
+              "kabir",
+              "tara"
+            ],
+            "startFrame": 24,
+            "endFrame": 42
+          },
+          {
+            "id": "kabir-medium",
+            "type": "medium",
+            "subject": "kabir",
+            "startFrame": 42,
+            "endFrame": 51
+          },
+          {
+            "id": "meera-reaction",
+            "type": "reaction",
+            "subject": "meera",
+            "startFrame": 51,
+            "endFrame": 60
           }
         ]
       }

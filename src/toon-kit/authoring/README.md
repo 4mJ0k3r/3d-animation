@@ -38,8 +38,9 @@ dialogue/caption cues, shots, and optional Phase 4B audio assets/clips/alignment
   Use named slots below or `{actor:"kabir",anchor:"head"}`. Camera choices and
   `pushIn`/`pan`/`move` use existing semantic shot definitions, never coordinates.
   Object-focus shots select a named prop and optional `region:"full"`.
-- Shots: `establishing`, `twoShot`, `medium`, `fullBody`, `closeUp`, `reaction`,
-  `objectFocus`. Gestures: `wave`, `nod`, `shake-head`, `shrug`, `explain`,
+- Shots: `establishing`, `twoShot`, `groupShot`, `medium`, `fullBody`, `closeUp`,
+  `reaction`, `objectFocus`. `groupShot` takes exactly three `subjects` and only
+  works in custom layouts with `composition.thirdActor`. Gestures: `wave`, `nod`, `shake-head`, `shrug`, `explain`,
   `surprise`, `sad`, `worried`, `excited`.
 - All intervals are absolute integer frames, `[startFrame,endFrame)`. Scenes and
   shots cover the duration; independent character channels may overlap, conflicting

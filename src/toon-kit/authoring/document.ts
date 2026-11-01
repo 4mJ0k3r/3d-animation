@@ -74,6 +74,7 @@ export function compileStoryDocument(input: unknown) {
     }
     const camera = (shot: SemanticCameraPlan) => {
       if(shot.type==='twoShot'&&shot.subjects?.length!==2)storyFail('INVALID_SUBJECT','twoShot requires exactly two specified actors',{scene:scene.id});
+      if(shot.type==='groupShot'&&(shot.subjects?.length!==3||Object.keys(scene.characters).length!==3))storyFail('INVALID_SUBJECT','groupShot requires exactly three specified actors in a scene with three active actors (custom composition.thirdActor)',{scene:scene.id});
       if (shot.type === 'objectFocus') {
         requireName(shot.subject, slots.props, 'camera prop');
         if (shot.region !== undefined && shot.region !== 'full') storyFail('UNKNOWN_SLOT', 'Curated starters expose objectFocus region:"full"', {

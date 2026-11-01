@@ -100,6 +100,7 @@ binding. Parent/scene transforms and props are evaluated before the cast.
 | --- | --- |
 | establishing | Full bodies and/or named props; shoes included for actors. |
 | twoShot | Both actors' heads, faces, torsos and hands; lower bodies may crop. |
+| groupShot | Exactly three actors, same protected regions as twoShot. Camera is vertically centered in the feasible window (other shots stay top-aligned). |
 | medium | Actor head, face, torso and both hands; lower body may crop. |
 | fullBody | Complete mesh envelope, including shoes and sole plane. |
 | closeUp | Head/hair and face; lower body may crop deliberately. |
