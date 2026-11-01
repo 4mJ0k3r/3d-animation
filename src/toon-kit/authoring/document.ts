@@ -1,6 +1,7 @@
 import { compileStory, compileOrchestrationStory } from '../story/compiler';
 import { authoringWarnings } from './diagnostics';
 import { validateEnvironment, environmentCatalog } from './environment-registry';
+import { checkPropAnimations } from './prop-animation-rules';
 import type { EnvironmentLayout } from './environment-registry';
 import type { StoryPlan, StoryTarget, StorySupport } from '../story/types';
 import { storyFail } from '../story/types';
@@ -88,6 +89,7 @@ export function compileStoryDocument(input: unknown) {
       }
       if (shot.subjects) for (const actor of shot.subjects) requireName(actor, Object.keys(scene.characters), 'camera actor');
     };
+    checkPropAnimations(scene, layouts[scene.setting]);
     for (const shot of scene.shots) {
       camera(shot);
       if (shot.motion?.type === 'move') {

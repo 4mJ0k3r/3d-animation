@@ -2,6 +2,7 @@ export * from './types';
 export { compileStory, STORY_LIMITS } from './compiler';
 export type { CompiledStory } from './compiler';
 export { createStory } from './player';
+export { PROP_ANIMATION_LIMITS, evaluatePropAnimation } from './prop-animation';
 export type { StoryPlayer, StorySettingBinding } from './player';
 export * from './audio-types';
 export { speechSecondsToFrame } from './audio-compiler';

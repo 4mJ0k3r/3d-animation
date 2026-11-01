@@ -11,6 +11,8 @@ import { walkAlong } from '../characters/walking';
 import { wave, nod, shakeHead, shrug, explain, surprise, sad, worried, excited, gestureDuring, turnTo, blendExpression } from '../characters/acting';
 import { createStage } from '../staging/stage';
 import { createDirector } from '../direction/director';
+import { createPropAnimator } from './prop-animation';
+import type { PropAnimator } from './prop-animation';
 import { StoryError, storyFail } from './types';
 import type { StoryClip, StoryIntent, StoryTarget, StorySupport } from './types';
 import type { CompiledStory } from './compiler';
@@ -20,6 +22,8 @@ export interface StorySettingBinding {
   readonly floor: T.Mesh;
   readonly cameraSpace?: Readonly<{width:number;depth:number;height:number}>;
   readonly targets: TargetLibrary;
+  /** Root-local ground locations that propAnimations "slide" may name. */
+  readonly anchors?: Readonly<Record<string, readonly number[]>>;
   readonly props?: Readonly<Record<string, T.Object3D>>;
   readonly paths?: WalkingPaths;
   readonly floors?: Readonly<Record<string, FloorTarget>>;
@@ -65,6 +69,7 @@ export function createStory(engine: CartoonEngine, options: {
   options.audio?.assertReady(timeline, engine);
   const stages = new Map<string, ReturnType<typeof createStage>>(),
     directors = new Map<string, ReturnType<typeof createDirector>>(),
+    animators = new Map<string, PropAnimator>(),
     roots = new Map<T.Group, boolean>();
   const targetCache = new Map<string, TargetReference>(),
     supportCache = new Map<object, NonNullable<ActorIntent['stance']>>(),
@@ -98,6 +103,8 @@ export function createStory(engine: CartoonEngine, options: {
     directors.forEach(d => d.dispose());
     stages.forEach(s => s.dispose());
     cast?.dispose();
+    animators.forEach(a => a.reset());
+    animators.clear();
     roots.forEach((v, r) => {
       r.visible = v;
     });
@@ -290,6 +297,8 @@ export function createStory(engine: CartoonEngine, options: {
     roots.forEach((_, r) => {
       r.visible = r === b.root;
     });
+    // Absolute-frame prop state is assigned BEFORE cast targets and stage snapshots read it.
+    animators.get(scene.setting)?.apply(scene.id, globalFrame);
     const state = cast!.evaluate({
       frame: globalFrame + offset,
       fps: timeline.plan.fps,
@@ -345,6 +354,14 @@ export function createStory(engine: CartoonEngine, options: {
         });
       for (const [id, mesh] of Object.entries(b.props ?? {})) stage.registerProp(id, mesh);
       stages.set(scene.id, stage);
+    }
+    // After registration, so stage bounds capture rest geometry; rest transforms are
+    // recorded once per setting and restored before every absolute-frame assignment.
+    for (const setting of new Set(timeline.plan.scenes.map(s => s.setting))) {
+      const scenes = timeline.plan.scenes.filter(s => s.setting === setting);
+      if (!scenes.some(s => s.propAnimations?.length)) continue;
+      const b = options.settings[setting];
+      animators.set(setting, createPropAnimator(b.props ?? {}, b.anchors, scenes));
     }
     cast = createCast(engine, Object.fromEntries(Object.entries(timeline.plan.characters).map(([id, c]) => [id, {
       ...(c.appearance ? {

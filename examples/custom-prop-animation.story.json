@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "yard": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "paving"
+        },
+        "items": {
+          "backdrop": {
+            "kind": "wall",
+            "size": {
+              "width": 8,
+              "height": 3.2
+            },
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "crate": {
+            "kind": "block",
+            "size": {
+              "width": 0.8,
+              "height": 0.8,
+              "depth": 0.8
+            },
+            "finish": "wood",
+            "place": {
+              "relation": "near",
+              "target": "right",
+              "side": "right",
+              "gap": 1
+            }
+          },
+          "notice": {
+            "prefab": "sign",
+            "text": "नमस्ते",
+            "place": {
+              "relation": "near",
+              "target": "entry",
+              "side": "left",
+              "gap": 1.5
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 24,
+    "characters": {
+      "meera": {
+        "appearance": "casual",
+        "expression": "happy"
+      },
+      "kabir": {
+        "appearance": "office"
+      }
+    },
+    "scenes": [
+      {
+        "id": "moving-crate",
+        "setting": "yard",
+        "startFrame": 0,
+        "endFrame": 24,
+        "axis": [
+          "meera",
+          "kabir"
+        ],
+        "characters": {
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "kabir": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "beats": [
+          {
+            "id": "watch-crate",
+            "startFrame": 12,
+            "endFrame": 24,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "look",
+                "target": "crate"
+              }
+            ]
+          },
+          {
+            "id": "point-crate",
+            "startFrame": 6,
+            "endFrame": 18,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "point",
+                "target": "crate",
+                "hand": "left"
+              }
+            ]
+          }
+        ],
+        "cues": [],
+        "shots": [
+          {
+            "id": "pair",
+            "type": "twoShot",
+            "subjects": [
+              "meera",
+              "kabir"
+            ],
+            "startFrame": 0,
+            "endFrame": 12
+          },
+          {
+            "id": "crate-focus",
+            "type": "objectFocus",
+            "subject": "crate",
+            "startFrame": 12,
+            "endFrame": 24
+          }
+        ],
+        "propAnimations": [
+          {
+            "prop": "crate",
+            "type": "slide",
+            "to": "backdrop.front",
+            "startFrame": 0,
+            "endFrame": 12,
+            "easing": "easeInOut"
+          },
+          {
+            "prop": "crate",
+            "type": "lift",
+            "height": 0.4,
+            "startFrame": 12,
+            "endFrame": 18,
+            "easing": "easeInOut"
+          },
+          {
+            "prop": "crate",
+            "type": "lift",
+            "height": 0,
+            "startFrame": 18,
+            "endFrame": 24,
+            "easing": "easeInOut"
+          },
+          {
+            "prop": "notice",
+            "type": "rotate",
+            "axis": "y",
+            "degrees": 40,
+            "startFrame": 4,
+            "endFrame": 20
+          }
+        ]
+      }
+    ]
+  }
+}

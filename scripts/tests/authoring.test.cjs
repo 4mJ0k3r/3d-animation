@@ -711,3 +711,115 @@ test('groupShot cameras are frame-order independent across fresh engines and dis
     } finally {e.dispose();}
   }
 });
+
+const propExample = () => {const d = JSON.parse(fs.readFileSync('examples/custom-prop-animation.story.json', 'utf8')); return d;};
+const noPropText = (d) => {delete d.layouts.yard.composition.items.notice.text; return d;};
+const PA = require('../../out/character-tests/toon-kit/story/prop-animation');
+test('prop animation: eligibility, stale-anchor, blocking and schema rules reject with structured diagnostics', () => {
+  const ok = D.compileStoryDocument(propExample());
+  assert.equal(ok.timeline.plan.scenes[0].propAnimations.length, 4);
+  assert.ok(Object.isFrozen(ok.timeline.plan.scenes[0].propAnimations));
+  assert.deepEqual(D.compileStoryDocument(propExample()).timeline.plan.scenes[0].propAnimations, ok.timeline.plan.scenes[0].propAnimations);
+  const anim = (extra) => ({prop: 'crate', startFrame: 0, endFrame: 12, ...extra});
+  const withAnims = (list, edit) => {const d = propExample(); d.story.scenes[0].propAnimations = list; if (edit) edit(d); return d;};
+  const cases = [
+    // eligibility
+    [withAnims([anim({prop: 'backdrop', type: 'lift', height: .2})]), 'PROP_NOT_ANIMATABLE'],
+    [withAnims([anim({type: 'lift', height: .2})], d => {d.layouts.yard.composition.items.topper = {kind: 'block', size: {width: .3, height: .3, depth: .3}, place: {relation: 'onTopOf', target: 'crate'}};}), 'PROP_NOT_ANIMATABLE'],
+    [withAnims([anim({prop: 'topper', type: 'lift', height: .2})], d => {d.layouts.yard.composition.items.topper = {kind: 'block', size: {width: .3, height: .3, depth: .3}, place: {relation: 'onTopOf', target: 'crate'}};}), 'PROP_NOT_ANIMATABLE'],
+    [withAnims([anim({prop: 'ghost', type: 'lift', height: .2})]), 'UNKNOWN_SLOT'],
+    [withAnims([anim({type: 'slide', to: 'nowhere'})]), 'UNKNOWN_SLOT'],
+    // actors keep their standing space; no collision simulation
+    [withAnims([anim({type: 'slide', to: 'right'})]), 'PROP_ANIMATION_BLOCKED'],
+    [withAnims([anim({type: 'slide', to: 'entry'})]), 'PROP_ANIMATION_BLOCKED'],
+    [withAnims([anim({type: 'rotate', axis: 'y', degrees: 45})], d => {d.layouts.yard.composition.items.rock = {kind: 'block', size: {width: .8, height: .8, depth: .8}, place: {relation: 'beside', target: 'crate', side: 'right', gap: .1}};}), 'PROP_ANIMATION_BLOCKED'],
+    // generated anchors are static rest snapshots, so referencing them for an animated item rejects
+    [withAnims([anim({type: 'lift', height: .2})], d => {d.story.scenes[0].characters.kabir.stance = {type: 'stand', at: 'crate.front'};}), 'PROP_ANIMATION_STALE_TARGET'],
+    // schema: no raw xyz, keyframes, overlaps or unbounded values
+    [withAnims([anim({type: 'lift', height: .2, position: [0, 1, 0]})]), 'INVALID_PROP_ANIMATION'],
+    [withAnims([anim({type: 'lift', height: 2})]), 'INVALID_PROP_ANIMATION'],
+    [withAnims([anim({type: 'rotate', axis: 'x', degrees: 40})]), 'INVALID_PROP_ANIMATION'],
+    [withAnims([anim({type: 'rotate', axis: 'w', degrees: 10})]), 'INVALID_PROP_ANIMATION'],
+    [withAnims([anim({type: 'spin'})]), 'INVALID_PROP_ANIMATION'],
+    [withAnims([anim({type: 'lift', height: .2, endFrame: 1})]), 'INVALID_PROP_ANIMATION'],
+    [withAnims([anim({type: 'lift', height: .2, endFrame: 25})]), 'INVALID_PROP_ANIMATION'],
+    [withAnims([anim({type: 'lift', height: .2}), anim({type: 'lift', height: 0, startFrame: 6, endFrame: 18})]), 'INVALID_PROP_ANIMATION'],
+    [withAnims(Array.from({length: 9}, (_, i) => anim({type: 'lift', height: .1, startFrame: i * 2, endFrame: i * 2 + 2}))), 'INVALID_PROP_ANIMATION'],
+    [withAnims([]), 'INVALID_PROP_ANIMATION']
+  ];
+  cases.forEach(([doc, code], i) => {try {D.compileStoryDocument(doc);} catch (error) {assert.equal(error.diagnostic?.code, code, `case ${i}: ${JSON.stringify(error.diagnostic)}`); return;} assert.fail(`case ${i} should reject with ${code}`);});
+  // curated layouts keep static props
+  const office = example(); office.story.scenes[0].propAnimations = [{prop: 'board', type: 'lift', height: .1, startFrame: 0, endFrame: 10}];
+  bad(() => D.compileStoryDocument(office), 'PROP_ANIMATION_UNSUPPORTED');
+  // declaration order cannot change the canonical compiled order
+  const shuffled = propExample(); shuffled.story.scenes[0].propAnimations.reverse();
+  assert.deepEqual(D.compileStoryDocument(shuffled).timeline.plan.scenes[0].propAnimations, ok.timeline.plan.scenes[0].propAnimations);
+});
+
+test('prop animation: deterministic chained "go to" tracks, held ends and segment rebasing', () => {
+  const list = D.compileStoryDocument(propExample()).timeline.plan.scenes[0].propAnimations.filter(a => a.prop === 'crate');
+  const anchor = () => [0, 0, -4];
+  const at = (f) => PA.evaluatePropAnimation(list, f, {x: 3, z: .35}, anchor);
+  assert.deepEqual([at(0).x, at(0).z, at(0).lift], [3, .35, 0]);
+  const mid = at(6); assert.ok(Math.abs(mid.x - 1.5) < 1e-12 && Math.abs(mid.z - (.35 + (-4 - .35) / 2)) < 1e-12, 'easeInOut midpoint is 50%');
+  assert.deepEqual([at(12).x, at(12).z, at(23).x], [0, -4, 0]);
+  assert.ok(Math.abs(at(15).lift - .2) < 1e-12); assert.equal(at(18).lift, .4); assert.ok(at(23).lift > 0 && at(23).lift < .4); assert.equal(at(24).lift, 0);
+  const frames = [23, 0, 15, 6, 12, 15, 0], first = frames.map(at);
+  assert.deepEqual(frames.map(at), first); assert.deepEqual(first[2], first[5]); assert.deepEqual(first[1], first[6]);
+  // two scenes: the second segment is rebased onto its own clock
+  const two = propExample(), s0 = two.story.scenes[0], s1 = JSON.parse(JSON.stringify(s0));
+  s1.id = 'again'; s1.startFrame = 24; s1.endFrame = 48; s1.shots.forEach(s => {s.startFrame += 24; s.endFrame += 24;}); s1.beats.forEach(b => {b.startFrame += 24; b.endFrame += 24;}); s1.propAnimations.forEach(a => {a.startFrame += 24; a.endFrame += 24;});
+  two.story.durationInFrames = 48; two.story.scenes.push(s1);
+  const c = D.compileStoryDocument(two), seg = D.compileStorySegment(c, 1);
+  assert.deepEqual(seg.timeline.plan.scenes[0].propAnimations, c.timeline.plan.scenes[0].propAnimations);
+  assert.deepEqual(D.compileStorySegment(c, 0).timeline.plan.scenes[0].propAnimations, c.timeline.plan.scenes[0].propAnimations);
+});
+
+test('prop animation: objects, gaze/pointing targets and object-focus camera follow the current frame deterministically and reuse all resources', () => {
+  const {createStory} = require('../../out/character-tests/toon-kit/story/player'), {createStage} = require('../../out/character-tests/toon-kit/staging/stage');
+  let baseline;
+  for (let instance = 0; instance < 2; instance++) {
+    const e = owner(), raw = noPropText(propExample());
+    try {
+      const c = D.compileStoryDocument(raw), b = D.createStoryEnvironments(e, c).yard, p = createStory(e, {timeline: c.timeline, settings: {yard: b}});
+      const crate = b.props.crate, notice = b.props.notice, restCrate = crate.position.toArray(), restNotice = notice.rotation.toArray().slice(0, 3);
+      const inventory = () => {const s = new Set(); let meshes = 0; e.scene.traverse(o => {if (o instanceof T.Mesh) {meshes++; s.add(o.geometry); for (const m of Array.isArray(o.material) ? o.material : [o.material]) {s.add(m); for (const v of Object.values(m)) if (v instanceof T.Texture) s.add(v);}}}); return {meshes, resources: s};};
+      const before = inventory();
+      try {p.prepare();} catch (error) {throw new Error(JSON.stringify(error.diagnostic));}
+      const stage = createStage(e, {root: b.root, floor: b.floor, axis: c.timeline.plan.scenes[0].axis, cameraSpace: b.cameraSpace});
+      stage.bind(p.cast); for (const [id, prop] of Object.entries(b.props)) stage.registerProp(id, prop);
+      const sequence = [23, 0, 12, 15, 6, 15, 0, 23], values = [], states = [];
+      for (const f of sequence) {
+        const r = p.applyFrame(f), gaze = r.cast.gaze.kabir, snap = stage.snapshot(r.cast), region = snap.props.crate.regions.full;
+        const anchorWorld = crate.children[0].getWorldPosition(new T.Vector3());
+        const head = snap.actors.kabir.visibility.proxies.find(x => x.id === 'kabir.head').center, want = anchorWorld.clone().sub(new T.Vector3(...head)).normalize();
+        // After the default look transition the desired direction is the exact direction to the moving crate.
+        if (f >= 20) assert.ok(want.dot(new T.Vector3(...gaze.desiredWorldDirection)) > .999, `frame ${f}: gaze direction aims at the current crate transform`);
+        if (f >= 9 && f < 15) assert.ok(Math.hypot(...r.cast.pointing.meera.targetWorld.map((v, i) => v - anchorWorld.toArray()[i])) < 1e-9, `frame ${f}: pointing target tracks the crate`);
+        const worldCrate = new T.Vector3().setFromMatrixPosition(crate.matrixWorld);
+        assert.ok(region.min[1] <= worldCrate.y + 1e-9 && region.max[1] >= worldCrate.y + .8 - 1e-9, `frame ${f}: prop proxy region follows`);
+        states.push({f, crate: crate.position.toArray(), notice: notice.rotation.y, camera: r.camera});
+        values.push(JSON.parse(JSON.stringify({r, region})));
+      }
+      assert.deepEqual(values[1], values[6]); assert.deepEqual(values[0], values[7]); assert.deepEqual(values[3], values[5]);
+      if (baseline) assert.deepEqual(values, baseline); baseline = values;
+      const at = (f) => states.find(s => s.f === f);
+      assert.deepEqual(at(0).crate, restCrate);
+      assert.ok(Math.abs(at(12).crate[0] - b.anchors['backdrop.front'][0]) < 1e-9 && Math.abs(at(12).crate[2] - b.anchors['backdrop.front'][2]) < 1e-9);
+      assert.ok(at(15).crate[1] > restCrate[1] && at(23).crate[1] > restCrate[1]);
+      assert.ok(Math.abs(at(23).notice - restNotice[1] - 40 * Math.PI / 180) < 1e-9, 'rotate holds its end angle');
+      assert.equal(at(0).notice, restNotice[1]);
+      // cuts: objectFocus certificate frames use the moving prop; twoShot frames use the other shot
+      assert.equal(p.describe(15).shot.type, 'objectFocus'); assert.equal(p.describe(3).shot.type, 'twoShot');
+      // zero new meshes/materials/textures/geometries from animating every frame
+      const after = inventory(); assert.equal(after.meshes, before.meshes);
+      for (const r of after.resources) assert.ok(before.resources.has(r) || r instanceof T.Texture, 'no per-frame resource creation');
+      assert.equal(after.resources.size - [...after.resources].filter(r => !before.resources.has(r)).length, before.resources.size);
+      stage.dispose();
+      const counts = new Map(); for (const r of after.resources) {counts.set(r, 0); r.addEventListener('dispose', () => counts.set(r, counts.get(r) + 1));}
+      p.dispose(); p.dispose(); e.dispose(); e.dispose();
+      for (const count of counts.values()) assert.equal(count, 1);
+      assert.deepEqual(crate.position.toArray(), restCrate, 'disposal restores rest transforms');
+    } finally {e.dispose();}
+  }
+});

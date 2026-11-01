@@ -164,6 +164,7 @@ export const buildConstruction: EnvironmentBuilder = (engine, p, name, index, la
     root,
     floor,
     props,
+    anchors: plan.marks,
     cameraSpace: Object.freeze({
       width: 24,
       depth: 40,

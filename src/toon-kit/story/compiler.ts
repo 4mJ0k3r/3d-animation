@@ -5,6 +5,7 @@ import { resolveProportions } from '../characters/proportions';
 import { freezeData } from '../characters/pose';
 import { compileShotTimeline } from '../direction/timeline';
 import { compileStoryAudio } from './audio-compiler';
+import { validatePropAnimations } from './prop-animation';
 import { storyFail, StoryError } from './types';
 import type { StoryPlan, StoryScene, StoryAction, StoryClip, StoryFrame, StoryTarget, StorySupport, StoryIntent, StoryBeat } from './types';
 export const STORY_LIMITS = freezeData({
@@ -101,12 +102,15 @@ function compile(input: StoryPlan, frameBudget: number = STORY_LIMITS.frames, sc
     beats = 0,
     actions = 0;
   for (const scene of scenes) {
-    keys(scene, ['id', 'setting', 'startFrame', 'endFrame', 'characters', 'axis', 'beats', 'cues', 'shots']);
+    keys(scene, ['id', 'setting', 'startFrame', 'endFrame', 'characters', 'axis', 'beats', 'cues', 'shots', 'propAnimations']);
     name(scene.id);
     name(scene.setting);
     if (ids.has(scene.id)) storyFail('DUPLICATE_ID', 'Duplicate scene');
     ids.add(scene.id);
     range(scene.startFrame, scene.endFrame, 0, plan.durationInFrames);
+    if (scene.propAnimations !== undefined) (scene as {
+      propAnimations?: unknown;
+    }).propAnimations = validatePropAnimations(scene.propAnimations, scene);
     if (scene.startFrame !== end) storyFail('SCENE_COVERAGE', 'Scenes must cover the whole story without gaps/overlap', {
       scene: scene.id
     });

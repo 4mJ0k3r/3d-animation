@@ -43,6 +43,13 @@ export function compileStorySegment(source: CompiledStoryDocument, index: number
       startFrame: sh.startFrame - start,
       endFrame: sh.endFrame - start
     })),
+    ...(s.propAnimations ? {
+      propAnimations: s.propAnimations.map(a => ({
+        ...a,
+        startFrame: a.startFrame - start,
+        endFrame: a.endFrame - start
+      }))
+    } : {}),
     cues: []
   }));
   const settings = new Set(scenes.map(s => s.setting));

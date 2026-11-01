@@ -40,7 +40,8 @@ dialogue/caption cues, shots, and optional Phase 4B audio assets/clips/alignment
   Object-focus shots select a named prop and optional `region:"full"`.
 - Shots: `establishing`, `twoShot`, `groupShot`, `medium`, `fullBody`, `closeUp`,
   `reaction`, `objectFocus`. `groupShot` takes exactly three `subjects` and only
-  works in custom layouts with `composition.thirdActor`. Gestures: `wave`, `nod`, `shake-head`, `shrug`, `explain`,
+  works in custom layouts with `composition.thirdActor`. Custom-layout scenes may
+  also add `propAnimations` (see CONSTRUCTION.md). Gestures: `wave`, `nod`, `shake-head`, `shrug`, `explain`,
   `surprise`, `sad`, `worried`, `excited`.
 - All intervals are absolute integer frames, `[startFrame,endFrame)`. Scenes and
   shots cover the duration; independent character channels may overlap, conflicting

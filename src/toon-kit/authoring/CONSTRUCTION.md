@@ -145,3 +145,39 @@ requires every face/eye region visible; single-subject shots may target any acto
 walking, new transitions or camera types are introduced. Existing visibility
 limits still apply, including region limits for establishing shots with gestures.
 See [custom-three-actors.story.json](../../../examples/custom-three-actors.story.json).
+
+
+## Phase 6D-A: deterministic prop animation
+
+Custom-layout scenes may add `propAnimations`. Each entry moves an existing item's
+transform; meshes, materials and textures are reused, never rebuilt.
+
+```json
+"propAnimations": [
+  {"prop":"crate","type":"slide","to":"backdrop.front","startFrame":0,"endFrame":12,"easing":"easeInOut"},
+  {"prop":"crate","type":"lift","height":0.4,"startFrame":12,"endFrame":18},
+  {"prop":"crate","type":"lift","height":0,"startFrame":18,"endFrame":24},
+  {"prop":"notice","type":"rotate","axis":"y","degrees":40,"startFrame":4,"endFrame":20}
+]
+```
+
+- Frames are absolute story frames, half-open, inside the scene. `easing` is
+  `linear` (default) or `easeInOut`. Each track (slide, lift, rotate per axis)
+  goes to its value and holds it; the next entry on that track starts from there.
+  Before the first entry the prop is at rest. Same-track entries may not overlap.
+- `slide.to` names a catalog ground mark (`entry`, `finish`, `right`, `item.front`,
+  `seat.approach`). `lift.height` is 0..1.5m above rest. `rotate` uses `y` up to
+  ±360° or `x`/`z` up to ±15°. No XYZ coordinates or keyframes.
+- At most 8 entries and 3 animated props per scene, each at least 2 frames.
+- Eligible: independent `block` items and prefabs. Rejected: walls, floors,
+  panels, windows, doors, platforms, barriers, columns, trees, attached/stacked
+  items and their parents (`PROP_NOT_ANIMATABLE`); curated layouts
+  (`PROP_ANIMATION_UNSUPPORTED`).
+- Generated `X.front`, `X.approach`, `to:X…` anchors and seat `X` are rest-position
+  snapshots; using them for an animated `X` rejects with `PROP_ANIMATION_STALE_TARGET`.
+  Point/look/objectFocus at `X` itself; those follow the current-frame transform.
+- A conservative swept envelope must stay inside the ground and clear of scenery
+  and the scene's declared standing, seat and walking space, else
+  `PROP_ANIMATION_BLOCKED`. There is no physics or collision simulation.
+
+Example: [custom-prop-animation.story.json](../../../examples/custom-prop-animation.story.json).

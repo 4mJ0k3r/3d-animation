@@ -276,3 +276,9 @@ Phase 6C-B exception: `groupShot` (exactly three subjects, custom thirdActor lay
 reuses the existing director, visibility proxies and 64-proxy budget; only that shot
 type centers the camera vertically. The third actor stays static; no group
 conversation automation, walking lanes, new rigs or renderer changes. Stop after 6C-B, not 6D.
+
+Phase 6D-A exception: custom-layout scenes may declare `propAnimations` (slide to a
+named mark, bounded lift, bounded rotate) per authoring/CONSTRUCTION.md. The story
+player resets animated props to rest and assigns the absolute frame before cast and
+stage evaluation; no new meshes, passes or history. Do not animate structures, use
+an animated item's generated anchors, or start Phase 6D-B.

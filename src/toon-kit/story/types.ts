@@ -71,6 +71,26 @@ export interface StoryCue {
   /** Required for word captions: supplied timestamps or explicitly estimated fallback. */
   readonly timing?: 'supplied' | 'estimated';
 }
+/**
+ * Phase 6D-A: bounded semantic prop animation. Frames are absolute story frames,
+ * half-open; each track (slide / lift / rotate per axis) goes "to" a value and holds.
+ */
+export type PropAnimation = {
+  readonly prop: string;
+  readonly startFrame: number;
+  readonly endFrame: number;
+  readonly easing?: 'linear' | 'easeInOut';
+} & ({
+  readonly type: 'slide';
+  readonly to: string;
+} | {
+  readonly type: 'lift';
+  readonly height: number;
+} | {
+  readonly type: 'rotate';
+  readonly axis: 'x' | 'y' | 'z';
+  readonly degrees: number;
+});
 export interface StoryScene {
   readonly id: string;
   readonly setting: string;
@@ -85,6 +105,7 @@ export interface StoryScene {
   readonly beats: readonly StoryBeat[];
   readonly cues?: readonly StoryCue[];
   readonly shots: readonly StaticShot[];
+  readonly propAnimations?: readonly PropAnimation[];
 }
 /** JSON-only; all frame numbers are absolute, intervals half-open. */
 export interface StoryPlan {
