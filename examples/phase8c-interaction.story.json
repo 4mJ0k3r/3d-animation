@@ -1,0 +1,119 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "actingStage": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 10,
+          "depth": 10,
+          "finish": "paving"
+        },
+        "items": {
+          "backWall": {
+            "kind": "wall",
+            "size": {
+              "width": 8,
+              "height": 3.6
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.5
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 30,
+    "characters": {
+      "ananya": {
+        "appearance": "casual",
+        "expression": "happy"
+      },
+      "rohit": {
+        "appearance": "office",
+        "expression": "neutral"
+      }
+    },
+    "scenes": [
+      {
+        "id": "scene-interaction",
+        "setting": "actingStage",
+        "startFrame": 0,
+        "endFrame": 30,
+        "axis": [
+          "ananya",
+          "rohit"
+        ],
+        "characters": {
+          "ananya": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "rohit": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "shots": [
+          {
+            "id": "shot-establishing",
+            "startFrame": 0,
+            "endFrame": 30,
+            "type": "establishing",
+            "subjects": [
+              "ananya",
+              "rohit"
+            ]
+          }
+        ],
+        "beats": [
+          {
+            "id": "beat-ananya-wave",
+            "startFrame": 0,
+            "endFrame": 30,
+            "actions": [
+              {
+                "actor": "ananya",
+                "type": "gesture",
+                "name": "wave",
+                "hand": "left"
+              }
+            ]
+          },
+          {
+            "id": "beat-rohit-look",
+            "startFrame": 0,
+            "endFrame": 30,
+            "actions": [
+              {
+                "actor": "rohit",
+                "type": "look",
+                "target": {
+                  "actor": "ananya",
+                  "anchor": "head"
+                },
+                "transitionFrames": 16
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -64,12 +64,53 @@ export function sampleActing(action:ActingGesture|TimedPoint,frame:number,fps:nu
   if(action.kind==='acting'&&!GESTURES.includes(action.name))castFail('ACTION_INVALID','Unknown semantic gesture.');
   const name=action.kind==='acting'?action.name:'point',t=timingProgress(action.options,frame,fps,action.kind==='acting'),u=t.progress;
   if(action.kind==='timed-point'&&(!action.point||action.point.kind!=='point'||!['auto','left','right'].includes(action.point.hand)))castFail('ACTION_INVALID','Invalid timed pointAt descriptor.');
-  const envelope=smoothStep(u/.23)*smoothStep((1-u)/.28),weight=envelope*(action.options.intensity??(name==='point'?1:.8)),beat=Math.sin(2*Math.PI*t.seconds/1.05);
-  const anticipation=u<.23?-.025*Math.sin(Math.PI*u/.23)**3:0;
-  const lean=(name==='sad'||name==='worried'?.075:name==='surprise'?-.055:name==='explain'?.025*beat:name==='excited'?.045*beat:0)*weight+anticipation*weight;
-  const headPitch=(name==='nod'?.18*Math.sin(2*Math.PI*t.seconds/.85):name==='sad'?.17:name==='worried'?.10:name==='surprise'?-.09:0)*weight;
-  const headYaw=(name==='shake-head'?.30*Math.sin(2*Math.PI*t.seconds/1.05):0)*weight;
-  const headRoll=(name==='shrug'?.09:name==='worried'?.07:name==='explain'?.035*beat:name==='excited'?.06*beat:0)*weight;
+  const envelope=smoothStep(u/.23)*smoothStep((1-u)/.28),intensity=action.options.intensity??(name==='point'?1:.8),weight=envelope*intensity;
+  const antProgress=u<.22?u/.22:0,antPulse=u<.22?Math.sin(Math.PI*antProgress)**2*(1-antProgress)*intensity:0;
+  const osProgress=(u>=.18&&u<.45)?(u-.18)/.27:0,osPulse=(u>=.18&&u<.45)?Math.sin(Math.PI*osProgress)**2*(1-osProgress)*intensity:0;
+  const beat=Math.sin(2*Math.PI*t.seconds/1.05),beatCadence=Math.sin(2*Math.PI*t.seconds/.95),beatPhrase=Math.sin(2*Math.PI*t.seconds/1.80+.45);
+  const bounceBeat=Math.sin(2*Math.PI*t.seconds/.55),nodBeat=Math.sin(2*Math.PI*t.seconds/.85);
+  let lean=0,headPitch=0,headYaw=0,headRoll=0;
+  if(name==='surprise'){
+    lean=.040*antPulse-.035*osPulse-.052*weight;
+    headPitch=.060*antPulse-.045*osPulse-.085*weight;
+    headRoll=.025*weight;
+  }else if(name==='point'){
+    lean=-.035*antPulse+.020*osPulse+.020*weight;
+    headPitch=-.025*antPulse+.018*osPulse+.014*weight;
+  }else if(name==='explain'){
+    lean=-.025*antPulse+(.022+.008*beatCadence)*weight;
+    headPitch=(.035+.022*beatCadence)*weight;
+    headRoll=.038*beatPhrase*weight;
+    headYaw=.020*beatCadence*weight;
+  }else if(name==='shrug'){
+    lean=.030*antPulse-.018*osPulse-.022*weight;
+    headPitch=.040*antPulse-.020*osPulse-.035*weight;
+    headRoll=.095*weight;
+  }else if(name==='wave'){
+    const waveHand=(action.kind==='acting'?action.options.hand:undefined)??'auto',rollDir=waveHand==='left'?.050:-.050;
+    lean=.020*antPulse-(.018-.006*beat)*weight;
+    headPitch=-.028*weight;
+    headRoll=rollDir*weight;
+  }else if(name==='excited'){
+    lean=(.035+.025*bounceBeat)*weight;
+    headPitch=.045*bounceBeat*weight;
+    headRoll=.055*Math.sin(2*Math.PI*t.seconds/1.10)*weight;
+  }else if(name==='nod'){
+    lean=.012*nodBeat*weight;
+    headPitch=.18*nodBeat*weight;
+  }else if(name==='shake-head'){
+    headYaw=.30*beat*weight;
+    headRoll=.025*Math.sin(2*Math.PI*t.seconds/2.10)*weight;
+    lean=.008*Math.sin(2*Math.PI*t.seconds/2.10)*weight;
+  }else if(name==='sad'){
+    lean=(.075+.006*Math.sin(2*Math.PI*t.seconds/2.2))*weight;
+    headPitch=.17*weight;
+    headRoll=.020*weight;
+  }else if(name==='worried'){
+    lean=.075*weight;
+    headPitch=.10*weight;
+    headRoll=.070*weight;
+  }
   const expression:ExpressionName=name==='explain'?'explaining':name==='surprise'?'surprised':name==='sad'?'sad':name==='worried'||name==='shrug'?'worried':name==='wave'||name==='excited'?'happy':'neutral';
   return freezeData({name,weight,envelope,time:t.seconds,progress:u,lean,headPitch,headYaw,headRoll,options:{...action.options},expression});
 }

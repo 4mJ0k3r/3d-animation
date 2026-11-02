@@ -75,11 +75,24 @@ export function solveActingArms(def:CharacterDefinition,baseline:Extract<Contact
   }else for(const side of hands){
     const sign=side==='left'?1:-1,beat=Math.sin(2*Math.PI*sample.time/1.05+(side==='left'?.7:0));
     let a=.7,b=.85,sag=.20;
-    if(sample.name==='wave'){a=1.8;b=1.1+.18*beat;sag=.08;}
-    if(sample.name==='explain'){a=.85+.15*beat;b=1.2+.20*beat;sag=.26+.12*beat;}
-    if(sample.name==='shrug'){a=.85;b=1.35;sag=.14;}
-    if(sample.name==='surprise'){a=1.35;b=1.15;sag=.12;}
-    if(sample.name==='excited'){a=1.5+.10*beat;b=1.3+.15*beat;sag=.15;}
+    if(sample.name==='wave'){a=1.80+.06*beat;b=1.10+.20*beat;sag=.08+.03*beat;}
+    if(sample.name==='explain'){
+      const explainCadence=Math.sin(2*Math.PI*sample.time/.95+(side==='left'?.75:0));
+      const explainSag=Math.sin(2*Math.PI*sample.time/1.80+(side==='left'?1.25:0));
+      a=.85+.14*explainCadence;b=1.20+.18*explainCadence;sag=.26+.10*explainSag;
+    }
+    if(sample.name==='shrug'){
+      const shrugPop=(sample.progress>=.18&&sample.progress<.45)?Math.sin(Math.PI*(sample.progress-.18)/.27)**2*(1-(sample.progress-.18)/.27)*.12:0;
+      a=.85+shrugPop;b=1.35+shrugPop*.4;sag=.14;
+    }
+    if(sample.name==='surprise'){
+      const shockSurge=(sample.progress>=.18&&sample.progress<.45)?Math.sin(Math.PI*(sample.progress-.18)/.27)**2*(1-(sample.progress-.18)/.27)*.22:0;
+      a=1.35+shockSurge;b=1.15+shockSurge*.5;sag=.12-shockSurge*.04;
+    }
+    if(sample.name==='excited'){
+      const bounce=Math.sin(2*Math.PI*sample.time/.55);
+      a=1.50+.12*bounce;b=1.30+.16*bounce;sag=.15+.04*bounce;
+    }
     const direction=(angle:number,z:number):Vec3=>rotateQ(pose.torso.quaternion,unit([sign*Math.sin(angle),-Math.cos(angle),z]));
     const shoulder=poseAnchorPosition(pose,def.anchors[`${side}Shoulder`]),elbow=add(shoulder,mul(direction(a,sag),p.upperArmLength));
     goals.set(side,{elbow,hand:add(elbow,mul(direction(a+b,sag+.12),p.lowerArmLength))});

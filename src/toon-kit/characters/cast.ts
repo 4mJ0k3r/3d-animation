@@ -11,7 +11,7 @@ import {rootToWorld} from './pose-space';
 import {worldToRoot} from './pose-space';
 import {inverseQ,rotateQ,sub} from './math';
 import {validateFaceConfig} from './face';
-import {sampleActing} from './acting';
+import {sampleActing,timingProgress} from './acting';
 import type {ActingSample} from './acting';
 import {solveActingArms,resolveTurn} from './acting-solver';
 import {resolveActingFace} from './acting-face';
@@ -173,7 +173,10 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
         if(faceConfig===false){
           if(intent.expression!==undefined||intent.blink!==undefined||intent.eyeGaze!==undefined)castFail('FACE_INVALID','Facial intentions require an enabled face.',name);
           faces.set(name,null);
-        }else try{faces.set(name,resolveActingFace(faceConfig??{},name,frame.time,frame.frame,frame.fps,intent.expression,intent.blink,direction,action??undefined));}
+        }else try{
+          const gazeProgress=intent.gaze?.kind==='turn-to'?timingProgress(intent.gaze.options,frame.frame,frame.fps).progress:undefined;
+          faces.set(name,resolveActingFace(faceConfig??{},name,frame.time,frame.frame,frame.fps,intent.expression,intent.blink,direction,action??undefined,gazeProgress));
+        }
         catch(error){castFail('FACE_INVALID',String(error),name);}
         validateCompletePose(gaze.pose);
         diagnostics.push(...result.diagnostics,...gaze.diagnostics.map(d=>({...d,actor:name})));

@@ -1,0 +1,99 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "actingStage": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 10,
+          "depth": 10,
+          "finish": "paving"
+        },
+        "items": {
+          "backWall": {
+            "kind": "wall",
+            "size": {
+              "width": 8,
+              "height": 3.6
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.5
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 30,
+    "characters": {
+      "ananya": {
+        "appearance": "casual",
+        "expression": "neutral"
+      },
+      "rohit": {
+        "appearance": "office",
+        "expression": "neutral"
+      }
+    },
+    "scenes": [
+      {
+        "id": "scene-surprise",
+        "setting": "actingStage",
+        "startFrame": 0,
+        "endFrame": 30,
+        "axis": [
+          "ananya",
+          "rohit"
+        ],
+        "characters": {
+          "ananya": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "rohit": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "shots": [
+          {
+            "id": "shot-surprise",
+            "startFrame": 0,
+            "endFrame": 30,
+            "type": "medium",
+            "subject": "ananya"
+          }
+        ],
+        "beats": [
+          {
+            "id": "beat-surprise",
+            "startFrame": 0,
+            "endFrame": 30,
+            "actions": [
+              {
+                "actor": "ananya",
+                "type": "react",
+                "name": "surprised"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

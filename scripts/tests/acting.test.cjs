@@ -94,3 +94,38 @@ test('timed pointing while walking has continuous wrists and exact stance plants
 test('matched walking endpoints hand off to standing without a body or foot jump',()=>{
  const e=owner(),c=S.createCast(e,{a:{stance:walk()}});try{for(const frame of [0,180]){const a=c.evaluate({frame,fps:30}),b=c.evaluate({frame,fps:30,poses:{a:{stance:S.standAt(S.worldMark([0,0,frame===0?0:3]))}}});for(const anchor of ['root','head','leftWrist','rightWrist','leftSole','rightSole'])assert.ok(dist(point(c.actors.a,a.poses.a,anchor),point(c.actors.a,b.poses.a,anchor))<1e-8);}}finally{e.dispose();}
 });
+test('Phase 8C acting polish: anticipation, overshoot, body coordination, and gaze saccadic blinks',()=>{
+ const sur=S.surprise({startFrame:0,endFrame:100});
+ const sample0=sampleActing(sur,0,30),sampleAnt=sampleActing(sur,8,30),sampleOver=sampleActing(sur,28,30),sampleHold=sampleActing(sur,50,30),sampleEnd=sampleActing(sur,100,30);
+ assert.ok(sampleAnt.lean>0,`Expected positive lean during anticipation, got ${sampleAnt.lean}`);
+ assert.ok(sampleAnt.headPitch>0,`Expected positive headPitch during anticipation, got ${sampleAnt.headPitch}`);
+ assert.ok(sampleOver.lean<sampleHold.lean,`Expected recoil lean overshoot, got ${sampleOver.lean} vs ${sampleHold.lean}`);
+ assert.ok(sampleOver.headPitch<sampleHold.headPitch,`Expected chin lift overshoot, got ${sampleOver.headPitch} vs ${sampleHold.headPitch}`);
+ assert.ok(sampleHold.lean<0&&Math.abs(sampleHold.lean)<=.15);
+ assert.equal(sample0.lean,0);assert.equal(sample0.headPitch,0);
+ assert.equal(sampleEnd.lean,0);assert.equal(sampleEnd.headPitch,0);
+
+ const pt=S.gestureDuring(S.pointAt(S.worldPoint([2,1,3])),{startFrame:0,endFrame:100});
+ const ptAnt=sampleActing(pt,8,30),ptOver=sampleActing(pt,28,30),ptHold=sampleActing(pt,50,30);
+ assert.ok(ptAnt.lean<0,`Expected negative lean during point anticipation, got ${ptAnt.lean}`);
+ assert.ok(ptOver.lean>ptHold.lean,`Expected point lean overshoot, got ${ptOver.lean} vs ${ptHold.lean}`);
+ assert.equal(ptHold.weight,1);
+
+ const e=owner(),c=S.createCast(e,{a:{face:{blink:{enabled:true,phase:1.5,period:10}}}});
+ try{
+  const turn=S.turnTo(S.worldPoint([3,2,5]),{from:S.worldPoint([-3,2,5]),startFrame:0,endFrame:30});
+  const rStart=c.evaluate({frame:0,fps:30,poses:{a:{gaze:turn}}});
+  const rMid=c.evaluate({frame:15,fps:30,poses:{a:{gaze:turn}}});
+  const rEnd=c.evaluate({frame:30,fps:30,poses:{a:{gaze:turn}}});
+  assert.ok(rMid.faces.a.blink>.7,`Expected saccadic blink peak, got ${rMid.faces.a.blink}`);
+  assert.equal(rStart.faces.a.blink,0);
+  assert.equal(rEnd.faces.a.blink,0);
+
+  const rSurprise=c.evaluate({frame:50,fps:30,poses:{a:{gesture:S.surprise({startFrame:0,endFrame:100})}}});
+  assert.equal(rSurprise.faces.a.expression,'surprised');
+  assert.equal(rSurprise.faces.a.blink,0);
+
+  const rExplicit=c.evaluate({frame:15,fps:30,poses:{a:{gaze:turn,blink:0}}});
+  assert.equal(rExplicit.faces.a.blink,0);
+ }finally{e.dispose();}
+});
