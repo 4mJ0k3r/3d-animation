@@ -10,3 +10,4 @@ export * from './staging';
 export * from './caption-layout';
 export * from './story';
 export * from './authoring';
+export * from './qa';
