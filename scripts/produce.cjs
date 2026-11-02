@@ -138,6 +138,28 @@ async function runProduce(options) {
     else if (qaResult.verdict === 'WARNINGS') status = 'WARNINGS';
   }
 
+  let technicalGuidance = 'Objective checks NOT EVALUATED: QA stage skipped via --skip-qa.';
+  let narrativeGuidance = 'Timeline continuity not evaluated.';
+  if (qaResult) {
+    if (qaResult.verdict === 'FAILED') {
+      const errorCodes = qaResult.issues.filter(i => i.severity === 'ERROR').map(i => i.code);
+      technicalGuidance = `Objective checks FAILED: technical defects detected (${errorCodes.join(', ')}). See QA report for details.`;
+    } else if (qaResult.verdict === 'WARNINGS') {
+      const warnCodes = qaResult.issues.filter(i => i.severity === 'WARNING').map(i => i.code);
+      technicalGuidance = `Objective checks PASSED with warnings: advisory findings detected (${warnCodes.join(', ') || 'review QA report'}). Bitstream intact.`;
+    } else {
+      technicalGuidance = 'Objective checks PASSED: container and bitstream decoded without corruption, audio stream aligned, no unintended black screens or renderer freezes.';
+    }
+
+    if (qaResult.checks?.storyContinuity?.status === 'FAILED') {
+      narrativeGuidance = `Timeline continuity FAILED: ${qaResult.checks.storyContinuity.message}`;
+    } else if (qaResult.checks?.storyContinuity?.status === 'WARNING') {
+      narrativeGuidance = `Timeline continuity PASSED with notices: ${qaResult.checks.storyContinuity.message}`;
+    } else if (qaResult.checks?.storyContinuity?.status === 'PASSED') {
+      narrativeGuidance = 'Narrative pacing and caption intervals match authored specifications.';
+    }
+  }
+
   const productionReport = {
     version: '1.0.0',
     timestamp: new Date().toISOString(),
@@ -181,8 +203,8 @@ async function runProduce(options) {
       totalMs
     },
     guidance: {
-      technicalIntegrity: 'Objective checks PASSED: container and bitstream decoded without corruption, audio stream aligned, no unintended black screens or renderer freezes.',
-      narrativeContinuity: 'Narrative pacing and caption intervals match authored specifications.',
+      technicalIntegrity: technicalGuidance,
+      narrativeContinuity: narrativeGuidance,
       visualReviewRequired: 'Artistic quality, character expressions, silhouette appeal, and aesthetic staging require visual review of the contact sheet or final MP4.'
     }
   };
@@ -240,8 +262,8 @@ function printProductionConsole(report, reportPath, contactSheetPath, skipQA) {
 
   console.log(`----------------------------------------------------------------`);
   console.log(`${bold}Review Guidance:${reset}`);
-  console.log(`  * Technical Integrity: OBJECTIVELY VERIFIED (bitstream decode, sync, frames).`);
-  console.log(`  * Narrative Bounds:   VERIFIED against story plan.`);
+  console.log(`  * Technical Integrity: ${report.guidance.technicalIntegrity}`);
+  console.log(`  * Narrative Bounds:   ${report.guidance.narrativeContinuity}`);
   console.log(`  * Visual / Artistic:  \x1b[1mREQUIRES AGENT/HUMAN INSPECTION.\x1b[0m`);
   console.log(`    Inspect the contact sheet: ${contactSheetPath}`);
   console.log(`Production Report: ${reportPath}`);

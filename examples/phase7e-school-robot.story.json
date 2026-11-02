@@ -1,0 +1,526 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "scienceFair": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "paving"
+        },
+        "items": {
+          "hallWall": {
+            "kind": "wall",
+            "size": {
+              "width": 9,
+              "height": 3.4
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "fairSign": {
+            "prefab": "sign",
+            "text": "स्कूल विज्ञान मेला २०२६",
+            "place": {
+              "relation": "attachedTo",
+              "target": "hallWall",
+              "face": "front",
+              "vertical": "top"
+            }
+          },
+          "displayBench": {
+            "kind": "block",
+            "size": {
+              "width": 1.0,
+              "height": 0.9,
+              "depth": 0.6
+            },
+            "finish": "wood",
+            "place": {
+              "relation": "near",
+              "target": "entry",
+              "side": "left",
+              "gap": 0.8
+            }
+          },
+          "mysteryRobot": {
+            "object": {
+              "focus": "domeHead",
+              "parts": {
+                "base": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.9,
+                    "height": 0.25
+                  },
+                  "finish": "charcoal"
+                },
+                "chassis": {
+                  "shape": "roundedBox",
+                  "size": {
+                    "width": 0.8,
+                    "height": 0.65,
+                    "depth": 0.65
+                  },
+                  "finish": "navy",
+                  "place": {
+                    "on": "base"
+                  }
+                },
+                "domeHead": {
+                  "shape": "sphere",
+                  "size": {
+                    "width": 0.48,
+                    "height": 0.48
+                  },
+                  "finish": "metal",
+                  "place": {
+                    "on": "chassis"
+                  }
+                },
+                "antenna": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.05,
+                    "height": 0.4
+                  },
+                  "finish": "teal",
+                  "place": {
+                    "on": "domeHead"
+                  }
+                },
+                "beacon": {
+                  "shape": "sphere",
+                  "size": {
+                    "width": 0.14,
+                    "height": 0.14
+                  },
+                  "finish": "glow",
+                  "place": {
+                    "on": "antenna"
+                  }
+                },
+                "screen": {
+                  "shape": "box",
+                  "size": {
+                    "width": 0.5,
+                    "height": 0.3,
+                    "depth": 0.05
+                  },
+                  "finish": "mint",
+                  "place": {
+                    "beside": "chassis",
+                    "side": "front"
+                  }
+                },
+                "crank": {
+                  "shape": "capsule",
+                  "size": {
+                    "width": 0.15,
+                    "height": 0.35
+                  },
+                  "finish": "yellow",
+                  "place": {
+                    "align": "middle",
+                    "beside": "chassis",
+                    "side": "right"
+                  }
+                },
+                "hopper": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.2,
+                    "height": 0.25
+                  },
+                  "finish": "red",
+                  "place": {
+                    "align": "top",
+                    "beside": "chassis",
+                    "side": "left"
+                  }
+                }
+              }
+            },
+            "place": {
+              "relation": "near",
+              "target": "right",
+              "side": "right",
+              "gap": 0.8
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 840,
+    "characters": {
+      "ananya": {
+        "appearance": "office",
+        "expression": "neutral"
+      },
+      "rohit": {
+        "appearance": "casual",
+        "expression": "neutral"
+      }
+    },
+    "scenes": [
+      {
+        "id": "exhibition-discovery",
+        "setting": "scienceFair",
+        "startFrame": 0,
+        "endFrame": 420,
+        "axis": [
+          "ananya",
+          "rohit"
+        ],
+        "characters": {
+          "ananya": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "rohit": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "shots": [
+          {
+            "id": "fair-wide",
+            "startFrame": 0,
+            "endFrame": 90,
+            "type": "establishing",
+            "subjects": [
+              "ananya",
+              "rohit"
+            ]
+          },
+          {
+            "id": "students-two",
+            "startFrame": 90,
+            "endFrame": 240,
+            "type": "twoShot",
+            "subjects": [
+              "ananya",
+              "rohit"
+            ]
+          },
+          {
+            "id": "robot-focus",
+            "startFrame": 240,
+            "endFrame": 420,
+            "type": "objectFocus",
+            "subject": "mysteryRobot"
+          }
+        ],
+        "beats": [
+          {
+            "id": "walk-in",
+            "startFrame": 0,
+            "endFrame": 90,
+            "actions": [
+              {
+                "actor": "ananya",
+                "type": "walk",
+                "path": "toMeeting"
+              }
+            ]
+          },
+          {
+            "id": "point-robot",
+            "startFrame": 90,
+            "endFrame": 240,
+            "actions": [
+              {
+                "actor": "ananya",
+                "type": "point",
+                "target": "mysteryRobot",
+                "hand": "left"
+              },
+              {
+                "actor": "rohit",
+                "type": "gesture",
+                "name": "explain"
+              }
+            ]
+          },
+          {
+            "id": "inspect-closely",
+            "startFrame": 240,
+            "endFrame": 420,
+            "actions": [
+              {
+                "actor": "ananya",
+                "type": "look",
+                "target": "mysteryRobot"
+              },
+              {
+                "actor": "rohit",
+                "type": "look",
+                "target": "mysteryRobot"
+              }
+            ]
+          }
+        ],
+        "cues": [
+          {
+            "id": "c1-discovery",
+            "speaker": "ananya",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "timing": "estimated",
+            "startFrame": 15,
+            "endFrame": 105,
+            "text": "रोहित, देखो! इस विज्ञान मेले में ये कैसा अजीब रोबोट है?"
+          },
+          {
+            "id": "c2-wonder",
+            "speaker": "rohit",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "timing": "estimated",
+            "startFrame": 120,
+            "endFrame": 225,
+            "text": "अरे वाह! इसमें तो एंटीना और सेंसर लगे हैं! क्या ये बात कर सकता है?"
+          },
+          {
+            "id": "c3-supercomputer",
+            "speaker": "ananya",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "timing": "estimated",
+            "startFrame": 245,
+            "endFrame": 335,
+            "text": "शायद ये कोई सुपर कंप्यूटर रोबोट है, इसकी बत्ती जल रही है!"
+          },
+          {
+            "id": "c4-starting",
+            "speaker": "rohit",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "timing": "estimated",
+            "startFrame": 345,
+            "endFrame": 415,
+            "text": "रुको, ये हिलने लगा है! कुछ बहुत बड़ा होने वाला है!"
+          }
+        ]
+      },
+      {
+        "id": "robot-reveal",
+        "setting": "scienceFair",
+        "startFrame": 420,
+        "endFrame": 840,
+        "axis": [
+          "ananya",
+          "rohit"
+        ],
+        "characters": {
+          "ananya": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "rohit": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "propAnimations": [
+          {
+            "prop": "mysteryRobot",
+            "type": "lift",
+            "height": 0.35,
+            "startFrame": 440,
+            "endFrame": 470,
+            "easing": "easeInOut"
+          },
+          {
+            "prop": "mysteryRobot",
+            "type": "rotate",
+            "axis": "y",
+            "degrees": 25,
+            "startFrame": 470,
+            "endFrame": 500
+          },
+          {
+            "prop": "mysteryRobot",
+            "type": "rotate",
+            "axis": "y",
+            "degrees": 0,
+            "startFrame": 500,
+            "endFrame": 530
+          },
+          {
+            "prop": "mysteryRobot",
+            "type": "lift",
+            "height": 0,
+            "startFrame": 530,
+            "endFrame": 550
+          }
+        ],
+        "effects": [
+          {
+            "type": "impactFlash",
+            "target": "mysteryRobot",
+            "startFrame": 550,
+            "intensity": "high"
+          },
+          {
+            "type": "dustPuff",
+            "target": "mysteryRobot",
+            "startFrame": 550
+          }
+        ],
+        "shots": [
+          {
+            "id": "robot-action",
+            "startFrame": 420,
+            "endFrame": 540,
+            "type": "objectFocus",
+            "subject": "mysteryRobot"
+          },
+          {
+            "id": "students-reaction",
+            "startFrame": 540,
+            "endFrame": 680,
+            "type": "twoShot",
+            "subjects": [
+              "ananya",
+              "rohit"
+            ]
+          },
+          {
+            "id": "funny-conclusion",
+            "startFrame": 680,
+            "endFrame": 840,
+            "type": "medium",
+            "subject": "rohit"
+          }
+        ],
+        "beats": [
+          {
+            "id": "robot-move",
+            "startFrame": 420,
+            "endFrame": 540,
+            "actions": [
+              {
+                "actor": "rohit",
+                "type": "point",
+                "target": "mysteryRobot",
+                "hand": "left"
+              },
+              {
+                "actor": "ananya",
+                "type": "gesture",
+                "name": "worried"
+              }
+            ]
+          },
+          {
+            "id": "shock-moment",
+            "startFrame": 540,
+            "endFrame": 680,
+            "actions": [
+              {
+                "actor": "ananya",
+                "type": "react",
+                "name": "surprised"
+              },
+              {
+                "actor": "rohit",
+                "type": "react",
+                "name": "surprised"
+              }
+            ]
+          },
+          {
+            "id": "laugh-ending",
+            "startFrame": 680,
+            "endFrame": 840,
+            "actions": [
+              {
+                "actor": "rohit",
+                "type": "gesture",
+                "name": "explain"
+              },
+              {
+                "actor": "ananya",
+                "type": "gesture",
+                "name": "nod"
+              }
+            ]
+          }
+        ],
+        "cues": [
+          {
+            "id": "c5-alarm",
+            "speaker": "rohit",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "timing": "estimated",
+            "startFrame": 435,
+            "endFrame": 535,
+            "text": "सावधान! ये कोई खतरनाक अंतरिक्ष तकनीक लग रही है!"
+          },
+          {
+            "id": "c6-pencil",
+            "speaker": "ananya",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "timing": "estimated",
+            "startFrame": 555,
+            "endFrame": 645,
+            "text": "अरे... ये क्या निकला? इस पर तो लिखा है 'पेंसिल छीलने की मशीन'!"
+          },
+          {
+            "id": "c7-laugh",
+            "speaker": "rohit",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "timing": "estimated",
+            "startFrame": 660,
+            "endFrame": 750,
+            "text": "हाहाहा! हम इसे एलियन रोबोट समझ रहे थे, ये तो बस पेंसिल छीलने का डिब्बा है!"
+          },
+          {
+            "id": "c8-closing",
+            "speaker": "ananya",
+            "kind": "dialogue",
+            "language": "hi",
+            "mode": "words",
+            "timing": "estimated",
+            "startFrame": 765,
+            "endFrame": 835,
+            "text": "लाओ मेरी पेंसिल, विज्ञान मेले का सबसे महंगा शार्पनर मिल गया!"
+          }
+        ]
+      }
+    ]
+  }
+}

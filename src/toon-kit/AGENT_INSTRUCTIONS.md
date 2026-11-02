@@ -338,7 +338,7 @@ Agent inspects Contact Sheet (out/name-contact-sheet.png) & Delivers MP4
 When given a natural-language script, the coding agent creates a structured `StoryDocument` JSON without writing raw 3D engine code:
 
 1. **Characters & Appearance:**
-   - Define actors in `story.characters` using supported appearance presets (`doctor`, `patient`, `office`, `casual`, `scientist`, `hoodie`, `glasses`).
+   - Define actors in `story.characters` using supported appearance presets (`doctor`, `patient`, `office`, `casual`). Note: `hoodie` and `jacket` are clothing style options (`clothing.style`), and `glasses` is an accessory option (`accessories`), not appearance presets.
    - Set starting emotional expression (`neutral`, `happy`, `worried`, `surprised`, `focused`).
 2. **Environment & Layout Construction:**
    - Choose a curated preset (`office`, `clinic`, `street`) or construct a custom environment with `preset: "custom"`.

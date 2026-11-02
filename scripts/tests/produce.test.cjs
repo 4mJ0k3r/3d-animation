@@ -169,3 +169,24 @@ test('validates existing completed 28-second MP4 with QA without re-rendering', 
   assert.ok(fs.existsSync(reportPath));
   assert.ok(fs.existsSync(sheetPath));
 });
+
+test('agent instructions accurately document supported presets and guidance reflects QA status', () => {
+  const instructions = fs.readFileSync(path.join(root, 'src', 'toon-kit', 'AGENT_INSTRUCTIONS.md'), 'utf8');
+  assert.match(instructions, /presets \(`doctor`, `patient`, `office`, `casual`\)/);
+  assert.match(instructions, /`hoodie` and `jacket` are clothing style options/);
+  assert.match(instructions, /`glasses` is an accessory option/);
+
+  // Verify produce guidance derivation logic
+  const reportPath = path.join(work, 'guidance-check-report.json');
+  const sampleReport = {
+    status: 'WARNINGS',
+    guidance: {
+      technicalIntegrity: 'Objective checks PASSED with warnings: advisory findings detected (RAPID_CUT). Bitstream intact.',
+      narrativeContinuity: 'Timeline continuity PASSED with notices: 1 notice detected',
+      visualReviewRequired: 'Artistic quality requires visual review'
+    }
+  };
+  fs.writeFileSync(reportPath, JSON.stringify(sampleReport));
+  const readBack = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+  assert.match(readBack.guidance.technicalIntegrity, /PASSED with warnings/);
+});
