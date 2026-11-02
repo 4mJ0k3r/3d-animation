@@ -1339,3 +1339,62 @@ test('Phase 8D: composite object text labels, focus-aware semantic regions, and 
     if (prior === undefined) delete global.document; else global.document = prior;
   }
 });
+
+test('Phase 8E regression check: composite object text labels count toward construction mesh accounting', () => {
+  const makeObj = (hasText) => {
+    const parts = {
+      b0: { shape: 'box', size: {width: 0.6, height: 0.2, depth: 0.6}, finish: 'wood' },
+      b1: { shape: 'box', size: {width: 0.3, height: 0.2, depth: 0.3}, finish: 'wood', place: { on: 'b0' } },
+      b2: { shape: 'box', size: {width: 0.15, height: 0.15, depth: 0.15}, finish: 'wood', place: { beside: 'b0', side: 'left' } },
+      b3: { shape: 'box', size: {width: 0.15, height: 0.15, depth: 0.15}, finish: 'wood', place: { beside: 'b0', side: 'right' } },
+      b4: { shape: 'box', size: {width: 0.15, height: 0.15, depth: 0.15}, finish: 'wood', place: { beside: 'b0', side: 'front' } },
+      b5: { shape: 'box', size: {width: 0.15, height: 0.15, depth: 0.15}, finish: 'wood', place: { beside: 'b0', side: 'back' } },
+      b6: { shape: 'box', size: {width: 0.15, height: 0.15, depth: 0.15}, finish: 'wood', place: { on: 'b1' } },
+      b7: { shape: 'box', size: {width: 0.25, height: 0.15, depth: 0.05}, finish: 'metal', place: { beside: 'b1', side: 'front' } }
+    };
+    if (hasText) parts.b7.text = 'परीक्षण';
+    return { parts };
+  };
+
+  const d = JSON.parse(fs.readFileSync('examples/custom-objects.story.json', 'utf8').replaceAll('beacon', 'obj1').replaceAll('lamp', 'obj2'));
+  d.layouts.plaza.composition = {
+    ground: { width: 14, depth: 14, finish: 'paving' },
+    items: {
+      obj1: { object: makeObj(true), place: { relation: 'alongBoundary', boundary: 'front', align: 'center', gap: 2 } },
+      obj2: { object: makeObj(true), place: { relation: 'alongBoundary', boundary: 'back', align: 'center', gap: 2 } },
+      obj3: { object: makeObj(false), place: { relation: 'alongBoundary', boundary: 'left', align: 'center', gap: 2 } },
+      obj4: { object: makeObj(false), place: { relation: 'alongBoundary', boundary: 'right', align: 'center', gap: 2 } },
+      col1: { kind: 'column', size: { width: 0.4, height: 2 }, finish: 'slate', place: { relation: 'alongBoundary', boundary: 'left', align: 'start', gap: 1 } },
+      col2: { kind: 'column', size: { width: 0.4, height: 2 }, finish: 'slate', place: { relation: 'alongBoundary', boundary: 'left', align: 'end', gap: 1 } },
+      col3: { kind: 'column', size: { width: 0.4, height: 2 }, finish: 'slate', place: { relation: 'alongBoundary', boundary: 'right', align: 'start', gap: 1 } },
+      col4: { kind: 'column', size: { width: 0.4, height: 2 }, finish: 'slate', place: { relation: 'alongBoundary', boundary: 'right', align: 'end', gap: 1 } },
+      col5: { kind: 'column', size: { width: 0.4, height: 2 }, finish: 'slate', place: { relation: 'alongBoundary', boundary: 'front', align: 'start', gap: 1 } }
+    }
+  };
+  delete d.story.scenes[0].propAnimations;
+
+  const prior = global.document;
+  const ctx = new Proxy({ font: '', textAlign: '', textBaseline: '', fillRect: () => {}, fillText: () => {}, measureText: () => ({ width: 40, actualBoundingBoxAscent: 20, actualBoundingBoxDescent: 10 }) }, { get(t, p) { return p in t ? t[p] : () => {}; } });
+  const fonts = new Set(); fonts.check = () => true; fonts.add({family: D.STORY_FONT.family, status: 'loaded'});
+  global.document = { fonts, createElement: () => ({ width: 0, height: 0, getContext: () => ctx }) };
+
+  const e = owner();
+  try {
+    const c = D.compileStoryDocument(d);
+    const envs = D.createStoryEnvironments(e, c);
+    assert.equal(envs.plaza.root.userData.construction.meshes, 40, 'builder measures exactly 40 meshes at the boundary');
+
+    // Adding one more column pushes it to 41 meshes (due to counting composite text labels) and must fail at preflight
+    const overflow = JSON.parse(JSON.stringify(d));
+    overflow.layouts.plaza.composition.items.col6 = {
+      kind: 'column',
+      size: { width: 0.4, height: 2 },
+      finish: 'slate',
+      place: { relation: 'alongBoundary', boundary: 'back', align: 'start', gap: 1 }
+    };
+    bad(() => D.compileStoryDocument(overflow), 'CONSTRUCTION_BUDGET');
+  } finally {
+    e.dispose();
+    if (prior === undefined) delete global.document; else global.document = prior;
+  }
+});

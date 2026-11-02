@@ -299,7 +299,7 @@ export function planConstruction(input: unknown) {
     sign: 3,
     screen: 3,
     planter: 2
-  }[s.prefab] : s.object ? Object.keys(s.object.parts).length : ['tree', 'window', 'door'].includes(s.kind!) ? 2 : 1), 0);
+  }[s.prefab] : s.object ? (Object.keys(s.object.parts).length + Object.values(s.object.parts).filter(p => p.text !== undefined).length) : ['tree', 'window', 'door'].includes(s.kind!) ? 2 : 1), 0);
   if (meshes > meshLimit) fail('CONSTRUCTION_BUDGET', 'Construction needs ' + meshes + ' meshes; maximum is ' + meshLimit + (c.thirdActor?' with three actors':''));
   const resolved = new Map<string, PlannedItem>(),
     active = new Set<string>();

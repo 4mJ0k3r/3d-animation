@@ -1,0 +1,637 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "marketNightDark": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "paving"
+        },
+        "items": {
+          "backWall": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "brick",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "wallTrim": {
+            "kind": "trim",
+            "size": {
+              "width": 9.6,
+              "height": 0.12
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "attachedTo",
+              "target": "backWall",
+              "face": "front",
+              "vertical": "top"
+            }
+          },
+          "leftColumn": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "start",
+              "gap": 1.0
+            }
+          },
+          "rightColumn": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "end",
+              "gap": 1.0
+            }
+          },
+          "stallBench": {
+            "kind": "block",
+            "size": {
+              "width": 1.1,
+              "height": 0.8,
+              "depth": 0.6
+            },
+            "finish": "wood",
+            "place": {
+              "relation": "near",
+              "target": "entry",
+              "side": "left",
+              "gap": 0.8
+            }
+          },
+          "nightBox": {
+            "object": {
+              "focus": "signboard",
+              "parts": {
+                "pedestal": {
+                  "shape": "box",
+                  "size": {
+                    "width": 1.0,
+                    "height": 0.35,
+                    "depth": 0.8
+                  },
+                  "finish": "charcoal"
+                },
+                "cabinet": {
+                  "shape": "roundedBox",
+                  "size": {
+                    "width": 0.9,
+                    "height": 0.75,
+                    "depth": 0.7
+                  },
+                  "finish": "navy",
+                  "place": {
+                    "on": "pedestal"
+                  }
+                },
+                "hopper": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.45,
+                    "height": 0.35
+                  },
+                  "finish": "metal",
+                  "place": {
+                    "on": "cabinet"
+                  }
+                },
+                "beacon": {
+                  "shape": "sphere",
+                  "size": {
+                    "width": 0.18,
+                    "height": 0.18
+                  },
+                  "finish": "glow",
+                  "place": {
+                    "align": "top",
+                    "beside": "cabinet",
+                    "side": "right"
+                  }
+                },
+                "exhaust": {
+                  "shape": "capsule",
+                  "size": {
+                    "width": 0.16,
+                    "height": 0.35
+                  },
+                  "finish": "yellow",
+                  "place": {
+                    "align": "middle",
+                    "beside": "cabinet",
+                    "side": "left"
+                  }
+                },
+                "signboard": {
+                  "shape": "box",
+                  "size": {
+                    "width": 0.75,
+                    "height": 0.35,
+                    "depth": 0.05
+                  },
+                  "finish": "metal",
+                  "place": {
+                    "beside": "cabinet",
+                    "side": "front"
+                  }
+                }
+              }
+            },
+            "place": {
+              "relation": "near",
+              "target": "right",
+              "side": "right",
+              "gap": 0.9
+            }
+          }
+        }
+      }
+    },
+    "marketNightLit": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "paving"
+        },
+        "items": {
+          "backWall": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "brick",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "wallTrim": {
+            "kind": "trim",
+            "size": {
+              "width": 9.6,
+              "height": 0.12
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "attachedTo",
+              "target": "backWall",
+              "face": "front",
+              "vertical": "top"
+            }
+          },
+          "leftColumn": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "start",
+              "gap": 1.0
+            }
+          },
+          "rightColumn": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "end",
+              "gap": 1.0
+            }
+          },
+          "stallBench": {
+            "kind": "block",
+            "size": {
+              "width": 1.1,
+              "height": 0.8,
+              "depth": 0.6
+            },
+            "finish": "wood",
+            "place": {
+              "relation": "near",
+              "target": "entry",
+              "side": "left",
+              "gap": 0.8
+            }
+          },
+          "nightBox": {
+            "object": {
+              "focus": "signboard",
+              "parts": {
+                "pedestal": {
+                  "shape": "box",
+                  "size": {
+                    "width": 1.0,
+                    "height": 0.35,
+                    "depth": 0.8
+                  },
+                  "finish": "charcoal"
+                },
+                "cabinet": {
+                  "shape": "roundedBox",
+                  "size": {
+                    "width": 0.9,
+                    "height": 0.75,
+                    "depth": 0.7
+                  },
+                  "finish": "navy",
+                  "place": {
+                    "on": "pedestal"
+                  }
+                },
+                "hopper": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.45,
+                    "height": 0.35
+                  },
+                  "finish": "metal",
+                  "place": {
+                    "on": "cabinet"
+                  }
+                },
+                "beacon": {
+                  "shape": "sphere",
+                  "size": {
+                    "width": 0.18,
+                    "height": 0.18
+                  },
+                  "finish": "glow",
+                  "place": {
+                    "align": "top",
+                    "beside": "cabinet",
+                    "side": "right"
+                  }
+                },
+                "exhaust": {
+                  "shape": "capsule",
+                  "size": {
+                    "width": 0.16,
+                    "height": 0.35
+                  },
+                  "finish": "yellow",
+                  "place": {
+                    "align": "middle",
+                    "beside": "cabinet",
+                    "side": "left"
+                  }
+                },
+                "signboard": {
+                  "shape": "box",
+                  "size": {
+                    "width": 0.75,
+                    "height": 0.35,
+                    "depth": 0.05
+                  },
+                  "finish": "metal",
+                  "text": "गरम मूँगफली मशीन\n१० रुपये प्रति पैकेट",
+                  "place": {
+                    "beside": "cabinet",
+                    "side": "front"
+                  }
+                }
+              }
+            },
+            "place": {
+              "relation": "near",
+              "target": "right",
+              "side": "right",
+              "gap": 0.9
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 780,
+    "characters": {
+      "kabir": {
+        "appearance": "casual",
+        "expression": "neutral"
+      },
+      "rohit": {
+        "appearance": "casual",
+        "expression": "neutral"
+      }
+    },
+    "scenes": [
+      {
+        "id": "night-discovery",
+        "setting": "marketNightDark",
+        "startFrame": 0,
+        "endFrame": 390,
+        "axis": [
+          "kabir",
+          "rohit"
+        ],
+        "characters": {
+          "kabir": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            },
+            "lookAt": "audience"
+          },
+          "rohit": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            },
+            "lookAt": "audience"
+          }
+        },
+        "cues": [
+          {
+            "id": "cue1-rohit",
+            "kind": "dialogue",
+            "speaker": "rohit",
+            "startFrame": 20,
+            "endFrame": 160,
+            "text": "कबीर, देखो! बंद बाज़ार में यह चमकता डिब्बा क्या कर रहा है?"
+          },
+          {
+            "id": "cue2-kabir",
+            "kind": "dialogue",
+            "speaker": "kabir",
+            "startFrame": 200,
+            "endFrame": 370,
+            "text": "सावधान रोहित! यह कोई खतरनाक जासूसी यंत्र लग रहा है!"
+          }
+        ],
+        "beats": [
+          {
+            "id": "beat1-notice",
+            "startFrame": 0,
+            "endFrame": 180,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "point",
+                "target": "nightBox",
+                "hand": "left"
+              },
+              {
+                "actor": "rohit",
+                "type": "look",
+                "target": "nightBox"
+              }
+            ]
+          },
+          {
+            "id": "beat2-speculate",
+            "startFrame": 180,
+            "endFrame": 390,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "gesture",
+                "name": "explain"
+              },
+              {
+                "actor": "kabir",
+                "type": "expression",
+                "name": "worried"
+              }
+            ]
+          }
+        ],
+        "shots": [
+          {
+            "id": "shot1-establishing",
+            "type": "twoShot",
+            "subjects": [
+              "kabir",
+              "rohit"
+            ],
+            "startFrame": 0,
+            "endFrame": 180
+          },
+          {
+            "id": "shot2-kabir-examines",
+            "type": "medium",
+            "subject": "kabir",
+            "startFrame": 180,
+            "endFrame": 390
+          }
+        ]
+      },
+      {
+        "id": "night-reveal",
+        "setting": "marketNightLit",
+        "startFrame": 390,
+        "endFrame": 780,
+        "axis": [
+          "kabir",
+          "rohit"
+        ],
+        "characters": {
+          "kabir": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            },
+            "lookAt": "audience"
+          },
+          "rohit": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            },
+            "lookAt": "audience"
+          }
+        },
+        "propAnimations": [
+          {
+            "prop": "nightBox",
+            "type": "lift",
+            "height": 0.15,
+            "startFrame": 410,
+            "endFrame": 470
+          }
+        ],
+        "effects": [
+          {
+            "type": "impactFlash",
+            "target": "nightBox",
+            "startFrame": 430
+          }
+        ],
+        "cues": [
+          {
+            "id": "cue3-caption",
+            "kind": "caption",
+            "startFrame": 410,
+            "endFrame": 500,
+            "text": "[ डिब्बा अचानक थरथराता है और रोशनी चमकती है ]"
+          },
+          {
+            "id": "cue4-reveal-caption",
+            "kind": "caption",
+            "startFrame": 530,
+            "endFrame": 640,
+            "text": "[ बोर्ड पर लिखा है: गरम मूँगफली मशीन ]"
+          },
+          {
+            "id": "cue5-rohit-laugh",
+            "kind": "dialogue",
+            "speaker": "rohit",
+            "startFrame": 660,
+            "endFrame": 770,
+            "text": "हाहा! जासूसी यंत्र नहीं, यह तो गरम मूँगफली की मशीन है!"
+          }
+        ],
+        "beats": [
+          {
+            "id": "beat3-machine-active",
+            "startFrame": 390,
+            "endFrame": 520,
+            "actions": [
+              {
+                "actor": "rohit",
+                "type": "look",
+                "target": "nightBox"
+              },
+              {
+                "actor": "kabir",
+                "type": "look",
+                "target": "nightBox"
+              }
+            ]
+          },
+          {
+            "id": "beat4-read-board",
+            "startFrame": 520,
+            "endFrame": 650,
+            "actions": [
+              {
+                "actor": "rohit",
+                "type": "look",
+                "target": "nightBox"
+              },
+              {
+                "actor": "kabir",
+                "type": "look",
+                "target": "nightBox"
+              }
+            ]
+          },
+          {
+            "id": "beat5-comedy-reaction",
+            "startFrame": 650,
+            "endFrame": 710,
+            "actions": [
+              {
+                "actor": "rohit",
+                "type": "react",
+                "name": "surprised"
+              },
+              {
+                "actor": "rohit",
+                "type": "look",
+                "target": "audience"
+              },
+              {
+                "actor": "kabir",
+                "type": "gesture",
+                "name": "shrug"
+              },
+              {
+                "actor": "kabir",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "beat6-laugh",
+            "startFrame": 710,
+            "endFrame": 780,
+            "actions": [
+              {
+                "actor": "rohit",
+                "type": "expression",
+                "name": "happy"
+              },
+              {
+                "actor": "kabir",
+                "type": "expression",
+                "name": "happy"
+              }
+            ]
+          }
+        ],
+        "shots": [
+          {
+            "id": "shot3-activation",
+            "type": "objectFocus",
+            "subject": "nightBox",
+            "startFrame": 390,
+            "endFrame": 520
+          },
+          {
+            "id": "shot4-reveal",
+            "type": "objectFocus",
+            "subject": "nightBox",
+            "region": "display",
+            "startFrame": 520,
+            "endFrame": 650
+          },
+          {
+            "id": "shot5-reaction",
+            "type": "twoShot",
+            "subjects": [
+              "kabir",
+              "rohit"
+            ],
+            "startFrame": 650,
+            "endFrame": 780
+          }
+        ]
+      }
+    ]
+  }
+}
