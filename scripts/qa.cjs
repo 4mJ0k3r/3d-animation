@@ -444,7 +444,101 @@ function checkPlanContinuity(storyData, videoInfo, audioInfo) {
         speakerCues.get(cue.speaker).push({ start: cStart, end: cEnd, id: cue.id });
       }
     }
+
+    // Effect visibility check: detect effects occurring in shots not clearly focused on their target
+    const effects = Array.isArray(scene.effects) ? scene.effects : [];
+    for (const effect of effects) {
+      const eStart = effect.startFrame;
+      const target = effect.target;
+      const activeShot = shots.find(s => s.startFrame <= eStart && s.endFrame > eStart);
+      const isFocused = activeShot && activeShot.type === 'objectFocus' && activeShot.subject === target;
+
+      if (!isFocused) {
+        const prevShot = shots.slice().reverse().find(s => s.type === 'objectFocus' && s.subject === target && s.endFrame <= eStart);
+        const fix = prevShot
+          ? `Extend shot '${prevShot.id}' (objectFocus on '${target}') to cover frame ${eStart}, or cut to an objectFocus shot of '${target}' during the effect, or align effect startFrame with the focused shot.`
+          : `Cut to an 'objectFocus' shot targeting '${target}' around frame ${eStart}, or widen framing so '${target}' is visibly centered during the effect.`;
+
+        issues.push({
+          severity: 'WARNING',
+          code: 'EFFECT_NOT_FOCUSED',
+          message: `Effect '${effect.type}' at frame ${eStart} targets '${target}', but active shot '${activeShot?.id || 'none'}' (${activeShot?.type || 'unknown'}) is not focused on '${target}'. Suggested fix: ${fix} If this is an intentional background/off-camera effect or reaction shot, review and accept this advisory warning.`,
+          scene: sceneId,
+          shot: activeShot?.id,
+          frame: eStart,
+          details: {
+            effectType: effect.type,
+            target,
+            startFrame: eStart,
+            activeShot: activeShot?.id,
+            activeShotType: activeShot?.type,
+            activeShotSubject: activeShot?.subject || activeShot?.subjects,
+            suggestedFix: fix
+          }
+        });
+        sceneContinuityIssues++;
+      }
+    }
+
+    // Dialogue speaker visibility check: detect dialogue cues where speaker is absent from single-subject shot
+    for (const cue of cues) {
+      if (cue.kind === 'caption' || cue.mode === 'voiceover' || cue.voiceover === true || cue.speaker === 'narrator' || !cue.speaker) {
+        continue;
+      }
+      const speaker = cue.speaker;
+      const cStart = cue.startFrame;
+      const cEnd = cue.endFrame;
+      const cDuration = cEnd - cStart;
+      if (cDuration <= 0) continue;
+
+      for (const shot of shots) {
+        const overlap = Math.max(0, Math.min(cEnd, shot.endFrame) - Math.max(cStart, shot.startFrame));
+        if (overlap <= 0 || (overlap / cDuration) <= 0.5) continue;
+
+        // Preserve intentional reaction shots
+        if (shot.type === 'reaction' || /\breact(ion)?\b/i.test(shot.id || '')) {
+          continue;
+        }
+
+        // Single-subject actor shots: medium, closeUp, fullBody, cowboy
+        const isSingleActorShot = ['medium', 'closeUp', 'fullBody', 'cowboy'].includes(shot.type);
+        if (isSingleActorShot && shot.subject && shot.subject !== speaker) {
+          const fix = `Cut to a shot of '${speaker}', switch to a twoShot including '${speaker}', or if this is an intentional reaction shot or voiceover, use shot type 'reaction' or mark the cue as voiceover.`;
+          issues.push({
+            severity: 'WARNING',
+            code: 'SPEAKER_NOT_IN_SHOT',
+            message: `Dialogue cue '${cue.id || 'unnamed'}' in ${sceneId} [${cStart}, ${cEnd}] is spoken by '${speaker}', but active shot '${shot.id || 'unnamed'}' (${shot.type}) focuses on '${shot.subject}' for ${Math.round((overlap / cDuration) * 100)}% of the line. Suggested fix: ${fix}`,
+            scene: sceneId,
+            shot: shot.id,
+            frame: cStart,
+            details: {
+              cueId: cue.id,
+              speaker,
+              startFrame: cStart,
+              endFrame: cEnd,
+              shotId: shot.id,
+              shotType: shot.type,
+              shotSubject: shot.subject,
+              overlapFrames: overlap,
+              cueFrames: cDuration,
+              overlapFraction: Math.round((overlap / cDuration) * 100) / 100,
+              suggestedFix: fix
+            }
+          });
+          sceneContinuityIssues++;
+        }
+      }
+    }
   }
+
+  const cinematicNotices = issues.filter(i => (i.code === 'EFFECT_NOT_FOCUSED' || i.code === 'SPEAKER_NOT_IN_SHOT') && i.scene);
+  checks.cinematicFraming = {
+    status: cinematicNotices.length > 0 ? 'WARNING' : 'PASSED',
+    message: cinematicNotices.length === 0
+      ? 'Effects and dialogue cues align with camera shot subjects'
+      : `${cinematicNotices.length} cinematic framing advisory notice(s) detected`,
+    details: { notices: cinematicNotices }
+  };
 
   checks.storyContinuity = {
     status: sceneContinuityIssues > 0 ? (issues.some(i => i.severity === 'ERROR' && i.scene) ? 'FAILED' : 'WARNING') : 'PASSED',
@@ -823,6 +917,7 @@ async function runQA(options) {
     checks.frameCount = { status: 'NOT_EVALUATED', message: 'Plan omitted; frame count not evaluated against script' };
     checks.audioSync = { status: 'NOT_EVALUATED', message: 'Plan omitted; audio sync not evaluated against script' };
     checks.storyContinuity = { status: 'NOT_EVALUATED', message: 'Plan omitted; narrative continuity not evaluated' };
+    checks.cinematicFraming = { status: 'NOT_EVALUATED', message: 'Plan omitted; cinematic framing not evaluated' };
   }
 
   // Correlate freezes with story plan or record warnings

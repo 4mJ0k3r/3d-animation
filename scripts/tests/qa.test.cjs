@@ -279,3 +279,112 @@ test('rejects missing video path with clean diagnostic', async () => {
     (err) => err.diagnostic?.code === 'VIDEO_NOT_FOUND'
   );
 });
+
+test('detects EFFECT_NOT_FOCUSED when effect occurs in shot not focused on target', () => {
+  const plan = {
+    document: {
+      story: {
+        fps: 30,
+        durationInFrames: 120,
+        scenes: [{
+          id: 'scene-effects',
+          startFrame: 0,
+          endFrame: 120,
+          shots: [
+            { id: 'shot-focus', startFrame: 0, endFrame: 60, type: 'objectFocus', subject: 'machine' },
+            { id: 'shot-reaction', startFrame: 60, endFrame: 120, type: 'twoShot', subjects: ['actor1', 'actor2'] }
+          ],
+          effects: [
+            { type: 'impactFlash', target: 'machine', startFrame: 30 }, // Focused in shot-focus -> OK
+            { type: 'dustPuff', target: 'machine', startFrame: 70 }     // Unfocused in shot-reaction -> WARNING
+          ]
+        }]
+      }
+    }
+  };
+
+  const videoInfo = { path: 'dummy.mp4', width: 720, height: 1280, fps: 30, frames: 120, duration: 4.0, codec: 'h264', isValid: true };
+  const audioInfo = { present: false, expected: false };
+
+  const res = QA.checkPlanContinuity({ doc: plan.document, story: plan.document.story, path: 'dummy.json' }, videoInfo, audioInfo);
+  const effectWarnings = res.issues.filter(i => i.code === 'EFFECT_NOT_FOCUSED');
+  assert.equal(effectWarnings.length, 1);
+  assert.equal(effectWarnings[0].frame, 70);
+  assert.equal(effectWarnings[0].details.target, 'machine');
+  assert.match(effectWarnings[0].message, /Extend shot 'shot-focus'/);
+  assert.equal(res.checks.cinematicFraming.status, 'WARNING');
+});
+
+test('detects SPEAKER_NOT_IN_SHOT when speaker is absent from single-subject shot, but preserves reaction shots and voiceover', () => {
+  const plan = {
+    document: {
+      story: {
+        fps: 30,
+        durationInFrames: 300,
+        scenes: [{
+          id: 'scene-dialogue',
+          startFrame: 0,
+          endFrame: 300,
+          shots: [
+            { id: 'shot-medium-a', startFrame: 0, endFrame: 100, type: 'medium', subject: 'actorA' },
+            { id: 'shot-reaction-b', startFrame: 100, endFrame: 200, type: 'reaction', subject: 'actorB' },
+            { id: 'shot-medium-b', startFrame: 200, endFrame: 300, type: 'medium', subject: 'actorB' }
+          ],
+          cues: [
+            // Line 1: actorA speaks in shot-medium-a -> matches subject -> OK
+            { id: 'c1', speaker: 'actorA', kind: 'dialogue', startFrame: 10, endFrame: 80, text: 'Hello' },
+            // Line 2: actorA speaks in shot-reaction-b -> intentional reaction shot -> preserved, no warning!
+            { id: 'c2', speaker: 'actorA', kind: 'dialogue', startFrame: 110, endFrame: 180, text: 'Look at me' },
+            // Line 3: actorA speaks in shot-medium-b -> single-subject medium on actorB -> WARNING!
+            { id: 'c3', speaker: 'actorA', kind: 'dialogue', startFrame: 210, endFrame: 280, text: 'Why is B on screen?' },
+            // Line 4: narrator voiceover in shot-medium-b -> voiceover -> preserved, no warning!
+            { id: 'c4', speaker: 'narrator', kind: 'caption', startFrame: 285, endFrame: 295, text: 'The end' }
+          ]
+        }]
+      }
+    }
+  };
+
+  const videoInfo = { path: 'dummy.mp4', width: 720, height: 1280, fps: 30, frames: 300, duration: 10.0, codec: 'h264', isValid: true };
+  const audioInfo = { present: false, expected: false };
+
+  const res = QA.checkPlanContinuity({ doc: plan.document, story: plan.document.story, path: 'dummy.json' }, videoInfo, audioInfo);
+  const speakerWarnings = res.issues.filter(i => i.code === 'SPEAKER_NOT_IN_SHOT');
+  assert.equal(speakerWarnings.length, 1);
+  assert.equal(speakerWarnings[0].details.cueId, 'c3');
+  assert.equal(speakerWarnings[0].details.speaker, 'actorA');
+  assert.equal(speakerWarnings[0].details.shotSubject, 'actorB');
+  assert.match(speakerWarnings[0].message, /focuses on 'actorB'/);
+});
+
+test('evaluates Phase 7E school-robot story against existing MP4 and detects cinematic framing notices without blocking', async () => {
+  const videoPath = 'out/phase7e-school-robot.mp4';
+  const planPath = 'examples/phase7e-school-robot.story.json';
+  const reportPath = path.join(work, 'phase7e-school-robot-qa.json');
+  const sheetPath = path.join(work, 'phase7e-school-robot-sheet.png');
+
+  const report = await QA.runQA({
+    video: videoPath,
+    plan: planPath,
+    report: reportPath,
+    contactSheet: sheetPath,
+    quiet: true
+  });
+
+  // Bitstream and technical checks remain PASSED
+  assert.equal(report.checks.decodeIntegrity.status, 'PASSED');
+  assert.equal(report.checks.blackFrames.status, 'PASSED');
+  assert.equal(report.checks.freezeFrames.status, 'PASSED');
+  assert.equal(report.checks.audioSync.status, 'PASSED');
+
+  // Advisory notices are detected
+  assert.equal(report.verdict, 'WARNINGS');
+  assert.equal(report.checks.cinematicFraming.status, 'WARNING');
+
+  const effectNotices = report.issues.filter(i => i.code === 'EFFECT_NOT_FOCUSED');
+  assert.equal(effectNotices.length, 2, 'Must detect impactFlash and dustPuff starting at frame 550 during twoShot');
+
+  const speakerNotices = report.issues.filter(i => i.code === 'SPEAKER_NOT_IN_SHOT');
+  assert.equal(speakerNotices.length, 1, 'Must detect Ananya closing dialogue while camera is on Rohit medium shot');
+  assert.equal(speakerNotices[0].details.cueId, 'c8-closing');
+});

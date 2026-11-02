@@ -9,9 +9,9 @@ export function authoringWarnings(timeline: CompiledStory) {
     severity: 'warning';
     scene: string;
     shot: string;
-    actor: string;
+    actor?: string;
     frame: number;
-    target: unknown;
+    target?: unknown;
     message: string;
   }[] = [];
   for (const scene of timeline.plan.scenes) for (const shot of scene.shots) {
@@ -48,6 +48,67 @@ export function authoringWarnings(timeline: CompiledStory) {
       warnings.push({code:'POSTURE_CUT',severity:'warning',scene:next.id,shot:after.shot.id,actor,frame:next.startFrame,
         target:{previousScene:previous.id,from:from.type==='sit'?'seated':'standing',to:to.type==='sit'?'seated':'standing'},
         message:`${actor} changes from ${from.type==='sit'?'seated':'standing'} to ${to.type==='sit'?'seated':'standing'} at the cut from ${previous.id} to ${next.id}. Keep the same posture across the cut, or author an explicit stand/sit contact cut at a suitable earlier shot boundary. Stand/sit commands are instant contact changes, not animated stand-up/sit-down transitions. If this is an intentional time jump, review and accept this warning.`});
+    }
+  }
+  for (const scene of timeline.plan.scenes) {
+    for (const effect of scene.effects ?? []) {
+      const eStart = effect.startFrame;
+      const target = effect.target;
+      const activeShot = scene.shots.find(s => s.startFrame <= eStart && s.endFrame > eStart);
+      if (!activeShot) continue;
+
+      const isFocused = activeShot.type === 'objectFocus' && activeShot.subject === target;
+      if (!isFocused) {
+        const prevShot = scene.shots.slice().reverse().find(s => s.type === 'objectFocus' && s.subject === target && s.endFrame <= eStart);
+        const fix = prevShot
+          ? `Extend shot '${prevShot.id}' (objectFocus on '${target}') to cover frame ${eStart}, or cut to an objectFocus shot of '${target}' during the effect, or align effect startFrame with the focused shot.`
+          : `Cut to an 'objectFocus' shot targeting '${target}' during the effect around frame ${eStart}, or widen framing so '${target}' is visibly centered.`;
+        warnings.push({
+          code: 'EFFECT_NOT_FOCUSED',
+          severity: 'warning',
+          scene: scene.id,
+          shot: activeShot.id,
+          frame: eStart,
+          target: { effect: effect.type, target, activeShot: activeShot.id, activeShotType: activeShot.type },
+          message: `Effect '${effect.type}' at frame ${eStart} targets '${target}', but active shot '${activeShot.id}' (${activeShot.type}) is not focused on '${target}'. Suggested fix: ${fix} If this is an intentional background/off-camera effect or reaction shot, review and accept this advisory warning.`
+        });
+      }
+    }
+
+    for (const cue of scene.cues ?? []) {
+      if (cue.kind === 'caption' || (cue as any).mode === 'voiceover' || (cue as any).voiceover === true || cue.speaker === 'narrator' || !cue.speaker) {
+        continue;
+      }
+      const speaker = cue.speaker;
+      const cStart = cue.startFrame;
+      const cEnd = cue.endFrame;
+      const cDuration = cEnd - cStart;
+      if (cDuration <= 0) continue;
+
+      for (const shot of scene.shots) {
+        const overlap = Math.max(0, Math.min(cEnd, shot.endFrame) - Math.max(cStart, shot.startFrame));
+        if (overlap <= 0 || (overlap / cDuration) <= 0.5) continue;
+
+        if (shot.type === 'reaction' || /\breact(ion)?\b/i.test(shot.id)) {
+          continue;
+        }
+
+        // Single-subject actor shots: medium, closeUp, fullBody, cowboy
+        const isSingleActorShot = ['medium', 'closeUp', 'fullBody', 'cowboy'].includes(shot.type);
+        if (isSingleActorShot && shot.subject && shot.subject !== speaker) {
+          const fix = `Cut to a shot of '${speaker}', switch to a twoShot including '${speaker}', or if this is an intentional reaction shot or voiceover, use shot type 'reaction' or mark the cue as voiceover.`;
+          warnings.push({
+            code: 'SPEAKER_NOT_IN_SHOT',
+            severity: 'warning',
+            scene: scene.id,
+            shot: shot.id,
+            actor: speaker,
+            frame: cStart,
+            target: { speaker, shotSubject: shot.subject, shotId: shot.id, shotType: shot.type, overlapFraction: Math.round((overlap / cDuration) * 100) / 100 },
+            message: `Dialogue cue '${cue.id || 'unnamed'}' in ${scene.id} [${cStart}, ${cEnd}] is spoken by '${speaker}', but active shot '${shot.id}' (${shot.type}) focuses on '${shot.subject}' for ${Math.round((overlap / cDuration) * 100)}% of the line. Suggested fix: ${fix}`
+          });
+        }
+      }
     }
   }
   return freezeData(warnings);

@@ -153,8 +153,11 @@ async function runProduce(options) {
 
     if (qaResult.checks?.storyContinuity?.status === 'FAILED') {
       narrativeGuidance = `Timeline continuity FAILED: ${qaResult.checks.storyContinuity.message}`;
-    } else if (qaResult.checks?.storyContinuity?.status === 'WARNING') {
-      narrativeGuidance = `Timeline continuity PASSED with notices: ${qaResult.checks.storyContinuity.message}`;
+    } else if (qaResult.checks?.storyContinuity?.status === 'WARNING' || qaResult.checks?.cinematicFraming?.status === 'WARNING') {
+      const notices = [];
+      if (qaResult.checks?.storyContinuity?.status === 'WARNING') notices.push(qaResult.checks.storyContinuity.message);
+      if (qaResult.checks?.cinematicFraming?.status === 'WARNING') notices.push(qaResult.checks.cinematicFraming.message);
+      narrativeGuidance = `Timeline continuity and framing PASSED with notices: ${notices.join('; ')}`;
     } else if (qaResult.checks?.storyContinuity?.status === 'PASSED') {
       narrativeGuidance = 'Narrative pacing and caption intervals match authored specifications.';
     }

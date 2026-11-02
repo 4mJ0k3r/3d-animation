@@ -333,6 +333,16 @@ npm run produce -- --plan=examples/name.story.json [--output=out/name.mp4]
 Agent inspects Contact Sheet (out/name-contact-sheet.png) & Delivers MP4
 ```
 
+### Pre-Production Cinematic & Storytelling Checklist
+
+Before rendering or declaring creative completion, verify these storytelling principles:
+
+- **Important Events Must Be Visible When They Occur:** Ensure cartoon effects (`impactFlash`, `dustPuff`), major prop animations, and critical character actions happen in shots clearly focused on their target. Do not cut away from a target before triggering its effect.
+- **Visual Evidence for Major Reveals:** A major reveal should feature recognizable visual evidence (e.g. prop transformations, signs, physical actions) rather than relying entirely on dialogue captions.
+- **Match Dialogue Speakers and Shots Deliberately:** Single-subject shots (`medium`, `closeUp`) must show the speaking actor during dialogue cues, unless intentionally framing a reaction shot (`shot.type: "reaction"` or shot ID with `reaction`) or off-screen voiceover. Avoid leaving the camera on a silent character while another delivers dialogue.
+- **Avoid Excessive Static Shots When Movement Is Required:** Maintain visual momentum by balancing character gestures, prop movements, and purposeful camera transitions rather than holding static scenes.
+- **Review Contact Sheet and Actual MP4 Before Declaring Completion:** Automated QA certifies technical bitstream integrity, audio sync, and objective continuity; creative staging, silhouette appeal, and comedic timing require inspecting `out/name-contact-sheet.png` and reviewing the final MP4.
+
 ### Step-by-Step Agent Authoring Guide
 
 When given a natural-language script, the coding agent creates a structured `StoryDocument` JSON without writing raw 3D engine code:
