@@ -1,9 +1,10 @@
 import type { CompiledStory } from '../story/compiler';
 import { freezeData } from '../characters/pose';
+import type { EnvironmentLayout } from './environment-registry';
 export const FRAMING_HINT = 'A twoShot (or groupShot, which needs all three faces) needs its faces visible: off-axis gaze toward a board, prop or another actor can make it impossible to frame. Aim actors toward audience during the twoShot, or cut to a closeUp/medium of the looking actor or an objectFocus shot of the target. Try a wider preset or shorter captions; never patch camera coordinates.';
 
 /** Static risk detection only; camera/constraint certification requires prepare(). */
-export function authoringWarnings(timeline: CompiledStory) {
+export function authoringWarnings(timeline: CompiledStory, layouts?: Readonly<Record<string, EnvironmentLayout>>) {
   const warnings: {
     code: string;
     severity: 'warning';
@@ -107,6 +108,87 @@ export function authoringWarnings(timeline: CompiledStory) {
             target: { speaker, shotSubject: shot.subject, shotId: shot.id, shotType: shot.type, overlapFraction: Math.round((overlap / cDuration) * 100) / 100 },
             message: `Dialogue cue '${cue.id || 'unnamed'}' in ${scene.id} [${cStart}, ${cEnd}] is spoken by '${speaker}', but active shot '${shot.id}' (${shot.type}) focuses on '${shot.subject}' for ${Math.round((overlap / cDuration) * 100)}% of the line. Suggested fix: ${fix}`
           });
+        }
+      }
+    }
+
+    // Phase 8D: Visual reveal and storytelling diagnostics
+    const evidenceProps = new Set<string>();
+    const settingLayout = layouts?.[scene.setting];
+    if (settingLayout) {
+      if (settingLayout.preset === 'office' && settingLayout.displays?.board?.text) {
+        evidenceProps.add('board');
+      }
+      for (const [id, p] of Object.entries(settingLayout.props ?? {})) {
+        if (p.text) evidenceProps.add(id);
+      }
+      if (settingLayout.preset === 'custom' && settingLayout.composition) {
+        for (const [id, item] of Object.entries(settingLayout.composition.items ?? {})) {
+          if (item.text) evidenceProps.add(id);
+          if (item.object) {
+            for (const part of Object.values(item.object.parts ?? {})) {
+              if (part.text) evidenceProps.add(id);
+            }
+          }
+        }
+      }
+    }
+
+    // Check for readable visual evidence that is never shown in an objectFocus shot
+    for (const propId of evidenceProps) {
+      const hasFocus = scene.shots.some(s => s.type === 'objectFocus' && s.subject === propId);
+      if (!hasFocus) {
+        warnings.push({
+          code: 'UNSEEN_EVIDENCE',
+          severity: 'warning',
+          scene: scene.id,
+          shot: scene.shots[0]?.id ?? 'scene',
+          frame: scene.shots[0]?.startFrame ?? 0,
+          target: { prop: propId },
+          message: `Prop '${propId}' in layout '${scene.setting}' carries readable visual evidence, but scene '${scene.id}' contains no 'objectFocus' insert revealing it to the audience. Suggested fix: Add an 'objectFocus' shot targeting '${propId}' (with region 'display' or 'label') when the evidence is discovered.`
+        });
+      }
+    }
+
+    // Check for reveal shots that are too brief to read (< 15 frames / 0.5s)
+    const revealShots = scene.shots.filter(s => s.type === 'objectFocus' && ((s.region && ['display', 'screen', 'label', 'detail'].includes(s.region)) || (s.subject && evidenceProps.has(s.subject))));
+    for (const shot of revealShots) {
+      const duration = shot.endFrame - shot.startFrame;
+      if (duration < 15) {
+        warnings.push({
+          code: 'REVEAL_TOO_BRIEF',
+          severity: 'warning',
+          scene: scene.id,
+          shot: shot.id,
+          frame: shot.startFrame,
+          target: { subject: shot.subject, region: shot.region, duration },
+          message: `Visual reveal shot '${shot.id}' (objectFocus on '${shot.subject}') lasts only ${duration} frames (< 15 frames / 0.5s), which is too brief for viewers to read the visual evidence. Suggested fix: Extend the shot duration to at least 15 frames.`
+        });
+      }
+    }
+
+    // Check for character reactions occurring strictly before the visual evidence is revealed
+    if (revealShots.length > 0) {
+      const earliestReveal = Math.min(...revealShots.map(s => s.startFrame));
+      for (const beat of scene.beats) {
+        for (const a of beat.actions) {
+          const isReaction = (a.type === 'react' && ['surprised', 'worried', 'excited'].includes((a as any).name ?? (a as any).react)) || (a.type === 'gesture' && ['surprise', 'shrug'].includes((a as any).gesture));
+          if (isReaction && beat.startFrame < earliestReveal) {
+            warnings.push({
+              code: 'REACTION_BEFORE_REVEAL',
+              severity: 'warning',
+              scene: scene.id,
+              shot: scene.shots.find(s => s.startFrame <= beat.startFrame && s.endFrame > beat.startFrame)?.id ?? 'unknown',
+              actor: a.actor,
+              frame: beat.startFrame,
+              target: {
+                reaction: (a as any).name ?? (a as any).react ?? (a as any).gesture,
+                reactionFrame: beat.startFrame,
+                earliestRevealFrame: earliestReveal
+              },
+              message: `Actor '${a.actor}' reacts with '${(a as any).name ?? (a as any).react ?? (a as any).gesture}' at frame ${beat.startFrame}, before visual evidence is revealed in shot '${revealShots[0].id}' at frame ${earliestReveal}. Suggested fix: Align the reaction beat with or after the visual reveal shot.`
+            });
+          }
         }
       }
     }

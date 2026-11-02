@@ -258,10 +258,19 @@ export function validateEnvironment(input: unknown): EnvironmentLayout {
 }
 export function environmentCatalog(layout: EnvironmentLayout): Readonly<Anchors & {
   roles: Readonly<Record<string, Role>>;
+  propRegions?: Readonly<Record<string, readonly string[]>>;
 }> {
   if (layout.preset === 'custom') return planConstruction(layout).catalog;
   const base = ENVIRONMENTS[layout.preset],
     a = base.anchors;
+  const propRegions: Record<string, readonly string[]> = {};
+  if (layout.preset === 'office') {
+    propRegions.board = ['full', 'display', 'screen', 'label', 'detail'];
+  } else if (layout.preset === 'clinic') {
+    propRegions.chart = ['full', 'diagram', 'node', 'display', 'detail'];
+    propRegions.medicalChart = ['full', 'diagram', 'node', 'display', 'detail'];
+    propRegions.examTable = ['full'];
+  }
   const result = {
     marks: [...a.marks],
     seats: [...a.seats],
@@ -271,7 +280,8 @@ export function environmentCatalog(layout: EnvironmentLayout): Readonly<Anchors 
     paths: [...a.paths],
     roles: {
       ...base.roles
-    }
+    },
+    propRegions
   };
   for (const [id, p] of Object.entries(layout.props ?? {})) {
     result.props.push(id);
@@ -281,6 +291,11 @@ export function environmentCatalog(layout: EnvironmentLayout): Readonly<Anchors 
       result.marks.push(id + '.approach');
       result.paths.push('to:' + id);
       result.roles[id] = result.roles[id + '.approach'] = result.roles['to:' + id] = 'right';
+    }
+    if (PREFABS[p.prefab].display) {
+      propRegions[id] = ['full', 'display', 'screen', 'label', 'detail', 'panel'];
+    } else {
+      propRegions[id] = ['full'];
     }
   }
   return freezeData(result);

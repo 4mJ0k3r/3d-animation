@@ -8,6 +8,7 @@ import { storyFail } from '../story/types';
 import { OBJECT_LIMITS } from './composite';
 import type { ObjectPlan } from './composite';
 import type { createPrimitiveFactory } from '../lib';
+import { createDisplayMaterial } from './display';
 
 /**
  * Composite object parts use the same pooled primitive factory, toon materials and
@@ -36,6 +37,17 @@ function buildObject(p: ReturnType<typeof createPrimitiveFactory>, plan: ObjectP
     mesh.position.fromArray(part.center);
     mesh.name = 'ObjectPart:' + part.id;
     root.add(mesh);
+    if (part.text !== undefined && part.shape === 'box') {
+      const label = p.plane({
+        width: Math.max(0.1, w * 0.92),
+        height: Math.max(0.08, h * 0.88),
+        position: [part.center[0], part.center[1], part.center[2] + d / 2 + 0.002],
+        material: createDisplayMaterial(part.text, color),
+        outlineMode: 'none'
+      });
+      label.name = 'ObjectLabel:' + part.id;
+      root.add(label);
+    }
   }
   return root;
 }
@@ -90,6 +102,7 @@ export const buildConstruction: EnvironmentBuilder = (engine, p, name, index, la
     let part: T.Group;
     if (item.object) {
       part = buildObject(p, item.object);
+      part.userData.regions = item.object.regions;
       let tris = 0;
       part.traverse(o => {
         if (o instanceof T.Mesh) tris += (o.geometry.index?.count ?? o.geometry.getAttribute('position').count) / 3;

@@ -1051,7 +1051,11 @@ test('composite objects: schema, placement, depth, size and budget rules reject 
     [withObject({parts: {a: P({size: {width: 3, height: 3}}), b: P({size: {width: 3, height: 3}, place: {on: 'a'}})}}), 'OBJECT_BUDGET'],
     [withObject({parts: Object.fromEntries(Array.from({length: 8}, (_, i) => ['p' + i, {shape: 'roundedBox', size: {width: .3, height: .3}, ...(i ? {place: {beside: 'p0', side: ['left', 'right', 'front', 'back'][i % 4], gap: i > 4 ? .5 : 0}} : {})}]))}), 'OBJECT_BUDGET'],
     [withObject({parts: {a: P()}}, {kind: 'block'}), 'INVALID_CONSTRUCTION'],
-    [withObject({parts: {a: P()}}, {place: {relation: 'attachedTo', target: 'backdrop', face: 'front'}}), 'INVALID_ATTACHMENT']
+    [withObject({parts: {a: P()}}, {place: {relation: 'attachedTo', target: 'backdrop', face: 'front'}}), 'INVALID_ATTACHMENT'],
+    [withObject({parts: {a: P({shape: 'cylinder', text: 'चाय मशीन'})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P({size: {width: .15, height: .3}, text: 'चाय मशीन'})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P({size: {width: .3, height: .05}, text: 'चाय मशीन'})}}), 'INVALID_OBJECT'],
+    [withObject({parts: {a: P({text: '1'}), b: P({place: {on: 'a'}, text: '2'}), c: P({place: {on: 'b'}, text: '3'})}}), 'OBJECT_BUDGET']
   ];
   cases.forEach(([doc, code], i) => {try {D.compileStoryDocument(doc);} catch (error) {assert.equal(error.diagnostic?.code, code, `case ${i}: ${JSON.stringify(error.diagnostic)}`); assert.ok(error.diagnostic.message.length > 20); return;} assert.fail(`case ${i} should reject with ${code}`);});
   // at most four composite objects per layout
@@ -1181,5 +1185,157 @@ test('animated composite objects: all parts move with the root; gaze, camera reg
       e.dispose(); e.dispose();
       for (const count of counts.values()) assert.equal(count, 1);
     } finally {e.dispose();}
+  }
+});
+
+test('Phase 8D: composite object text labels, focus-aware semantic regions, and reveal storytelling diagnostics', () => {
+  const d = objectsExample();
+  // Add readable text label to a box part
+  d.layouts.plaza.composition.items.beacon.object.parts.panel = {
+    shape: 'box',
+    size: {width: 0.4, height: 0.25, depth: 0.05},
+    place: {beside: 'body', side: 'front'},
+    finish: 'metal',
+    text: 'चाय मशीन'
+  };
+  const compiled = D.compileStoryDocument(d);
+  const plan = D.planConstruction(compiled.document.layouts.plaza);
+  const beaconItem = plan.items.find(i => i.id === 'beacon');
+  assert.ok(beaconItem.object.regions.display, 'creates display region');
+  assert.ok(beaconItem.object.regions.panel, 'creates part region');
+  assert.deepEqual(beaconItem.object.regions.display, beaconItem.object.regions.label);
+
+  // objectFocus with semantic region passes
+  const goodShot = JSON.parse(JSON.stringify(d));
+  goodShot.story.durationInFrames = 40;
+  goodShot.story.scenes[0].endFrame = 40;
+  goodShot.story.scenes[0].shots[2] = {
+    id: 'reveal',
+    type: 'objectFocus',
+    subject: 'beacon',
+    region: 'display',
+    startFrame: 16,
+    endFrame: 40
+  };
+  assert.ok(D.compileStoryDocument(goodShot));
+
+  // objectFocus with invalid region fails
+  const badRegion = JSON.parse(JSON.stringify(d));
+  badRegion.story.scenes[0].shots[2] = {
+    id: 'reveal',
+    type: 'objectFocus',
+    subject: 'beacon',
+    region: 'nowhere',
+    startFrame: 16,
+    endFrame: 30
+  };
+  bad(() => D.compileStoryDocument(badRegion), 'UNKNOWN_SLOT');
+
+  // Reveal too brief diagnostic (< 15 frames)
+  const briefDoc = JSON.parse(JSON.stringify(d));
+  briefDoc.story.scenes[0].shots[2] = {
+    id: 'reveal',
+    type: 'objectFocus',
+    subject: 'beacon',
+    region: 'display',
+    startFrame: 16,
+    endFrame: 26 // 10 frames
+  };
+  briefDoc.story.scenes[0].shots.push({
+    id: 'after',
+    type: 'medium',
+    subject: 'kabir',
+    startFrame: 26,
+    endFrame: 30
+  });
+  const briefRes = D.compileStoryDocument(briefDoc);
+  const briefWarn = briefRes.warnings.find(w => w.code === 'REVEAL_TOO_BRIEF');
+  assert.ok(briefWarn, 'warns when reveal shot is too brief');
+  assert.equal(briefWarn.target.duration, 10);
+
+  // Reaction before reveal diagnostic
+  const earlyReactDoc = JSON.parse(JSON.stringify(d));
+  earlyReactDoc.story.durationInFrames = 40;
+  earlyReactDoc.story.scenes[0].endFrame = 40;
+  earlyReactDoc.story.scenes[0].beats[1].actions.push({
+    actor: 'kabir',
+    type: 'react',
+    name: 'surprised'
+  }); // beat 1 starts at frame 8, reveal shot starts at frame 20
+  earlyReactDoc.story.scenes[0].shots[1].endFrame = 20;
+  earlyReactDoc.story.scenes[0].shots[2] = {
+    id: 'reveal',
+    type: 'objectFocus',
+    subject: 'beacon',
+    region: 'display',
+    startFrame: 20,
+    endFrame: 40
+  };
+  const earlyReactRes = D.compileStoryDocument(earlyReactDoc);
+  const earlyWarn = earlyReactRes.warnings.find(w => w.code === 'REACTION_BEFORE_REVEAL');
+  assert.ok(earlyWarn, 'warns when character reacts before visual evidence is revealed');
+
+  // Unseen evidence diagnostic
+  const unseenDoc = JSON.parse(JSON.stringify(d));
+  // remove all objectFocus shots from scene
+  unseenDoc.story.scenes[0].shots = [
+    { id: 's1', type: 'twoShot', subjects: ['meera', 'kabir'], startFrame: 0, endFrame: 30 }
+  ];
+  const unseenRes = D.compileStoryDocument(unseenDoc);
+  const unseenWarn = unseenRes.warnings.find(w => w.code === 'UNSEEN_EVIDENCE');
+  assert.ok(unseenWarn, 'warns when readable evidence is not framed by objectFocus');
+  assert.equal(unseenWarn.target.prop, 'beacon');
+
+  // Verify 3D building and stage snapshot regions
+  const prior = global.document, drawn = [];
+  const ctx = new Proxy({
+    font: '',
+    textAlign: '',
+    textBaseline: '',
+    fillRect: () => {},
+    fillText: s => drawn.push(s),
+    measureText(s) {
+      return {
+        width: Array.from(s).length * parseFloat(this.font.split(' ')[1] || '44') * .6,
+        actualBoundingBoxAscent: 60,
+        actualBoundingBoxDescent: 20
+      };
+    }
+  }, {
+    get(target, prop) {
+      if (prop in target) return target[prop];
+      return () => {};
+    }
+  });
+  const fonts = new Set(); fonts.check = () => true;
+  fonts.add({family: D.STORY_FONT.family, status: 'loaded'});
+  global.document = {fonts, createElement: () => ({width:0, height:0, getContext: () => ctx})};
+  const {createStory} = require('../../out/character-tests/toon-kit/story/player'), {createStage} = require('../../out/character-tests/toon-kit/staging/stage');
+  const e = owner();
+  try {
+    const envs = D.createStoryEnvironments(e, compiled);
+    const beacon = envs.plaza.props.beacon;
+    assert.ok(beacon.userData.regions?.display, 'userData exposes display region');
+    const labelMesh = beacon.getObjectByName('ObjectLabel:panel');
+    assert.ok(labelMesh, 'creates ObjectLabel:panel mesh');
+    assert.equal(labelMesh.material.name, 'ToonKitDisplayText');
+
+    const p = createStory(e, {timeline: compiled.timeline, settings: {plaza: envs.plaza}});
+    p.prepare();
+    const stage = createStage(e, {root: envs.plaza.root, floor: envs.plaza.floor, axis: compiled.timeline.plan.scenes[0].axis, cameraSpace: envs.plaza.cameraSpace});
+    stage.bind(p.cast);
+    for (const [id, prop] of Object.entries(envs.plaza.props)) stage.registerProp(id, prop);
+    const snap = stage.snapshot(p.applyFrame(0).cast);
+    assert.ok(snap.props.beacon.regions.display, 'snapshot exposes display region');
+    assert.ok(snap.props.beacon.regions.panel, 'snapshot exposes part region');
+    const full = snap.props.beacon.regions.full, disp = snap.props.beacon.regions.display;
+    for (let i = 0; i < 3; i++) {
+      assert.ok(disp.min[i] >= full.min[i] - 0.05 && disp.max[i] <= full.max[i] + 0.05, 'display region fits within full bounds');
+    }
+    stage.dispose();
+    p.dispose();
+  } finally {
+    e.dispose();
+    if (prior === undefined) delete global.document; else global.document = prior;
   }
 });

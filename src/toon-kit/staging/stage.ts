@@ -190,11 +190,18 @@ export function createStage(engine: CartoonEngine, options: {
         },
         props: Object.fromEntries([...props].map(([id, p]) => {
           p.mesh.updateWorldMatrix(true, false);
+          const subRegions: Record<string, Bounds> = {};
+          if (p.mesh.userData?.regions && typeof p.mesh.userData.regions === 'object') {
+            for (const [rId, rBounds] of Object.entries(p.mesh.userData.regions as Record<string, Bounds>)) {
+              subRegions[rId] = transformBounds(rBounds, p.mesh.matrixWorld);
+            }
+          }
           return [id, {
             visible: visible(p.mesh),
             facing: new T.Vector3(0, 0, 1).transformDirection(p.mesh.matrixWorld).toArray(),
             regions: {
-              full: transformBounds(p.bounds, p.mesh.matrixWorld)
+              full: transformBounds(p.bounds, p.mesh.matrixWorld),
+              ...subRegions
             }
           }];
         })),

@@ -1,0 +1,251 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "lab": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "tile"
+        },
+        "items": {
+          "backwall": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "trimStrip": {
+            "kind": "trim",
+            "size": {
+              "width": 9.6,
+              "height": 0.12
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "attachedTo",
+              "target": "backwall",
+              "face": "front",
+              "vertical": "top"
+            }
+          },
+          "mysteryMachine": {
+            "object": {
+              "focus": "panel",
+              "parts": {
+                "base": {
+                  "shape": "box",
+                  "size": {
+                    "width": 1.1,
+                    "height": 0.25,
+                    "depth": 0.8
+                  },
+                  "finish": "charcoal"
+                },
+                "body": {
+                  "shape": "box",
+                  "size": {
+                    "width": 0.9,
+                    "height": 1.4,
+                    "depth": 0.7
+                  },
+                  "finish": "navy",
+                  "place": {
+                    "on": "base"
+                  }
+                },
+                "panel": {
+                  "shape": "box",
+                  "size": {
+                    "width": 0.72,
+                    "height": 0.45,
+                    "depth": 0.06
+                  },
+                  "finish": "metal",
+                  "text": "चाय मशीन\nगरम मसाला चाय",
+                  "place": {
+                    "beside": "body",
+                    "side": "front",
+                    "align": "middle"
+                  }
+                },
+                "dome": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.5,
+                    "height": 0.25
+                  },
+                  "taper": 0.6,
+                  "finish": "glow",
+                  "place": {
+                    "on": "body"
+                  }
+                }
+              }
+            },
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "center",
+              "gap": 1.2
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 180,
+    "characters": {
+      "rohit": {
+        "appearance": "casual"
+      },
+      "ananya": {
+        "appearance": "casual"
+      }
+    },
+    "scenes": [
+      {
+        "id": "lab-reveal",
+        "setting": "lab",
+        "startFrame": 0,
+        "endFrame": 180,
+        "axis": [
+          "rohit",
+          "ananya"
+        ],
+        "characters": {
+          "rohit": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            },
+            "expression": "worried",
+            "lookAt": "mysteryMachine"
+          },
+          "ananya": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            },
+            "expression": "worried",
+            "lookAt": "mysteryMachine"
+          }
+        },
+        "cues": [
+          {
+            "id": "line1",
+            "kind": "dialogue",
+            "speaker": "rohit",
+            "startFrame": 0,
+            "endFrame": 50,
+            "text": "यह क्या है? कोई गुप्त रोबोट?"
+          },
+          {
+            "id": "caption-label",
+            "kind": "caption",
+            "startFrame": 50,
+            "endFrame": 110,
+            "text": "[ लेबल: चाय मशीन ]"
+          },
+          {
+            "id": "line2",
+            "kind": "dialogue",
+            "speaker": "ananya",
+            "startFrame": 110,
+            "endFrame": 180,
+            "text": "अरे नहीं! यह तो बस चाय मशीन है!"
+          }
+        ],
+        "beats": [
+          {
+            "id": "point-machine",
+            "startFrame": 0,
+            "endFrame": 50,
+            "actions": [
+              {
+                "actor": "rohit",
+                "type": "point",
+                "target": "mysteryMachine"
+              }
+            ]
+          },
+          {
+            "id": "read-label",
+            "startFrame": 50,
+            "endFrame": 110,
+            "actions": [
+              {
+                "actor": "ananya",
+                "type": "look",
+                "target": "mysteryMachine"
+              }
+            ]
+          },
+          {
+            "id": "ananya-relief",
+            "startFrame": 110,
+            "endFrame": 180,
+            "actions": [
+              {
+                "actor": "ananya",
+                "type": "react",
+                "name": "surprised"
+              },
+              {
+                "actor": "rohit",
+                "type": "gesture",
+                "name": "shrug"
+              }
+            ]
+          }
+        ],
+        "shots": [
+          {
+            "id": "discovery-two-shot",
+            "type": "twoShot",
+            "subjects": [
+              "rohit",
+              "ananya"
+            ],
+            "startFrame": 0,
+            "endFrame": 50
+          },
+          {
+            "id": "reveal-label-insert",
+            "type": "objectFocus",
+            "subject": "mysteryMachine",
+            "region": "display",
+            "startFrame": 50,
+            "endFrame": 110
+          },
+          {
+            "id": "reaction-shot",
+            "type": "twoShot",
+            "subjects": [
+              "rohit",
+              "ananya"
+            ],
+            "startFrame": 110,
+            "endFrame": 180
+          }
+        ]
+      }
+    ]
+  }
+}

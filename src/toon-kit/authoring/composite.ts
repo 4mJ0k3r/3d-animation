@@ -1,5 +1,6 @@
 import { freezeData } from '../characters/pose';
 import { storyFail } from '../story/types';
+import { validateDisplayText } from './display-content';
 /**
  * Phase 6E-A composite objects: a few named primitive parts placed by relations,
  * never by coordinates. Pure planning only; geometry is built by the construction builder.
@@ -62,6 +63,8 @@ export interface ObjectPart {
   readonly taper?: number;
   /** Omit for exactly one root part, which stands on the ground at the object origin. */
   readonly place?: PartPlacement;
+  /** Optional readable Hindi/English label for flat box parts. */
+  readonly text?: string;
 }
 export interface CompositeObject {
   readonly parts: Readonly<Record<string, ObjectPart>>;
@@ -77,6 +80,7 @@ export interface PlannedPart {
   readonly center: V;
   readonly color: string;
   readonly depth: number;
+  readonly text?: string;
 }
 const SAFE = /^[A-Za-z][A-Za-z0-9_-]{0,31}$/;
 export function planObject(itemId: string, input: unknown) {
@@ -99,7 +103,7 @@ export function planObject(itemId: string, input: unknown) {
   for (const id of ids) {
     if (!SAFE.test(id)) fail('INVALID_OBJECT', 'unsafe part name ' + id);
     const p = def.parts[id];
-    only(p, ['shape', 'size', 'finish', 'taper', 'place'], 'part ' + id);
+    only(p, ['shape', 'size', 'finish', 'taper', 'place', 'text'], 'part ' + id);
     if (!OBJECT_SHAPES.includes(p.shape)) fail('INVALID_OBJECT', `part ${id}: shape must be ${OBJECT_SHAPES.join(', ')}`);
     only(p.size, ['width', 'height', 'depth'], `part ${id}.size`);
     for (const k of ['width', 'height'] as const) num(p.size[k], OBJECT_LIMITS.partMin, OBJECT_LIMITS.partMax, `part ${id}.size.${k}`);
@@ -108,6 +112,11 @@ export function planObject(itemId: string, input: unknown) {
     if (p.taper !== undefined) {
       if (p.shape !== 'cylinder') fail('INVALID_OBJECT', `part ${id}: taper applies only to cylinders`);
       num(p.taper, .1, 2, `part ${id}.taper`);
+    }
+    if (p.text !== undefined) {
+      if (p.shape !== 'box') fail('INVALID_OBJECT', `part ${id}: text applies only to flat box parts`);
+      if (p.size.width < .20 || p.size.height < .10) fail('INVALID_OBJECT', `part ${id}: text box part must be at least 0.20m wide and 0.10m high for readability`);
+      validateDisplayText(p.text);
     }
     if (p.place !== undefined) {
       const keys = 'on' in p.place ? ['on'] : 'beside' in p.place ? ['beside', 'side', 'align', 'gap'] : ['centeredOn'];
@@ -125,6 +134,8 @@ export function planObject(itemId: string, input: unknown) {
   const roots = ids.filter(id => def.parts[id].place === undefined);
   if (roots.length !== 1) fail('OBJECT_PLACEMENT', `exactly one part must omit place (the ground root); found ${roots.length ? roots.join(', ') : 'none'}`);
   if (def.focus !== undefined && (typeof def.focus !== 'string' || !Object.hasOwn(def.parts, def.focus))) fail('OBJECT_PLACEMENT', 'focus must name a part');
+  const textParts = ids.filter(id => def.parts[id].text !== undefined);
+  if (textParts.length > 2) fail('OBJECT_BUDGET', 'Use at most 2 text parts per composite object');
   const done = new Map<string, PlannedPart>(), active = new Set<string>();
   const resolve = (id: string): PlannedPart => {
     if (done.has(id)) return done.get(id)!;
@@ -147,7 +158,16 @@ export function planObject(itemId: string, input: unknown) {
       if (center[1] - size[1] / 2 < -1e-9) fail('OBJECT_PLACEMENT', `part ${id} would sink below the ground; use align middle/top on a taller parent or place it on a part`);
     }
     const color = OBJECT_FINISHES[p.finish ?? 'cream'];
-    const planned = freezeData({id, shape: p.shape, size, taper, center, color, depth}) as PlannedPart;
+    const planned = freezeData({
+      id,
+      shape: p.shape,
+      size,
+      taper,
+      center,
+      color,
+      depth,
+      ...(p.text !== undefined ? { text: p.text } : {})
+    }) as PlannedPart;
     done.set(id, planned);
     active.delete(id);
     return planned;
@@ -156,15 +176,45 @@ export function planObject(itemId: string, input: unknown) {
   const parts = ids.map(id => done.get(id)!);
   const min: V = [0, 1, 2].map(i => Math.min(...parts.map(p => p.center[i] - p.size[i] / 2))) as V,
     max: V = [0, 1, 2].map(i => Math.max(...parts.map(p => p.center[i] + p.size[i] / 2))) as V;
-  const triangles = parts.reduce((n, p) => n + OBJECT_TRIANGLES[p.shape], 0);
+  const triangles = parts.reduce((n, p) => n + OBJECT_TRIANGLES[p.shape] + (p.text !== undefined ? 2 : 0), 0);
   if (triangles > OBJECT_LIMITS.trianglesPerObject) fail('OBJECT_BUDGET', `estimated ${triangles} triangles exceeds ${OBJECT_LIMITS.trianglesPerObject}; replace some rounded parts (sphere/capsule/roundedBox) with box or cylinder`);
   const extent = [0, 1, 2].map(i => max[i] - min[i]);
   if (extent.some((e, i) => e > OBJECT_LIMITS.extent[i] + 1e-9)) fail('OBJECT_BUDGET', `overall size ${extent.map(e => e.toFixed(2)).join(' x ')}m exceeds ${OBJECT_LIMITS.extent.join(' x ')}m (width x height x depth)`);
+  const regions: Record<string, { min: V; max: V }> = {
+    full: { min, max }
+  };
+  for (const part of parts) {
+    const pMin: V = [0, 1, 2].map(i => part.center[i] - part.size[i] / 2) as V;
+    const pMax: V = [0, 1, 2].map(i => part.center[i] + part.size[i] / 2) as V;
+    regions[part.id] = { min: pMin, max: pMax };
+  }
+  if (textParts.length > 0) {
+    const primary = done.get(textParts[0])!;
+    const dMin: V = [0, 1, 2].map(i => primary.center[i] - primary.size[i] / 2) as V;
+    const dMax: V = [0, 1, 2].map(i => primary.center[i] + primary.size[i] / 2) as V;
+    const dBox = { min: dMin, max: dMax };
+    regions.display = dBox;
+    regions.screen = dBox;
+    regions.label = dBox;
+    regions.detail = dBox;
+  } else if (def.focus !== undefined) {
+    const fPart = done.get(def.focus)!;
+    const fMin: V = [0, 1, 2].map(i => fPart.center[i] - fPart.size[i] / 2) as V;
+    const fMax: V = [0, 1, 2].map(i => fPart.center[i] + fPart.size[i] / 2) as V;
+    regions.detail = { min: fMin, max: fMax };
+  }
+  if (def.focus !== undefined) {
+    const fPart = done.get(def.focus)!;
+    const fMin: V = [0, 1, 2].map(i => fPart.center[i] - fPart.size[i] / 2) as V;
+    const fMax: V = [0, 1, 2].map(i => fPart.center[i] + fPart.size[i] / 2) as V;
+    regions.focus = { min: fMin, max: fMax };
+  }
   return freezeData({
     parts,
     triangles,
     focus: def.focus ?? roots[0],
-    local: {min, max}
+    local: {min, max},
+    regions
   });
 }
 export type ObjectPlan = ReturnType<typeof planObject>;

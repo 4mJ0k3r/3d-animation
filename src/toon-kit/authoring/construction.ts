@@ -248,8 +248,12 @@ export function planConstruction(input: unknown) {
     if ([s.kind, s.prefab, s.object].filter(v => v !== undefined).length !== 1) fail('INVALID_CONSTRUCTION', id + ': choose exactly one kind, prefab or object');
     if (s.object !== undefined) {
       if (++objects > OBJECT_LIMITS.objects) fail('OBJECT_BUDGET', `Use at most ${OBJECT_LIMITS.objects} composite objects per layout`);
-      if (s.size !== undefined || s.finish !== undefined || s.text !== undefined) fail('INVALID_OBJECT', id + ': set size and finish on each object part; objects have no text');
-      objectPlans[id] = planObject(id, s.object);
+      if (s.size !== undefined || s.finish !== undefined || s.text !== undefined) fail('INVALID_OBJECT', id + ': set size and finish on each object part; declare text on box parts');
+      const planned = planObject(id, s.object);
+      objectPlans[id] = planned;
+      for (const p of planned.parts) {
+        if (p.text !== undefined) textures++;
+      }
     } else if (s.kind !== undefined) {
       if (!Object.hasOwn(STRUCTURES, s.kind)) fail('UNKNOWN_STRUCTURE', id + ': choose ' + Object.keys(STRUCTURES).join(', '));
       structures++;
@@ -515,7 +519,16 @@ export function planConstruction(input: unknown) {
       props: items.map(i => i.id),
       floors: ['ground'],
       paths: Object.keys(paths),
-      roles
+      roles,
+      propRegions: Object.fromEntries(items.map(i => {
+        if (i.object) {
+          return [i.id, Object.keys(i.object.regions)];
+        }
+        if (i.spec.prefab === 'sign' || i.spec.prefab === 'screen') {
+          return [i.id, ['full', 'display', 'screen', 'label', 'detail', 'panel']];
+        }
+        return [i.id, ['full']];
+      }))
     }
   });
 }

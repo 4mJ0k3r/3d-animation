@@ -78,7 +78,8 @@ export function compileStoryDocument(input: unknown) {
       if(shot.type==='groupShot'&&(shot.subjects?.length!==3||Object.keys(scene.characters).length!==3))storyFail('INVALID_SUBJECT','groupShot requires exactly three specified actors in a scene with three active actors (custom composition.thirdActor)',{scene:scene.id});
       if (shot.type === 'objectFocus') {
         requireName(shot.subject, slots.props, 'camera prop');
-        if (shot.region !== undefined && shot.region !== 'full') storyFail('UNKNOWN_SLOT', 'Curated starters expose objectFocus region:"full"', {
+        const allowedRegions = (slots as any).propRegions?.[shot.subject!] ?? ['full'];
+        if (shot.region !== undefined && !allowedRegions.includes(shot.region)) storyFail('UNKNOWN_SLOT', `Prop '${shot.subject}' does not expose region '${shot.region}'; choose ${allowedRegions.join(', ')}`, {
           scene: scene.id
         });
       } else {
@@ -137,7 +138,7 @@ export function compileStoryDocument(input: unknown) {
       story: timeline.plan
     }),
     timeline,
-    warnings: authoringWarnings(timeline)
+    warnings: authoringWarnings(timeline, layouts)
   });
 }
 export type CompiledStoryDocument = ReturnType<typeof compileStoryDocument>;

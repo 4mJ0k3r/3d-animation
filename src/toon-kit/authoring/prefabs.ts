@@ -92,6 +92,17 @@ const display = (screen: boolean): Builder => (p, finish, text, mounted) => {
     position: [0, (y - height / 2) / 2, -.04],
     color: '#415c65'
   }));
+  const panelBounds = {
+    min: [-width / 2, y - height / 2, -0.05],
+    max: [width / 2, y + height / 2, 0.05]
+  };
+  root.userData.regions = {
+    display: panelBounds,
+    screen: panelBounds,
+    label: panelBounds,
+    detail: panelBounds,
+    panel: panelBounds
+  };
   return {
     root,
     point: panel,

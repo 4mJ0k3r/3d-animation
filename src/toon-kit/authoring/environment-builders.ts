@@ -73,6 +73,12 @@ export const buildOffice: EnvironmentBuilder = (engine, p, name, layoutIndex, la
       position: [1, 1.025, -.5],
       color: '#6b8e9c'
     });
+  board.userData.regions = {
+    display: { min: [-0.8, -0.55, -0.05], max: [0.8, 0.55, 0.05] },
+    screen: { min: [-0.8, -0.55, -0.05], max: [0.8, 0.55, 0.05] },
+    label: { min: [-0.8, -0.55, -0.05], max: [0.8, 0.55, 0.05] },
+    detail: { min: [-0.8, -0.55, -0.05], max: [0.8, 0.55, 0.05] }
+  };
   chair.name = 'OfficeChairSeat';
   root.add(floor, wall, board, chair);
   // Keep the exact semantic seat surface; replace the solid pedestal with

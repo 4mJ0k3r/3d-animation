@@ -1,0 +1,256 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "controlRoom": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "carpet"
+        },
+        "items": {
+          "mainWall": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "charcoal",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "wallPanel": {
+            "kind": "panel",
+            "size": {
+              "width": 3.8,
+              "height": 2.4,
+              "depth": 0.1
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "attachedTo",
+              "target": "mainWall",
+              "face": "front",
+              "vertical": "middle"
+            }
+          },
+          "console": {
+            "object": {
+              "focus": "alertScreen",
+              "parts": {
+                "desk": {
+                  "shape": "box",
+                  "size": {
+                    "width": 1.3,
+                    "height": 0.75,
+                    "depth": 0.7
+                  },
+                  "finish": "charcoal"
+                },
+                "tower": {
+                  "shape": "box",
+                  "size": {
+                    "width": 1.05,
+                    "height": 0.7,
+                    "depth": 0.35
+                  },
+                  "finish": "slate",
+                  "place": {
+                    "on": "desk"
+                  }
+                },
+                "alertScreen": {
+                  "shape": "box",
+                  "size": {
+                    "width": 0.82,
+                    "height": 0.42,
+                    "depth": 0.06
+                  },
+                  "finish": "metal",
+                  "text": "खतरा: तापमान अधिक\nतुरंत बंद करें!",
+                  "place": {
+                    "beside": "tower",
+                    "side": "front",
+                    "align": "middle"
+                  }
+                },
+                "warningLight": {
+                  "shape": "cylinder",
+                  "size": {
+                    "width": 0.35,
+                    "height": 0.2
+                  },
+                  "finish": "red",
+                  "place": {
+                    "on": "tower"
+                  }
+                }
+              }
+            },
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "center",
+              "gap": 1.2
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 180,
+    "characters": {
+      "kabir": {
+        "appearance": "office"
+      },
+      "meera": {
+        "appearance": "doctor"
+      }
+    },
+    "scenes": [
+      {
+        "id": "control-room-alert",
+        "setting": "controlRoom",
+        "startFrame": 0,
+        "endFrame": 180,
+        "axis": [
+          "kabir",
+          "meera"
+        ],
+        "characters": {
+          "kabir": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            },
+            "expression": "neutral",
+            "lookAt": "console"
+          },
+          "meera": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            },
+            "expression": "neutral",
+            "lookAt": "console"
+          }
+        },
+        "cues": [
+          {
+            "id": "line1",
+            "kind": "dialogue",
+            "speaker": "kabir",
+            "startFrame": 0,
+            "endFrame": 45,
+            "text": "प्रणाली की जाँच कर रहा हूँ।"
+          },
+          {
+            "id": "caption-alert",
+            "kind": "caption",
+            "startFrame": 45,
+            "endFrame": 105,
+            "text": "[ चेतावनी: उच्च तापमान ]"
+          },
+          {
+            "id": "line2",
+            "kind": "dialogue",
+            "speaker": "kabir",
+            "startFrame": 105,
+            "endFrame": 180,
+            "text": "सावधान! तापमान बहुत बढ़ गया है!"
+          }
+        ],
+        "beats": [
+          {
+            "id": "monitor-console",
+            "startFrame": 0,
+            "endFrame": 45,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "point",
+                "target": "console"
+              }
+            ]
+          },
+          {
+            "id": "inspect-alert",
+            "startFrame": 45,
+            "endFrame": 105,
+            "actions": [
+              {
+                "actor": "meera",
+                "type": "look",
+                "target": "console"
+              }
+            ]
+          },
+          {
+            "id": "critical-reaction",
+            "startFrame": 105,
+            "endFrame": 180,
+            "actions": [
+              {
+                "actor": "kabir",
+                "type": "react",
+                "name": "worried"
+              },
+              {
+                "actor": "meera",
+                "type": "gesture",
+                "name": "surprise"
+              }
+            ]
+          }
+        ],
+        "shots": [
+          {
+            "id": "monitoring-shot",
+            "type": "medium",
+            "subject": "kabir",
+            "startFrame": 0,
+            "endFrame": 45
+          },
+          {
+            "id": "reveal-alert-insert",
+            "type": "objectFocus",
+            "subject": "console",
+            "region": "display",
+            "startFrame": 45,
+            "endFrame": 105
+          },
+          {
+            "id": "alarm-reaction-shot",
+            "type": "twoShot",
+            "subjects": [
+              "kabir",
+              "meera"
+            ],
+            "startFrame": 105,
+            "endFrame": 180
+          }
+        ],
+        "effects": [
+          {
+            "type": "impactFlash",
+            "target": "console",
+            "startFrame": 50,
+            "intensity": "low"
+          }
+        ]
+      }
+    ]
+  }
+}
