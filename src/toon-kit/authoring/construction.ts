@@ -33,10 +33,15 @@ export const STRUCTURES = freezeData({
     min: [.5, .4, .08],
     max: [4, 3, .25]
   },
+  trim: {
+    size: [4, .15, .04],
+    min: [.4, .04, .02],
+    max: [12, .4, .1]
+  },
   window: {
     size: [1.4, 1, .08],
     min: [.6, .6, .08],
-    max: [2, 1.6, .12]
+    max: [4, 2.2, .15]
   },
   door: {
     size: [1.3, 2.5, .1],
@@ -70,6 +75,24 @@ export const STRUCTURES = freezeData({
   }
 } as const);
 export type StructureKind = keyof typeof STRUCTURES;
+export const STRUCTURE_FINISHES = freezeData([
+  'cream',
+  'brick',
+  'slate',
+  'white',
+  'wood',
+  'charcoal',
+  'metal',
+  'navy',
+  'teal',
+  'mint',
+  'red',
+  'yellow'
+] as const);
+export type StructureFinish = typeof STRUCTURE_FINISHES[number];
+
+export const GROUND_FINISHES = freezeData(['sand', 'grass', 'paving', 'wood', 'slate', 'tile', 'carpet'] as const);
+export type GroundFinish = typeof GROUND_FINISHES[number];
 type Facing = 'front' | 'right' | 'back' | 'left';
 type Align = 'center' | 'start' | 'end';
 export type Placement = {
@@ -119,7 +142,7 @@ export interface Construction {
   readonly ground: Readonly<{
     width: number;
     depth: number;
-    finish?: 'sand' | 'grass' | 'paving';
+    finish?: GroundFinish;
   }>;
   readonly items: Readonly<Record<string, ConstructionItem>>;
 }
@@ -210,7 +233,7 @@ export function planConstruction(input: unknown) {
   keys(c.ground, ['width', 'depth', 'finish']);
   const width = number(c.ground.width, 10, 20, 'ground.width'),
     depth = number(c.ground.depth, 10, 20, 'ground.depth');
-  if (c.ground.finish !== undefined) option(c.ground.finish, ['sand', 'grass', 'paving'], 'ground.finish');
+  if (c.ground.finish !== undefined) option(c.ground.finish, GROUND_FINISHES, 'ground.finish');
   if (!c.items || typeof c.items !== 'object' || Array.isArray(c.items) || !Object.keys(c.items).length || Object.keys(c.items).length > CONSTRUCTION_LIMITS.items) fail('CONSTRUCTION_BUDGET', 'Declare 1..24 construction items');
   const specs: Record<string, ConstructionItem> = {};
   let structures = 0,
@@ -230,7 +253,7 @@ export function planConstruction(input: unknown) {
     } else if (s.kind !== undefined) {
       if (!Object.hasOwn(STRUCTURES, s.kind)) fail('UNKNOWN_STRUCTURE', id + ': choose ' + Object.keys(STRUCTURES).join(', '));
       structures++;
-      if (s.finish !== undefined) option(s.finish, ['cream', 'brick', 'slate', 'white', 'wood'], id + '.finish');
+      if (s.finish !== undefined) option(s.finish, STRUCTURE_FINISHES, id + '.finish');
     } else {
       if (!Object.hasOwn(PREFABS, s.prefab!)) fail('UNSUPPORTED_PREFAB', id + ': unknown prefab ' + s.prefab);
       props++;
@@ -318,7 +341,7 @@ export function planConstruction(input: unknown) {
     } else {
       const parent = resolve(p.target);
       if (p.relation === 'attachedTo') {
-        if (!['wall', 'panel'].includes(parent.spec.kind ?? '') || !['window', 'door', 'panel', 'sign', 'screen'].includes(spec.kind ?? spec.prefab ?? '')) fail('INVALID_ATTACHMENT', id + ': attach window/door/panel/sign/screen to a wall or panel front');
+        if (!['wall', 'panel'].includes(parent.spec.kind ?? '') || !['window', 'door', 'panel', 'trim', 'sign', 'screen'].includes(spec.kind ?? spec.prefab ?? '')) fail('INVALID_ATTACHMENT', id + ': attach window/door/panel/trim/sign/screen to a wall or panel front');
         if (spec.facing !== undefined && turn !== parent.turn) fail('INVALID_ATTACHMENT', id + ': attached facing inherits the parent');
         turn = parent.turn;
         b = oriented(local, turn);

@@ -56,7 +56,11 @@ export const buildConstruction: EnvironmentBuilder = (engine, p, name, index, la
     color: ({
       sand: '#e0d4bb',
       grass: '#91af80',
-      paving: '#c5c9c8'
+      paving: '#c5c9c8',
+      wood: '#b98c5c',
+      slate: '#516472',
+      tile: '#d5dbdb',
+      carpet: '#4a687d'
     } as const)[plan.ground.finish],
     outlineMode: 'none'
   });
@@ -64,12 +68,19 @@ export const buildConstruction: EnvironmentBuilder = (engine, p, name, index, la
   const props: Record<string, T.Object3D> = {},
     entries: Record<string, TargetLibrary['entries'][string]> = {},
     marks: Record<string, T.Group> = {};
-  const colors = {
+  const colors: Record<string, string> = {
     cream: '#e8dfd1',
     brick: '#c88d78',
     slate: '#7e929e',
     white: '#fff6e5',
-    wood: '#b98c5c'
+    wood: '#b98c5c',
+    charcoal: '#3b3f45',
+    metal: '#a9b3bd',
+    navy: '#2f4a73',
+    teal: '#2a8f8a',
+    mint: '#7fd1b9',
+    red: '#c9503f',
+    yellow: '#e8b93a'
   };
   for (const item of plan.items) {
     const {

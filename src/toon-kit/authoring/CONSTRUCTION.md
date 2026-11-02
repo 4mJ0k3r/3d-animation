@@ -33,12 +33,12 @@ The normative schema is `Construction` plus `planConstruction()` validation in
 
 Each item declares exactly one `kind` or existing `prefab`. `STRUCTURES` exports
 kinds, default dimensions and min/max dimensions. Kinds: floor, wall, panel,
-window, door, platform, barrier, column, block, tree. Partial `size` uses metres;
-column/tree width and depth must match. Prefab sizes remain fixed. Choose
+window, door, platform, barrier, column, block, tree, trim. Partial `size` uses metres;
+column/tree width and depth must match; trim provides architectural accents such as baseboards, chair-rails, and crown moldings (default `[4, 0.15, 0.04]`, min `[0.4, 0.04, 0.02]`, max `[12, 0.4, 0.1]`). Windows support panoramic/observation scaling up to width 4m and height 2.2m. Prefab sizes remain fixed. Choose
 `facing: front|right|back|left`; arbitrary angles/XYZ are unsupported. Structural
-finishes: cream, brick, slate, white, wood (tree finish colors its trunk).
-Existing prefab finishes/text rules apply. Ground is 10..20m per axis with sand,
-grass or paving. It is finite; the ground edge can enter a wide camera view.
+finishes: cream, brick, slate, white, wood, charcoal, metal, navy, teal, mint, red, yellow (tree finish colors its trunk).
+Existing prefab finishes/text rules apply. Ground is 10..20m per axis with finishes: sand, grass, paving, wood, slate, tile, carpet.
+It is finite; the ground edge can enter a wide camera view.
 
 ## Relationships
 
@@ -54,7 +54,7 @@ grass or paving. It is finite; the ground edge can enter a wide camera view.
 Beside/behind/front/boundary use scene axes: Y up, +Z front, +X right.
 Start/end mean negative/positive tangent axis. Attached fronts inherit parent
 orientation and use a 1cm surface separation and 15cm face margins. Supported
-attached children: window/door/panel/sign/screen. Supported top children:
+attached children: window/door/panel/sign/screen/trim. Trim attached to a wall or panel supports vertical alignment (`bottom` for baseboards/skirting, `middle` for chair/accent rails, `top` for frieze/crown moldings) and tangent alignment (`start`, `center`, `end`). Supported top children:
 column/block/planter/sign/screen. Top children retain their selected facing.
 Gap is 0..3m (default 0.3, or 0.5 near). Dependencies resolve in canonical ID
 order, independent of declaration order. Cycles reject. Placements are static;
@@ -232,3 +232,115 @@ pointing, gaze, effects and `objectFocus`, overlap/path checks and budgets.
 
 Example: [custom-objects.story.json](../../../examples/custom-objects.story.json)
 (a street lamp and a sci-fi beacon from the same API).
+
+## Phase 8B: Reusable Environment Art Direction & 3-Layer Depth Recipes
+
+Phase 8B enriches Toon-Kit's declarative environments without increasing GPU/CPU budgets, adding shaders, or breaking deterministic software-safe rendering:
+
+1. **`trim` Structure Kind:**
+   - Provides architectural detail lines (skirting/baseboards, chair-rails, wainscot dividers, friezes).
+   - Default dimensions: `[4, 0.15, 0.04]` (min `[0.4, 0.04, 0.02]`, max `[12, 0.4, 0.1]`).
+   - Attached to `wall` or `panel` via `{"relation": "attachedTo", "target": "wallId", "vertical": "bottom" | "middle" | "top", "align": "start" | "center" | "end"}`.
+   - Contributes exactly 1 box mesh to the layout budget.
+
+2. **Panoramic / Observation Windows:**
+   - Window structure max size extended to `[4, 2.2, 0.15]`.
+   - Allows expansive observatory or scenic exhibition windows.
+
+3. **Unified 12-Finish Palette:**
+   - All structures and composite object parts share 12 cohesive finishes:
+     `cream`, `brick`, `slate`, `white`, `wood`, `charcoal`, `metal`, `navy`, `teal`, `mint`, `red`, `yellow`.
+   - Materials are pooled and shared across the scene with zero per-frame allocation.
+
+4. **Indoor & Outdoor Ground Finishes:**
+   - `ground.finish` supports 7 finishes: `sand`, `grass`, `paving`, `wood`, `slate`, `tile`, `carpet`.
+
+### 3-Layer Environmental Staging Guidelines
+
+To make scenes feel grounded and cinematic instead of flat or empty, compose custom layouts across three distinct spatial planes:
+
+- **Background Layer (Depth & Context):**
+  - Anchor the back boundary with a main wall (`alongBoundary: "back"`).
+  - Add architectural rhythm using `column` pilasters or corner pillars.
+  - Break up monotonic wall planes with `trim` (`vertical: "bottom"` for skirting, `vertical: "middle"` for wainscot rails) and large panoramic `window` or framed `sign` inserts.
+- **Midground Layer (Action & Interaction):**
+  - Place primary interaction surfaces: workbenches, lab consoles, science fair tables, or seating.
+  - Contrast the floor plane using an accent `floor` structure or runner (e.g. `finish: "navy"` or `finish: "wood"` over `tile` ground).
+  - Place hero composite objects or props (`object` or prefabs) where characters congregate.
+- **Foreground Layer (Scale & Framing Parallax):**
+  - Frame the shot with subtle foreground boundaries (`alongBoundary: "front"` or `near: "entry"` / `"right"`).
+  - Use low `barrier` partitions, decorative `planter` boxes, or flanking edge `column`s to provide parallax cues as cameras shift between angles.
+
+#### Recipe: School Science Fair
+```json
+{
+  "ground": {"width": 14, "depth": 12, "finish": "wood"},
+  "items": {
+    "backWall": {
+      "kind": "wall", "size": {"width": 10, "height": 3.8}, "finish": "slate",
+      "place": {"relation": "alongBoundary", "boundary": "back", "gap": 0.8}
+    },
+    "skirting": {
+      "kind": "trim", "size": {"width": 9.6, "height": 0.15}, "finish": "charcoal",
+      "place": {"relation": "attachedTo", "target": "backWall", "face": "front", "vertical": "bottom"}
+    },
+    "chairRail": {
+      "kind": "trim", "size": {"width": 9.6, "height": 0.1}, "finish": "navy",
+      "place": {"relation": "attachedTo", "target": "backWall", "face": "front", "vertical": "middle"}
+    },
+    "schoolBanner": {
+      "prefab": "sign", "text": "विज्ञान प्रदर्शनी", "finish": "teal",
+      "place": {"relation": "attachedTo", "target": "backWall", "face": "front", "vertical": "top"}
+    },
+    "pillarLeft": {
+      "kind": "column", "size": {"width": 0.5, "height": 3.8, "depth": 0.5}, "finish": "cream",
+      "place": {"relation": "beside", "target": "backWall", "side": "left", "gap": 0}
+    },
+    "carpetRunner": {
+      "kind": "floor", "size": {"width": 4.5, "height": 0.04, "depth": 4}, "finish": "navy",
+      "place": {"relation": "inFrontOf", "target": "backWall", "gap": 1.2}
+    },
+    "exhibitTable": {
+      "kind": "block", "size": {"width": 2.6, "height": 0.85, "depth": 0.8}, "finish": "wood",
+      "place": {"relation": "inFrontOf", "target": "backWall", "gap": 2.2}
+    }
+  }
+}
+```
+
+#### Recipe: Sci-Fi Research Outpost
+```json
+{
+  "ground": {"width": 16, "depth": 14, "finish": "slate"},
+  "items": {
+    "outpostWall": {
+      "kind": "wall", "size": {"width": 12, "height": 4.2}, "finish": "charcoal",
+      "place": {"relation": "alongBoundary", "boundary": "back", "gap": 0.5}
+    },
+    "lowerTrim": {
+      "kind": "trim", "size": {"width": 11.6, "height": 0.2}, "finish": "metal",
+      "place": {"relation": "attachedTo", "target": "outpostWall", "face": "front", "vertical": "bottom"}
+    },
+    "accentStrip": {
+      "kind": "trim", "size": {"width": 11.6, "height": 0.12}, "finish": "teal",
+      "place": {"relation": "attachedTo", "target": "outpostWall", "face": "front", "vertical": "top"}
+    },
+    "observationPort": {
+      "kind": "window", "size": {"width": 3.8, "height": 2.0}, "finish": "metal",
+      "place": {"relation": "attachedTo", "target": "outpostWall", "face": "front", "vertical": "middle"}
+    },
+    "stationPillar": {
+      "kind": "column", "size": {"width": 0.6, "height": 4.2, "depth": 0.6}, "finish": "metal",
+      "place": {"relation": "beside", "target": "outpostWall", "side": "right", "gap": 0}
+    },
+    "techConsole": {
+      "kind": "block", "size": {"width": 2.2, "height": 0.9, "depth": 0.8}, "finish": "teal",
+      "place": {"relation": "inFrontOf", "target": "outpostWall", "gap": 2.0}
+    },
+    "deckTile": {
+      "kind": "floor", "size": {"width": 6, "height": 0.04, "depth": 4}, "finish": "metal",
+      "place": {"relation": "inFrontOf", "target": "outpostWall", "gap": 1.0}
+    }
+  }
+}
+```

@@ -352,6 +352,11 @@ When given a natural-language script, the coding agent creates a structured `Sto
    - Set starting emotional expression (`neutral`, `happy`, `worried`, `surprised`, `focused`).
 2. **Environment & Layout Construction:**
    - Choose a curated preset (`office`, `clinic`, `street`) or construct a custom environment with `preset: "custom"`.
+   - Apply 3-layer depth (Background, Midground, Foreground):
+     * Background: Anchor back wall (`alongBoundary: "back"`), add vertical rhythm with `column` pilasters, break wide surfaces with `trim` (`attachedTo` wall with `vertical: "bottom"` for skirting or `vertical: "middle"` for chair rails), and add large panoramic `window`s or framed `sign`s.
+     * Midground: Interaction surfaces (`barrier` table, `block` console), focal props, and contrasting floor runners (`floor` structure).
+     * Foreground: Flanking framing elements (`column`, `barrier` partition, `planter`) near the front boundary.
+   - Use unified finishes (`cream`, `brick`, `slate`, `white`, `wood`, `charcoal`, `metal`, `navy`, `teal`, `mint`, `red`, `yellow`) and indoor/outdoor ground finishes (`sand`, `grass`, `paving`, `wood`, `slate`, `tile`, `carpet`).
    - Place ground, backdrops, and props using semantic relations (`relation: "near" | "alongBoundary" | "attachedTo"`).
    - Build composite props via `object` with named primitive parts (`antenna`, `dome`, `base`).
 3. **Staging & Stances:**

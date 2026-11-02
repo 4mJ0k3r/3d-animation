@@ -546,6 +546,113 @@ test('construction enforces independent piece, geometry, attachment and display 
  a=l();for(let i=0;i<5;i++)a.composition.items['p'+i]={prefab:'sign',text:'hello',place:{relation:'alongBoundary',boundary:'back'}};bad(()=>D.planConstruction(a),'CONSTRUCTION_BUDGET');
  a=l();a.composition.items={base:{kind:'platform',place:{relation:'alongBoundary',boundary:'back'}},one:{kind:'block',size:{width:1,height:.5,depth:1},place:{relation:'onTopOf',target:'base'}},two:{kind:'block',size:{width:.7,height:.5,depth:.7},place:{relation:'onTopOf',target:'one'}},three:{kind:'block',size:{width:.4,height:.5,depth:.4},place:{relation:'onTopOf',target:'two'}}};bad(()=>D.planConstruction(a),'ATTACHMENT_DEPTH');
 });
+
+test('Phase 8B: trim structure, extended finishes and ground finishes validate and build deterministically', () => {
+  const layout = {
+    preset: 'custom',
+    composition: {
+      ground: { width: 14, depth: 14, finish: 'wood' },
+      items: {
+        backWall: {
+          kind: 'wall',
+          size: { width: 8, height: 3.5, depth: 0.25 },
+          finish: 'slate',
+          place: { relation: 'alongBoundary', boundary: 'back', gap: 0.4 }
+        },
+        skirtingTrim: {
+          kind: 'trim',
+          size: { width: 7.6, height: 0.15, depth: 0.04 },
+          finish: 'charcoal',
+          place: { relation: 'attachedTo', target: 'backWall', face: 'front', vertical: 'bottom' }
+        },
+        dadoTrim: {
+          kind: 'trim',
+          size: { width: 7.6, height: 0.08, depth: 0.04 },
+          finish: 'teal',
+          place: { relation: 'attachedTo', target: 'backWall', face: 'front', vertical: 'middle' }
+        },
+        panoramicWindow: {
+          kind: 'window',
+          size: { width: 3.2, height: 1.4, depth: 0.1 },
+          finish: 'metal',
+          place: { relation: 'attachedTo', target: 'backWall', face: 'front', vertical: 'top' }
+        },
+        floorRunner: {
+          kind: 'floor',
+          size: { width: 2, height: 0.04, depth: 6 },
+          finish: 'navy',
+          place: { relation: 'alongBoundary', boundary: 'front', gap: 1 }
+        }
+      }
+    }
+  };
+
+  const plan = D.planConstruction(layout);
+  assert.equal(plan.items.length, 5);
+  const byId = Object.fromEntries(plan.items.map(i => [i.id, i]));
+  assert.equal(byId.skirtingTrim.spec.kind, 'trim');
+  assert.equal(byId.skirtingTrim.spec.finish, 'charcoal');
+  assert.equal(byId.dadoTrim.spec.finish, 'teal');
+  assert.equal(byId.panoramicWindow.size[0], 3.2);
+  assert.equal(byId.floorRunner.spec.finish, 'navy');
+  assert.equal(plan.ground.finish, 'wood');
+
+  bad(() => D.planConstruction({ preset: 'custom', composition: { ground: { width: 10, depth: 10, finish: 'lava' }, items: {} } }), 'INVALID_PLACEMENT');
+  bad(() => D.planConstruction({
+    preset: 'custom',
+    composition: {
+      ground: { width: 10, depth: 10 },
+      items: {
+        badTrim: { kind: 'trim', finish: 'neon', place: { relation: 'alongBoundary', boundary: 'back' } }
+      }
+    }
+  }), 'INVALID_PLACEMENT');
+
+  const doc = {
+    version: 1,
+    video: { width: 720, height: 1280 },
+    font: 'noto-sans-devanagari',
+    layouts: { testEnriched: layout },
+    story: {
+      version: 1,
+      fps: 30,
+      durationInFrames: 60,
+      characters: {
+        a: { appearance: 'casual' },
+        b: { appearance: 'office' }
+      },
+      scenes: [{
+        id: 's1',
+        setting: 'testEnriched',
+        startFrame: 0,
+        endFrame: 60,
+        axis: ['a', 'b'],
+        characters: {
+          a: { stance: { type: 'stand', at: 'entry' } },
+          b: { stance: { type: 'stand', at: 'right' } }
+        },
+        beats: [{ id: 'b1', startFrame: 0, endFrame: 60, actions: [{ actor: 'a', type: 'gesture', name: 'nod' }] }],
+        shots: [{ id: 'sh1', startFrame: 0, endFrame: 60, type: 'twoShot', subjects: ['a', 'b'] }]
+      }]
+    }
+  };
+
+  const compiled = D.compileStoryDocument(doc);
+  const e = owner();
+  try {
+    const envs = D.createStoryEnvironments(e, compiled);
+    const built = envs.testEnriched;
+    assert.ok(built.props.skirtingTrim);
+    assert.ok(built.props.dadoTrim);
+    assert.ok(built.props.panoramicWindow);
+    assert.ok(built.props.floorRunner);
+    assert.ok(built.root.userData.construction.meshes <= D.CONSTRUCTION_LIMITS.meshes);
+    assert.ok(built.root.userData.construction.triangles <= D.CONSTRUCTION_LIMITS.triangles);
+  } finally {
+    e.dispose();
+  }
+});
+
 test('constructed anchors, resource envelopes and complete poses agree across owners and shuffled frames',()=>{
  const {createStory}=require('../../out/character-tests/toon-kit/story/player');
  for(const name of ['school','garden']){
