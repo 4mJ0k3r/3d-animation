@@ -305,3 +305,63 @@ guard. No server, upload, polling or cloud transport. Stop after 7A.
 Phase 7B-A: optional private relay (RENDER_JOBS.md). Muse may run only `job
 submit`, `job status` and `job fetch`, never `job worker` or a polling loop.
 Never print, commit or invent relay credentials. Stop after 7B-A.
+
+
+## Phase 7D: Local One-Shot Production Workflow
+
+Phase 7D establishes the canonical one-shot production command and step-by-step authoring workflow for local coding agents producing original Hindi/English cartoon animations on a Windows PC.
+
+### The Agent Production Pipeline
+
+```
+User Script (Hindi/English)
+       │
+       ▼
+Local Coding Agent authors StoryDocument JSON (examples/name.story.json)
+       │
+       ▼
+npm run produce -- --plan=examples/name.story.json [--output=out/name.mp4]
+       │
+       ├─► 1. Fast Story Validation (Schema, asset paths, font sha256, slot bounds)
+       ├─► 2. Whole-Story Preparation (Preflight bounds, camera visibility, proxy budget)
+       ├─► 3. Guarded CPU Rendering (Software-safe SwiftShader, segment caching & resumption)
+       ├─► 4. Output Verification (File existence, non-empty bitstream check)
+       ├─► 5. Automated QA & Contact Sheet (Decode, black detect, freeze correlation, audio sync)
+       └─► 6. Unified Production Report (Metrics, issues, review guidance)
+       │
+       ▼
+Agent inspects Contact Sheet (out/name-contact-sheet.png) & Delivers MP4
+```
+
+### Step-by-Step Agent Authoring Guide
+
+When given a natural-language script, the coding agent creates a structured `StoryDocument` JSON without writing raw 3D engine code:
+
+1. **Characters & Appearance:**
+   - Define actors in `story.characters` using supported appearance presets (`doctor`, `patient`, `office`, `casual`, `scientist`, `hoodie`, `glasses`).
+   - Set starting emotional expression (`neutral`, `happy`, `worried`, `surprised`, `focused`).
+2. **Environment & Layout Construction:**
+   - Choose a curated preset (`office`, `clinic`, `street`) or construct a custom environment with `preset: "custom"`.
+   - Place ground, backdrops, and props using semantic relations (`relation: "near" | "alongBoundary" | "attachedTo"`).
+   - Build composite props via `object` with named primitive parts (`antenna`, `dome`, `base`).
+3. **Staging & Stances:**
+   - Staging anchors: `at: "entry" | "left" | "right" | "center"` for standing; `seat: "chair" | "table"` for seated.
+   - Maintain actor axis in `scene.axis` across scene cuts.
+4. **Cinematic Camera Shots:**
+   - Choose from supported shot types: `establishing`, `twoShot`, `medium`, `closeUp`, `objectFocus`, `groupShot`.
+   - Keep subjects visible: do not turn actors fully away during `twoShot` or `groupShot` without cutting to close-up or objectFocus.
+5. **Character Acting & Beats:**
+   - Use declarative actions: `walk` (along paths), `look` (target actor or prop), `point` (hand target), `gesture` (`nod`, `explain`, `shrug`, `wave`, `worried`), `react` (`surprised`, `excited`).
+6. **Captions & Audio Narration:**
+   - Dialogue cues: `kind: "dialogue"`, `language: "hi" | "en"`, `mode: "words" | "line"`.
+   - Place referenced audio clips in `public/audio/...` and declare them in `story.audio.assets`.
+7. **Fast Early Validation:**
+   - Run `npm run story -- validate --plan=examples/name.story.json` before rendering. Fix schema or asset errors immediately.
+8. **One-Command Production:**
+   - Run `npm run produce -- --plan=examples/name.story.json --output=out/name.mp4`.
+9. **QA Interpretation & Inspection Guidance:**
+   - **Technical Integrity (Automated):** Objectively verified by software decoders. Bitstream is clean, audio duration matches video within ±0.5s, frame count is exact, no unexpected black screens or render stalls.
+   - **Story Pacing & Continuity (Automated):** Shot lengths, scene cut contiguity, and caption timing boundaries match plan.
+   - **Artistic & Visual Quality (Requires Agent/Human Review):** Automated QA does NOT certify artistic appeal. Inspect `out/name-contact-sheet.png` (4x4 labeled grid) to check character framing, gesture clarity, and silhouette readability before delivering.
+10. **Delivery:**
+    - Deliver the final MP4 and point to the production report and contact sheet.

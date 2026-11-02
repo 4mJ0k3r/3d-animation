@@ -33,8 +33,10 @@
     "verify:story-audio": "node scripts/verify-story-audio.cjs",
     "story": "node scripts/story.cjs",
     "qa": "node scripts/qa.cjs",
+    "produce": "node scripts/produce.cjs",
     "job": "node scripts/render-job.cjs",
     "test:qa": "node --test --test-concurrency=1 scripts/tests/qa.test.cjs",
+    "test:produce": "node --test --test-concurrency=1 scripts/tests/produce.test.cjs",
     "test:render-job": "node --test --test-concurrency=1 scripts/tests/render-job.test.cjs scripts/tests/relay.test.cjs",
     "test:authoring": "node scripts/test-authoring.cjs"
   },

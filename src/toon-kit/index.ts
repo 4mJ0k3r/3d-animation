@@ -11,3 +11,4 @@ export * from './caption-layout';
 export * from './story';
 export * from './authoring';
 export * from './qa';
+export * from './production';
