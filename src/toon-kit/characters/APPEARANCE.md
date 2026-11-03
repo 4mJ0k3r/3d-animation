@@ -50,8 +50,8 @@ appearance: {
 
 | Field | Supported values |
 |---|---|
-| Preset | `doctor`, `patient`, `office`, `casual` |
-| Hair | `none`, `short`, `swept`, `tied-back` |
+| Preset | `doctor`, `patient`, `office`, `casual`, `yellow-mellow` |
+| Hair | `none`, `short`, `swept`, `tied-back`, `beanie` |
 | Clothing | `shirt`, `hoodie`, `lab-coat`, `jacket` |
 | Sleeves | `none`, `short`, `long` |
 | Trousers | `solid`, `shorts` |

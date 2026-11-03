@@ -32,7 +32,7 @@ Top-level keys are exactly those above. A scene's `setting` selects a key in
 `layouts`. `story` declares characters, scene defaults, timed beats/actions,
 dialogue/caption cues, shots, and optional Phase 4B audio assets/clips/alignments.
 
-- Choose appearance `casual`, `office`, `doctor` or `patient`. Curated starters use
+- Choose appearance `casual`, `office`, `doctor`, `patient` or `yellow-mellow`. Curated starters use
   the existing default body proportions and scale 1; omit raw body dimensions.
 - Actions: `stand`, `sit`, `walk`, `look`, `point`, `gesture`, `expression`, `react`.
   Use named slots below or `{actor:"kabir",anchor:"head"}`. Camera choices and

@@ -348,7 +348,8 @@ Before rendering or declaring creative completion, verify these storytelling pri
 When given a natural-language script, the coding agent creates a structured `StoryDocument` JSON without writing raw 3D engine code:
 
 1. **Characters & Appearance:**
-   - Define actors in `story.characters` using supported appearance presets (`doctor`, `patient`, `office`, `casual`). Note: `hoodie` and `jacket` are clothing style options (`clothing.style`), and `glasses` is an accessory option (`accessories`), not appearance presets.
+   - Define actors in `story.characters` using supported appearance presets (`doctor`, `patient`, `office`, `casual`), alongside the official `yellow-mellow` character preset. Note: `hoodie` and `jacket` are clothing style options (`clothing.style`), and `glasses` is an accessory option (`accessories`), not appearance presets.
+   - The `yellow-mellow` preset is the official canonical hero character: solid black-ink head (`#171717`), large white highlight facial features (wavy mouth for `worried`, smile for `happy`, high arches for `surprised`), red ribbed knit beanie (`#e53935`) with rolled cuff, oversized yellow hoodie (`#fbc02d`) with continuous torso-anchored cowl neckline, minimalist black stick limbs, dark athletic shorts (`#37474f`) with white side racing stripes, and rounded black cartoon shoes.
    - Set starting emotional expression (`neutral`, `happy`, `worried`, `surprised`, `focused`).
 2. **Environment & Layout Construction:**
    - Choose a curated preset (`office`, `clinic`, `street`) or construct a custom environment with `preset: "custom"`.

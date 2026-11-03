@@ -35,7 +35,7 @@ const snapshot = cast.evaluate({
 ```
 
 Names identify universal characters, not migrated legacy rigs. Use
-`appearancePreset('doctor'|'patient'|'office'|'casual')` for reusable looks.
+`appearancePreset('doctor'|'patient'|'office'|'casual'|'yellow-mellow')` for reusable looks.
 Cast actor options are `proportions`, `colors`, `appearance`, `face`, `stance`,
 `scale`, and optional scene `parent`.
 `cast.actors[name]` exposes read-only definition/root handles and semantic targets.
