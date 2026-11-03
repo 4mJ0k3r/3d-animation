@@ -213,7 +213,7 @@
               {
                 "type": "look",
                 "actor": "protagonist",
-                "target": "audience"
+                "target": "right"
               }
             ]
           },

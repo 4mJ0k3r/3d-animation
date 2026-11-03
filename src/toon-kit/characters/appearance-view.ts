@@ -27,7 +27,7 @@ export function createAppearancePool(owner:CharacterResourceOwner){
       map=new THREE.CanvasTexture(canvas);map.colorSpace=THREE.SRGBColorSpace;map.generateMipmaps=false;map.minFilter=map.magFilter=THREE.LinearFilter;
       owner.registerCleanup(()=>{canvas.width=canvas.height=1;});
     }
-    const value=new THREE.MeshToonMaterial({color:map?'#ffffff':color,map:map??null,gradientMap:gradient??=createToonGradientMap(3)});materials.set(key,value);
+    const value=new THREE.MeshToonMaterial({color:map?'#ffffff':color,map:map??null,gradientMap:gradient??=createToonGradientMap(3),side:THREE.DoubleSide});materials.set(key,value);
     // Register immediately even before attachment or a later construction failure.
     owner.track(Object.assign(new THREE.Object3D(),{material:value}));return value;
   }
@@ -62,7 +62,7 @@ export function createAppearancePool(owner:CharacterResourceOwner){
       const p=definition.proportions;add('hood','torso',1,`hood:${p.torsoRadius}:${p.torsoLength}`,()=>hoodGeometry(p.torsoRadius,p.torsoLength),material(a,a.clothing.color));
     }
     if((a.hair.style==='beanie'||a.preset==='yellow-mellow')&&a.clothing.style==='hoodie'){
-      add('cowl','head',r,'cowl',cowlGeometry,material(a,a.clothing.color));
+      const p=definition.proportions;add('cowl','torso',1,`cowl:${p.torsoRadius}:${p.torsoLength}`,()=>cowlGeometry(p.torsoRadius,p.torsoLength),material(a,a.clothing.color));
     }
     const reset=()=>{for(const {mesh,scale}of controlled){mesh.position.set(0,0,0);mesh.quaternion.identity();mesh.scale.setScalar(scale);mesh.visible=true;mesh.matrixAutoUpdate=mesh.matrixWorldAutoUpdate=true;}};
     reset();return {reset};

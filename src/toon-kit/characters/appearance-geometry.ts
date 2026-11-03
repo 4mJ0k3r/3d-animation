@@ -72,22 +72,25 @@ export function hoodGeometry(radius:number,length:number):THREE.BufferGeometry {
   return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),24,radius*.11,6,false);
 }
 
-/** Oversized puffy hoodie cowl/collar wrapping the lower skull and neck. */
-export function cowlGeometry():THREE.BufferGeometry {
-  const positions:number[]=[],uvs:number[]=[],indices:number[]=[],w=32,h=10;
+/** Oversized puffy hoodie cowl/collar wrapping the neck and lower skull continuously from the torso. */
+export function cowlGeometry(radius:number,length:number):THREE.BufferGeometry {
+  const positions:number[]=[],uvs:number[]=[],indices:number[]=[],w=32,h=12;
+  const yBase=length/2+radius*.78,yHeight=radius*.88;
   for(let j=0;j<=h;j++){
-    const v=j/h;
+    const v=j/h,bulge=Math.sin(v*Math.PI);
     for(let i=0;i<=w;i++){
       const yaw=i===w?0:(i/w)*Math.PI*2;
       const back=(1-Math.cos(yaw))/2;
-      const r=(0.24+0.08*Math.sin(v*Math.PI))*(1+0.2*back);
-      const y=-0.88-v*0.35+0.03*back;
-      positions.push(r*Math.sin(yaw),y,r*Math.cos(yaw)-0.04*back);
+      const y=yBase+v*yHeight-.02*(1-back);
+      const r=radius*(.84+.16*bulge+.04*back);
+      const zOffset=-radius*.04*back;
+      positions.push(r*Math.sin(yaw),y,r*Math.cos(yaw)+zOffset);
       uvs.push(i/w,v);
     }
   }
   for(let j=0;j<h;j++)for(let i=0;i<w;i++){
-    const a=j*(w+1)+i;indices.push(a,a+1,a+w+2,a,a+w+2,a+w+1);
+    const a=j*(w+1)+i;
+    indices.push(a,a+w+1,a+1,a+1,a+w+1,a+w+2);
   }
   const g=new THREE.BufferGeometry();
   g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));

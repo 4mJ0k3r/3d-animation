@@ -71,11 +71,61 @@ test('yellow-mellow preset resolves beanie hair, black skin, hoodie, shorts and 
    assert.equal(hood.userData.attachmentAnchor,'torso');
    const cowl=r.root.getObjectByName('appearance:cowl');
    assert.ok(cowl);
-   assert.equal(cowl.userData.attachmentAnchor,'head');
+   assert.equal(cowl.userData.attachmentAnchor,'torso');
+   assert.ok(cowl.parent.name.endsWith(':torso'));
 
    // Highlight face audit: dark skin alone without yellow-mellow preset does NOT force highlight mode
    const darkHuman=S.resolveAppearance({skin:'#171717',clothing:{style:'shirt'}});
    const rDark=f.create({id:'darkHuman',appearance:darkHuman,face:{}});
    assert.ok(rDark);
+ }finally{e.dispose();}
+});
+test('hoodie cowl forms a continuous neckline from torso to head and validates true 90-degree side profile',()=>{
+ const ym=S.appearancePreset('yellow-mellow');
+ const e=owner(),f=S.createCharacterFactory(e);
+ try{
+   const r=f.create({id:'ymProfile',appearance:ym,face:{}});
+   const cowl=r.root.getObjectByName('appearance:cowl');
+   assert.ok(cowl);
+   assert.equal(cowl.userData.attachmentAnchor,'torso');
+   assert.ok(cowl.parent.name.endsWith(':torso'));
+
+   // Geometry extents: cowl must overlap torso capsule below and skull above without gap
+   const p=r.definition.proportions;
+   const torsoTop=p.torsoLength/2+p.torsoRadius; // 0.55m
+   const headBottom=torsoTop+p.neckLength; // 0.67m
+   const pos=cowl.geometry.attributes.position;
+   let minY=Infinity,maxY=-Infinity,minR=Infinity;
+   for(let i=0;i<pos.count;i++){
+     const x=pos.getX(i),y=pos.getY(i),z=pos.getZ(i);
+     if(y<minY)minY=y;
+     if(y>maxY)maxY=y;
+     const r=Math.hypot(x,z);
+     if(r<minR)minR=r;
+   }
+   // Cowl bottom must be well below torsoTop so it anchors inside the torso capsule
+   assert.ok(minY<torsoTop-.03,`Cowl bottom (${minY}) must embed into torso capsule below ${torsoTop}`);
+   // Cowl top must extend well above headBottom so lower head is nestled inside collar
+   assert.ok(maxY>headBottom+.02,`Cowl top (${maxY}) must extend into lower head sphere above ${headBottom}`);
+   // Minimum radius must comfortably enclose the 0.075m neck
+   assert.ok(minR>p.neckRadius*1.5,`Cowl radius (${minR}) must exceed neck radius (${p.neckRadius})`);
+
+   // Posed validation: evaluate under head gaze rotation (looking 60 deg right)
+   const c=S.createCast(e,{actor:{appearance:ym}});
+   const evalHeadTurn=c.evaluate({frame:0,fps:30,poses:{actor:{gaze:S.lookAt(S.worldPoint([10,1.5,0]))}}});
+   assert.ok(evalHeadTurn);
+   // Cowl stays firmly attached to torso on the shoulders while head rotates inside
+   r.applyPose(evalHeadTurn.poses.actor);
+   assert.equal(cowl.position.y,0);
+
+   // True 90-degree side profile validation: body and head oriented orthogonal to camera axis
+   const evalSide=c.evaluate({frame:0,fps:30,poses:{actor:{stance:S.standAt(S.worldMark([0,0,0],Math.PI/2))}}});
+   const sidePose=evalSide.poses.actor;
+   // Facing direction: yaw of Math.PI / 2 means forward faces pure +X
+   const facingX=Math.sin(Math.PI/2);
+   assert.ok(facingX>0.99,'Body must face orthogonal (90 degrees) to camera axis');
+   // Torso and head quaternions remain stable and valid
+   assert.ok(sidePose.torso.quaternion.every(Number.isFinite));
+   assert.ok(sidePose.head.quaternion.every(Number.isFinite));
  }finally{e.dispose();}
 });

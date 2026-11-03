@@ -182,6 +182,9 @@ export const buildConstruction: EnvironmentBuilder = (engine, p, name, index, la
   for (const [id, position] of Object.entries(plan.marks)) {
     const mark = new T.Group();
     mark.position.fromArray(position);
+    if ((plan as { markYaws?: Record<string, number> }).markYaws?.[id] !== undefined) {
+      mark.rotation.y = (plan as { markYaws?: Record<string, number> }).markYaws![id];
+    }
     root.add(mark);
     marks[id] = mark;
     entries[id] = sceneMark(mark);

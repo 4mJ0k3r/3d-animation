@@ -427,6 +427,11 @@ export function planConstruction(input: unknown) {
       finish: [...markers.finish],
       right: [...markers.right]
     },
+    markYaws: Record<string, number> = {
+      entry: 0,
+      finish: 0,
+      right: 0
+    },
     roles: Record<string, 'left' | 'right' | 'third'> = {
       entry: 'left',
       finish: 'left',
@@ -444,6 +449,7 @@ export function planConstruction(input: unknown) {
       role = location[0] <= 0 ? 'left' : 'right';
     if (clear(location)) {
       marks[name] = location;
+      markYaws[name] = ((item.turn + 2) % 4) * Math.PI / 2;
       roles[name] = role;
       const from = role === 'left' ? 'entry' : 'right';
       if (Math.hypot(location[0] - marks[from][0], location[2] - marks[from][2]) > .05 && clearPath(marks[from], location)) {
@@ -511,6 +517,7 @@ export function planConstruction(input: unknown) {
       finish: c.ground.finish ?? 'sand'
     },
     marks,
+    markYaws,
     paths,
     catalog: {
       marks: Object.keys(marks),

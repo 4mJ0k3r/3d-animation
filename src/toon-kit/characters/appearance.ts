@@ -59,4 +59,4 @@ export function appearancePreset(preset:AppearancePreset,overrides:Omit<Appearan
   // Return complete immutable appearance fields, allowing simple property spread/reuse.
   return resolveAppearance({...overrides,preset});
 }
-export const APPEARANCE_ATTACHMENTS=freezeData({hair:'head',glasses:'head',hood:'torso',cowl:'head',badge:'torso',stethoscope:'neckBase'} as const);
+export const APPEARANCE_ATTACHMENTS=freezeData({hair:'head',glasses:'head',hood:'torso',cowl:'torso',badge:'torso',stethoscope:'neckBase'} as const);
