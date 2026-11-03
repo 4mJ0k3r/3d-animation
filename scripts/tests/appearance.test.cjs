@@ -52,3 +52,22 @@ test('skin and hair variants reuse the same immutable fabric material',()=>{
 test('repeated construction and cleanup disposes all shared appearance resources exactly once',()=>{
  for(let cycle=0;cycle<6;cycle++){const e=owner(),f=S.createCharacterFactory(e),resources=new Map();for(const name of ['doctor','patient','office','casual']){const r=f.create({id:name,appearance:S.appearancePreset(name)});r.root.traverse(o=>{if(o instanceof THREE.Mesh)for(const resource of [o.geometry,o.material,o.material.gradientMap])if(resource&&!resources.has(resource)){resources.set(resource,0);resource.addEventListener('dispose',()=>resources.set(resource,resources.get(resource)+1));}});}f.dispose();assert.ok([...resources.values()].every(n=>n===0));e.dispose();e.dispose();assert.ok([...resources.values()].every(n=>n===1));}
 });
+test('yellow-mellow preset resolves beanie hair, black skin, hoodie, shorts and highlight face',()=>{
+ const ym=S.appearancePreset('yellow-mellow');
+ assert.equal(ym.skin,'#171717');
+ assert.equal(ym.hair.style,'beanie');
+ assert.equal(ym.hair.color,'#e53935');
+ assert.equal(ym.clothing.style,'hoodie');
+ assert.equal(ym.clothing.color,'#fbc02d');
+ assert.equal(ym.trousers.style,'shorts');
+ const e=owner(),f=S.createCharacterFactory(e);
+ try{
+   const r=f.create({id:'ym',appearance:ym,face:{}});
+   const beanie=r.root.getObjectByName('appearance:hair');
+   assert.ok(beanie);
+   assert.equal(beanie.userData.attachmentAnchor,'head');
+   const hood=r.root.getObjectByName('appearance:hood');
+   assert.ok(hood);
+   assert.equal(hood.userData.attachmentAnchor,'torso');
+ }finally{e.dispose();}
+});

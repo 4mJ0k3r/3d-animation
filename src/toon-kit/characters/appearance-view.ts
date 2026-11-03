@@ -39,6 +39,7 @@ export function createAppearancePool(owner:CharacterResourceOwner){
     if(part.endsWith('Forearm'))return c.sleeves==='long'?material(a,sleeveColor(c.color),'lowerSleeve'):material(a,limb);
     if(part.endsWith('ElbowShape'))return material(a,c.sleeves==='long'?sleeveColor(c.color):limb);
     if(part.endsWith('Shoe'))return material(a,a.shoes.color,a.shoes.style==='sneakers'?'shoe':undefined);
+    if(part.endsWith('Thigh')&&a.trousers.style==='shorts')return material(a,a.trousers.color,'thigh');
     return material(a,a.trousers.style==='shorts'&&(part.endsWith('Shin')||part.endsWith('KneeShape'))?limb:a.trousers.color);
   }
   function attach(nodes:Record<NodeName,THREE.Object3D>,definition:CharacterDefinition,a:ResolvedAppearance){
@@ -52,7 +53,7 @@ export function createAppearancePool(owner:CharacterResourceOwner){
     const r=definition.proportions.headRadius;
     if(a.hair.style!=='none'){
       const style=a.hair.style;
-      add('hair','head',r,'hair:'+style,()=>hairGeometry(style),material(a,a.hair.color,style==='swept'?'hair':undefined));
+      add('hair','head',r,'hair:'+style,()=>hairGeometry(style),material(a,a.hair.color,(style==='swept'||style==='beanie')?'hair':undefined));
       if(style==='tied-back')add('hair-tail','head',r,'tail',tailGeometry,material(a,a.hair.color));
     }
     if(a.accessories.includes('glasses'))add('glasses','head',r,'glasses',glassesGeometry,material(a,'#292532'));

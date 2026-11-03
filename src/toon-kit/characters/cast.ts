@@ -41,8 +41,12 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
       if(!options[name]||typeof options[name]!=='object'||Array.isArray(options[name])||Object.keys(options[name]).some(k=>!['proportions','colors','stance','scale','parent','face','appearance'].includes(k)))castFail('INVALID_CAST_REQUEST','Unknown actor construction fields.',name);
       const config={...options[name]};configs.set(name,config);
       if(config.appearance!==undefined)try{if(config.colors!==undefined)throw new Error('Use appearance or legacy colors, not both');config.appearance=resolveAppearance(config.appearance);}catch(error){castFail('APPEARANCE_INVALID',String(error),name);}
-      if(config.face!==false){try{validateFaceConfig(config.face??{});}catch(error){castFail('FACE_INVALID',String(error),name);}
-        config.face=freezeData({...config.face,blink:config.face?.blink?{...config.face.blink}:undefined});}
+      if(config.face!==false){
+        const autoStyle=config.appearance?.skin==='#171717'?'highlight'as const:undefined;
+        const faceObj={style:autoStyle,...config.face};
+        try{validateFaceConfig(faceObj);}catch(error){castFail('FACE_INVALID',String(error),name);}
+        config.face=freezeData({...faceObj,blink:faceObj.blink?{...faceObj.blink}:undefined});
+      }
       if(config.scale!==undefined&&(typeof config.scale!=='number'||!Number.isFinite(config.scale)||config.scale<.05||config.scale>20))castFail('INVALID_CAST_REQUEST','Invalid default scale.',name);
       if(config.stance!==undefined&&(!config.stance||typeof config.stance!=='object'))castFail('INVALID_CAST_REQUEST','Invalid default stance.',name);
       if(config.parent!==undefined&&!(config.parent instanceof THREE.Object3D))castFail('INVALID_PARENT','Actor parent must be a scene object.',name);

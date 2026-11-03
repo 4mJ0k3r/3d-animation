@@ -1,0 +1,208 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "studio": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "tile"
+        },
+        "items": {
+          "studioWall": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 240,
+    "characters": {
+      "protagonist": {
+        "appearance": "yellow-mellow"
+      },
+      "observer": {
+        "appearance": "casual"
+      }
+    },
+    "scenes": [
+      {
+        "id": "characterShowcase",
+        "setting": "studio",
+        "startFrame": 0,
+        "endFrame": 180,
+        "axis": [
+          "protagonist",
+          "observer"
+        ],
+        "characters": {
+          "protagonist": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            }
+          },
+          "observer": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "shots": [
+          {
+            "id": "shotFrontNeutral",
+            "type": "medium",
+            "subject": "protagonist",
+            "view": "subjectFront",
+            "startFrame": 0,
+            "endFrame": 45
+          },
+          {
+            "id": "shotThreeQuarterSurprise",
+            "type": "reaction",
+            "subject": "protagonist",
+            "view": "threeQuarter",
+            "startFrame": 45,
+            "endFrame": 90
+          },
+          {
+            "id": "shotSidePoint",
+            "type": "medium",
+            "subject": "protagonist",
+            "view": "front",
+            "startFrame": 90,
+            "endFrame": 135
+          },
+          {
+            "id": "shotSideProfile",
+            "type": "fullBody",
+            "subject": "protagonist",
+            "view": "front",
+            "startFrame": 135,
+            "endFrame": 180
+          }
+        ],
+        "beats": [
+          {
+            "id": "beatNeutral",
+            "startFrame": 0,
+            "endFrame": 45,
+            "actions": [
+              {
+                "type": "expression",
+                "actor": "protagonist",
+                "name": "neutral"
+              }
+            ]
+          },
+          {
+            "id": "beatSurprise",
+            "startFrame": 45,
+            "endFrame": 90,
+            "actions": [
+              {
+                "type": "react",
+                "actor": "protagonist",
+                "name": "surprised",
+                "intensity": 0.9
+              }
+            ]
+          },
+          {
+            "id": "beatPoint",
+            "startFrame": 90,
+            "endFrame": 135,
+            "actions": [
+              {
+                "type": "point",
+                "actor": "protagonist",
+                "target": "audience",
+                "hand": "auto"
+              }
+            ]
+          },
+          {
+            "id": "beatLook",
+            "startFrame": 135,
+            "endFrame": 180,
+            "actions": [
+              {
+                "type": "look",
+                "actor": "protagonist",
+                "target": "audience"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "walkingShowcase",
+        "setting": "studio",
+        "startFrame": 180,
+        "endFrame": 240,
+        "axis": [
+          "protagonist",
+          "observer"
+        ],
+        "characters": {
+          "protagonist": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "observer": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "shots": [
+          {
+            "id": "shotWalk",
+            "type": "fullBody",
+            "subject": "protagonist",
+            "view": "threeQuarter",
+            "startFrame": 180,
+            "endFrame": 240
+          }
+        ],
+        "beats": [
+          {
+            "id": "beatWalk",
+            "startFrame": 180,
+            "endFrame": 240,
+            "actions": [
+              {
+                "type": "walk",
+                "actor": "protagonist",
+                "path": "toMeeting"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

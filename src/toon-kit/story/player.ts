@@ -416,7 +416,8 @@ export function createStory(engine: CartoonEngine, options: {
         scale: c.scale
       }),
       face: {
-        defaultExpression: c.expression ?? 'neutral'
+        defaultExpression: c.expression ?? 'neutral',
+        ...(c.appearance === 'yellow-mellow' ? { style: 'highlight' as const } : {})
       }
     }])));
     stages.forEach(s => s.bind(cast!));

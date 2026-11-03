@@ -1,0 +1,868 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "studyRoom": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "tile"
+        },
+        "items": {
+          "studyWall": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "cream",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "wallTrim": {
+            "kind": "trim",
+            "size": {
+              "width": 9.6,
+              "height": 0.12
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "attachedTo",
+              "target": "studyWall",
+              "face": "front",
+              "vertical": "top"
+            }
+          },
+          "signBoard": {
+            "prefab": "sign",
+            "text": "EARN $1 EVERY SECOND",
+            "place": {
+              "relation": "attachedTo",
+              "target": "studyWall",
+              "face": "front",
+              "vertical": "middle"
+            }
+          },
+          "deskBlock": {
+            "kind": "block",
+            "size": {
+              "width": 0.8,
+              "height": 0.7,
+              "depth": 0.6
+            },
+            "finish": "wood",
+            "place": {
+              "relation": "near",
+              "target": "finish",
+              "side": "front",
+              "gap": 1.2
+            }
+          },
+          "leftCol": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "start",
+              "gap": 1.0
+            }
+          },
+          "rightCol": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "end",
+              "gap": 1.0
+            }
+          }
+        }
+      }
+    },
+    "vaultRoom": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "slate"
+        },
+        "items": {
+          "vaultWall": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "vaultTrim": {
+            "kind": "trim",
+            "size": {
+              "width": 9.6,
+              "height": 0.12
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "attachedTo",
+              "target": "vaultWall",
+              "face": "front",
+              "vertical": "top"
+            }
+          },
+          "vaultSign": {
+            "prefab": "sign",
+            "text": "$86,400 PER DAY",
+            "place": {
+              "relation": "attachedTo",
+              "target": "vaultWall",
+              "face": "front",
+              "vertical": "middle"
+            }
+          },
+          "vaultPedestal": {
+            "kind": "block",
+            "size": {
+              "width": 0.8,
+              "height": 0.7,
+              "depth": 0.6
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "near",
+              "target": "finish",
+              "side": "front",
+              "gap": 1.2
+            }
+          },
+          "vColLeft": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "start",
+              "gap": 1.0
+            }
+          },
+          "vColRight": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "end",
+              "gap": 1.0
+            }
+          }
+        }
+      }
+    },
+    "vaultRoomPlain": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "slate"
+        },
+        "items": {
+          "vaultWallPlain": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "vaultTrimPlain": {
+            "kind": "trim",
+            "size": {
+              "width": 9.6,
+              "height": 0.12
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "attachedTo",
+              "target": "vaultWallPlain",
+              "face": "front",
+              "vertical": "top"
+            }
+          },
+          "vaultPedestalPlain": {
+            "kind": "block",
+            "size": {
+              "width": 0.8,
+              "height": 0.7,
+              "depth": 0.6
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "near",
+              "target": "finish",
+              "side": "front",
+              "gap": 1.2
+            }
+          },
+          "vpColLeft": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "start",
+              "gap": 1.0
+            }
+          },
+          "vpColRight": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "end",
+              "gap": 1.0
+            }
+          }
+        }
+      }
+    },
+    "punchlineRoom": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "tile"
+        },
+        "items": {
+          "punchWall": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "cream",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          },
+          "punchTrim": {
+            "kind": "trim",
+            "size": {
+              "width": 9.6,
+              "height": 0.12
+            },
+            "finish": "metal",
+            "place": {
+              "relation": "attachedTo",
+              "target": "punchWall",
+              "face": "front",
+              "vertical": "top"
+            }
+          },
+          "punchSign": {
+            "prefab": "sign",
+            "text": "1 BILLION = 31.7 YEARS",
+            "place": {
+              "relation": "attachedTo",
+              "target": "punchWall",
+              "face": "front",
+              "vertical": "middle"
+            }
+          },
+          "punchDesk": {
+            "kind": "block",
+            "size": {
+              "width": 0.8,
+              "height": 0.7,
+              "depth": 0.6
+            },
+            "finish": "wood",
+            "place": {
+              "relation": "near",
+              "target": "finish",
+              "side": "front",
+              "gap": 1.2
+            }
+          },
+          "pColLeft": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "start",
+              "gap": 1.0
+            }
+          },
+          "pColRight": {
+            "kind": "column",
+            "size": {
+              "width": 0.5,
+              "height": 3.4,
+              "depth": 0.5
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "front",
+              "align": "end",
+              "gap": 1.0
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 840,
+    "characters": {
+      "protagonist": {
+        "appearance": "yellow-mellow"
+      },
+      "buddy": {
+        "appearance": "casual"
+      }
+    },
+    "scenes": [
+      {
+        "id": "sceneDiscovery",
+        "setting": "studyRoom",
+        "startFrame": 0,
+        "endFrame": 210,
+        "axis": [
+          "protagonist",
+          "buddy"
+        ],
+        "characters": {
+          "protagonist": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            }
+          },
+          "buddy": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "cues": [
+          {
+            "id": "cue1-imagine",
+            "kind": "dialogue",
+            "speaker": "protagonist",
+            "startFrame": 20,
+            "endFrame": 70,
+            "text": "सोचो अगर तुम्हें हर सेकंड एक डॉलर मिलने लगे..."
+          },
+          {
+            "id": "cue2-small",
+            "kind": "dialogue",
+            "speaker": "protagonist",
+            "startFrame": 120,
+            "endFrame": 200,
+            "text": "शुरुआत में लगता है कि यह बहुत छोटी रकम है!"
+          }
+        ],
+        "shots": [
+          {
+            "id": "shot1Medium",
+            "startFrame": 0,
+            "endFrame": 70,
+            "type": "medium",
+            "subject": "protagonist",
+            "view": "subjectFront"
+          },
+          {
+            "id": "shot1Reveal",
+            "startFrame": 70,
+            "endFrame": 120,
+            "type": "objectFocus",
+            "subject": "signBoard",
+            "region": "display"
+          },
+          {
+            "id": "shot1Reaction",
+            "startFrame": 120,
+            "endFrame": 210,
+            "type": "reaction",
+            "subject": "protagonist",
+            "view": "threeQuarter"
+          }
+        ],
+        "beats": [
+          {
+            "id": "beat1-speak",
+            "startFrame": 0,
+            "endFrame": 70,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "gesture",
+                "name": "explain",
+                "hand": "auto"
+              },
+              {
+                "actor": "buddy",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "beat1-point",
+            "startFrame": 70,
+            "endFrame": 120,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "point",
+                "target": "audience",
+                "hand": "auto"
+              },
+              {
+                "actor": "buddy",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "beat1-react",
+            "startFrame": 120,
+            "endFrame": 210,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "react",
+                "name": "surprised",
+                "intensity": 0.9
+              },
+              {
+                "actor": "buddy",
+                "type": "gesture",
+                "name": "nod"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sceneRapidGrowth",
+        "setting": "vaultRoom",
+        "startFrame": 210,
+        "endFrame": 420,
+        "axis": [
+          "protagonist",
+          "buddy"
+        ],
+        "characters": {
+          "protagonist": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            }
+          },
+          "buddy": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "cues": [
+          {
+            "id": "cue3-calculation",
+            "kind": "dialogue",
+            "speaker": "protagonist",
+            "startFrame": 215,
+            "endFrame": 270,
+            "text": "एक मिनट में साठ डॉलर, और एक घंटे में छत्तीस सौ डॉलर!"
+          },
+          {
+            "id": "cue4-daily",
+            "kind": "dialogue",
+            "speaker": "protagonist",
+            "startFrame": 330,
+            "endFrame": 415,
+            "text": "यानी एक दिन में पूरे छियासी हज़ार चार सौ डॉलर!"
+          }
+        ],
+        "shots": [
+          {
+            "id": "shot2Two",
+            "startFrame": 210,
+            "endFrame": 270,
+            "type": "twoShot",
+            "subjects": [
+              "protagonist",
+              "buddy"
+            ]
+          },
+          {
+            "id": "shot2Reveal",
+            "startFrame": 270,
+            "endFrame": 330,
+            "type": "objectFocus",
+            "subject": "vaultSign",
+            "region": "display"
+          },
+          {
+            "id": "shot2Excited",
+            "startFrame": 330,
+            "endFrame": 420,
+            "type": "reaction",
+            "subject": "protagonist",
+            "view": "subjectFront"
+          }
+        ],
+        "beats": [
+          {
+            "id": "beat2-explain",
+            "startFrame": 210,
+            "endFrame": 270,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "gesture",
+                "name": "explain",
+                "hand": "auto"
+              },
+              {
+                "actor": "buddy",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "beat2-point",
+            "startFrame": 270,
+            "endFrame": 330,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "point",
+                "target": "audience",
+                "hand": "auto"
+              },
+              {
+                "actor": "buddy",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "beat2-excited",
+            "startFrame": 330,
+            "endFrame": 420,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "react",
+                "name": "excited",
+                "intensity": 0.95
+              },
+              {
+                "actor": "buddy",
+                "type": "gesture",
+                "name": "nod"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sceneMillionaireBillionaire",
+        "setting": "vaultRoomPlain",
+        "startFrame": 420,
+        "endFrame": 630,
+        "axis": [
+          "protagonist",
+          "buddy"
+        ],
+        "characters": {
+          "protagonist": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            }
+          },
+          "buddy": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "cues": [
+          {
+            "id": "cue5-million",
+            "kind": "dialogue",
+            "speaker": "protagonist",
+            "startFrame": 430,
+            "endFrame": 520,
+            "text": "करोड़पति बनने में तुम्हें सिर्फ बारह दिन लगेंगे!"
+          },
+          {
+            "id": "cue6-billion",
+            "kind": "dialogue",
+            "speaker": "protagonist",
+            "startFrame": 530,
+            "endFrame": 620,
+            "text": "लेकिन क्या तुम कभी एक अरब डॉलर कमा पाओगे?"
+          }
+        ],
+        "shots": [
+          {
+            "id": "shot3Push",
+            "startFrame": 420,
+            "endFrame": 525,
+            "type": "medium",
+            "subject": "protagonist",
+            "view": "threeQuarter",
+            "motion": {
+              "type": "pushIn",
+              "amount": "subtle"
+            }
+          },
+          {
+            "id": "shot3Shock",
+            "startFrame": 525,
+            "endFrame": 630,
+            "type": "reaction",
+            "subject": "protagonist",
+            "view": "subjectFront"
+          }
+        ],
+        "beats": [
+          {
+            "id": "beat3-explain",
+            "startFrame": 420,
+            "endFrame": 525,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "gesture",
+                "name": "explain",
+                "hand": "auto"
+              },
+              {
+                "actor": "buddy",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "beat3-shock",
+            "startFrame": 525,
+            "endFrame": 630,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "react",
+                "name": "surprised",
+                "intensity": 0.95
+              },
+              {
+                "actor": "buddy",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "sceneThePunchline",
+        "setting": "punchlineRoom",
+        "startFrame": 630,
+        "endFrame": 840,
+        "axis": [
+          "protagonist",
+          "buddy"
+        ],
+        "characters": {
+          "protagonist": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            }
+          },
+          "buddy": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "cues": [
+          {
+            "id": "cue7-years",
+            "kind": "dialogue",
+            "speaker": "protagonist",
+            "startFrame": 635,
+            "endFrame": 690,
+            "text": "एक अरब डॉलर तक पहुँचने में पूरे इकतीस साल लग जाएँगे!"
+          },
+          {
+            "id": "cue8-punch",
+            "kind": "dialogue",
+            "speaker": "protagonist",
+            "startFrame": 750,
+            "endFrame": 830,
+            "text": "तो चुपचाप अपनी नौकरी करते रहो, समझ गए ना?"
+          }
+        ],
+        "shots": [
+          {
+            "id": "shot4Two",
+            "startFrame": 630,
+            "endFrame": 690,
+            "type": "twoShot",
+            "subjects": [
+              "protagonist",
+              "buddy"
+            ]
+          },
+          {
+            "id": "shot4Reveal",
+            "startFrame": 690,
+            "endFrame": 745,
+            "type": "objectFocus",
+            "subject": "punchSign",
+            "region": "display"
+          },
+          {
+            "id": "shot4Final",
+            "startFrame": 745,
+            "endFrame": 840,
+            "type": "reaction",
+            "subject": "protagonist",
+            "view": "subjectFront"
+          }
+        ],
+        "beats": [
+          {
+            "id": "beat4-look",
+            "startFrame": 630,
+            "endFrame": 690,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "look",
+                "target": "audience"
+              },
+              {
+                "actor": "buddy",
+                "type": "look",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "beat4-point",
+            "startFrame": 690,
+            "endFrame": 745,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "point",
+                "target": "audience",
+                "hand": "auto"
+              },
+              {
+                "actor": "buddy",
+                "type": "react",
+                "name": "worried",
+                "intensity": 0.8
+              }
+            ]
+          },
+          {
+            "id": "beat4-shrug",
+            "startFrame": 745,
+            "endFrame": 840,
+            "actions": [
+              {
+                "actor": "protagonist",
+                "type": "gesture",
+                "name": "shrug"
+              },
+              {
+                "actor": "buddy",
+                "type": "gesture",
+                "name": "shake-head"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

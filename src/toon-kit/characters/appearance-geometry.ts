@@ -6,8 +6,36 @@ function closeNormals(g:THREE.BufferGeometry,width:number,height:number):void {
   for(let j=0;j<=height;j++){const first=j*(width+1),last=first+width,v=new THREE.Vector3().fromBufferAttribute(n,first).add(new THREE.Vector3().fromBufferAttribute(n,last)).normalize();n.setXYZ(first,v.x,v.y,v.z);n.setXYZ(last,v.x,v.y,v.z);}
 }
 
+/** Parametric ribbed knit beanie with rolled brim and skull inset lip. */
+export function beanieGeometry():THREE.BufferGeometry {
+  const positions:number[]=[],uvs:number[]=[],indices:number[]=[],w=40,h=16;
+  for(let j=0;j<=h;j++){
+    const v=j/h;
+    for(let i=0;i<=w;i++){
+      const yaw=i===w?0:(i/w)*Math.PI*2;
+      const rimLat=0.27+0.17*Math.cos(yaw);
+      const lat=rimLat+(Math.PI/2-rimLat)*Math.pow(v,0.92);
+      let radius:number;
+      if(j===0)radius=0.97;
+      else if(v<=0.26){
+        const cuffT=(v-1/h)/(0.26-1/h);
+        radius=1.05+0.038*Math.sin(Math.max(0,Math.min(1,cuffT))*Math.PI);
+      }else{
+        radius=1.036+0.02*Math.sin((1-v)*Math.PI);
+      }
+      positions.push(radius*Math.sin(yaw)*Math.cos(lat),radius*Math.sin(lat),radius*Math.cos(yaw)*Math.cos(lat));
+      uvs.push(i/w,v);
+    }
+  }
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){
+    const a=j*(w+1)+i;indices.push(a,a+1,a+w+2,a,a+w+2,a+w+1);
+  }
+  const g=new THREE.BufferGeometry();g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));g.setIndex(indices);g.computeVertexNormals();closeNormals(g,w,h);return g;
+}
+
 /** No forehead ink seam: one coherent shell with an inset lip and a shaped hairline. */
 export function hairGeometry(style:Exclude<HairStyle,'none'>):THREE.BufferGeometry {
+  if(style==='beanie')return beanieGeometry();
   const positions:number[]=[],uvs:number[]=[],indices:number[]=[],w=40,h=14;
   for(let j=0;j<=h;j++)for(let i=0;i<=w;i++){
     const yaw=i===w?0:(i/w)*Math.PI*2,angle=Math.acos(Math.cos(yaw)),signed=Math.atan2(Math.sin(yaw),Math.cos(yaw));

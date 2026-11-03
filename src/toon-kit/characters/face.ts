@@ -6,17 +6,19 @@ export type ExpressionName=typeof EXPRESSIONS[number];
 export type MouthShape='auto'|'closed'|'smile'|'frown'|'open'|'o';
 export interface Expression {readonly name:ExpressionName;readonly intensity?:number;readonly mouth?:MouthShape;readonly blush?:number}
 export interface BlinkConfig {readonly period?:number;readonly duration?:number;readonly phase?:number;readonly enabled?:boolean}
-export interface FaceConfig {readonly textureSize?:256|512;readonly defaultExpression?:ExpressionName;readonly blink?:BlinkConfig}
+export interface FaceConfig {readonly textureSize?:256|512;readonly defaultExpression?:ExpressionName;readonly blink?:BlinkConfig;readonly style?:'standard'|'highlight'}
 export interface ResolvedFace {
   readonly transition?:{readonly from:ResolvedFace;readonly weight:number};
   readonly expression:ExpressionName;readonly intensity:number;readonly mouth:MouthShape;readonly blush:number;
   readonly blink:number;readonly pupil:readonly [number,number];
+  readonly style?:'standard'|'highlight';
 }
 const only=(o:object,keys:string[])=>Object.keys(o).every(k=>keys.includes(k));
 const scalar=(n:unknown,min:number,max:number):n is number=>typeof n==='number'&&Number.isFinite(n)&&n>=min&&n<=max;
 export function validateFaceConfig(config:FaceConfig):void {
-  if(!config||typeof config!=='object'||Array.isArray(config)||!only(config,['textureSize','defaultExpression','blink'])||
+  if(!config||typeof config!=='object'||Array.isArray(config)||!only(config,['textureSize','defaultExpression','blink','style'])||
     (config.textureSize!==undefined&&![256,512].includes(config.textureSize))||
+    (config.style!==undefined&&!['standard','highlight'].includes(config.style))||
     (config.defaultExpression!==undefined&&!EXPRESSIONS.includes(config.defaultExpression)))throw new Error('Invalid face configuration');
   const b=config.blink;
   if(b!==undefined&&(!b||typeof b!=='object'||Array.isArray(b)||!only(b,['period','duration','phase','enabled'])||
@@ -47,6 +49,6 @@ export function resolveFace(config:FaceConfig,id:string,time:number,expression:E
   const yaw=Math.atan2(direction[0],direction[2]),pitch=Math.atan2(direction[1],Math.hypot(direction[0],direction[2]));
   const clamp=(v:number)=>Math.max(-1,Math.min(1,v));
   const quantize=(v:number)=>Math.round(v*256)/256||0;
-  return freezeData({expression:e.name,intensity:e.intensity??1,mouth:e.mouth??'auto',blush:e.blush??0,
+  return freezeData({style:config.style??'standard',expression:e.name,intensity:e.intensity??1,mouth:e.mouth??'auto',blush:e.blush??0,
     blink:quantize(blink??blinkAt(time,id,config.blink)),pupil:[quantize(clamp(yaw/(Math.PI*25/180))),quantize(clamp(pitch/(Math.PI*18/180)))] as const});
 }

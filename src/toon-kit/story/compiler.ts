@@ -83,7 +83,7 @@ function compile(input: StoryPlan, frameBudget: number = STORY_LIMITS.frames, sc
   for (const [id, c] of Object.entries(plan.characters)) {
     name(id);
     keys(c, ['appearance', 'proportions', 'expression', 'scale']);
-    if (c.appearance !== undefined && !['doctor', 'patient', 'office', 'casual'].includes(c.appearance)) storyFail('INVALID_CHARACTER', 'Unknown appearance');
+    if (c.appearance !== undefined && !['doctor', 'patient', 'office', 'casual', 'yellow-mellow'].includes(c.appearance)) storyFail('INVALID_CHARACTER', 'Unknown appearance');
     if (c.expression !== undefined) expression(c.expression);
     if (c.scale !== undefined && (!Number.isFinite(c.scale) || c.scale < .05 || c.scale > 20)) storyFail('INVALID_CHARACTER', 'Invalid scale');
     try {

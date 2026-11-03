@@ -70,9 +70,10 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
     if (typeof options.id !== 'string' || !options.id.trim() || usedIds.has(options.id)) throw new Error('Character id must be nonempty and unique within the owner; disposed ids cannot be recycled');
     const definition = createCharacterDefinition(options.proportions);
     const initialPose = createRestPose(definition, options.placement);
-    if(options.face!==undefined&&options.face!==false)validateFaceConfig(options.face);
     if(options.appearance!==undefined&&options.colors!==undefined)throw new Error('Use appearance or legacy colors, not both');
     const appearance=options.appearance===undefined?undefined:resolveAppearance(options.appearance);
+    const faceConfig=options.face?{style:options.face.style??(appearance?.skin==='#171717'?'highlight'as const:undefined),...options.face}:options.face;
+    if(faceConfig!==undefined&&faceConfig!==false)validateFaceConfig(faceConfig);
     const colors = {skin: '#f2c69d', torso: '#36a9b0', limbs: '#16131a', shoes: '#16131a', ...options.colors};
     // Validate all palette values before allocating pooled meshes/materials.
     for (const color of Object.values(colors)) if (!/^#[0-9a-f]{6}$/i.test(color)) throw new Error('Character colors must be #rrggbb');
@@ -110,7 +111,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
       if (parent) nodes[parent].add(nodes[name]);
     }
     let dead = false;
-    const face=options.face&&makeFace(nodes.head,definition.proportions.headRadius,options.face);
+    const face=faceConfig&&makeFace(nodes.head,definition.proportions.headRadius,faceConfig);
     const appearanceView=appearance&&appearancePool.attach(nodes,definition,appearance);
     const ensureLive = () => {checkOpen(); if (dead) throw new Error('Character is disposed');};
     const rig: CharacterRig = {
@@ -154,7 +155,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
       },
     };
     rig.applyPose(initialPose);
-    if(face&&options.face)face.prepare(resolveFace(options.face,options.id,0,undefined,undefined,[0,0,1]))();
+    if(face&&faceConfig)face.prepare(resolveFace(faceConfig,options.id,0,undefined,undefined,[0,0,1]))();
     rigs.set(options.id, rig);
     return rig;
   }

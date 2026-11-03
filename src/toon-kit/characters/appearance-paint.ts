@@ -9,6 +9,15 @@ export function paintAppearance(ctx:CanvasRenderingContext2D,a:ResolvedAppearanc
   if(role==='hair'){
     const highlight='#'+[1,3,5].map(i=>Math.round(parseInt(a.hair.color.slice(i,i+2),16)*.82+255*.18).toString(16).padStart(2,'0')).join('');
     if(a.hair.style==='swept')line([[20,205],[27,170],[31,132],[34,95]],highlight,1.8);
+    if(a.hair.style==='beanie'){
+      const shadow='#'+[1,3,5].map(i=>Math.round(parseInt(a.hair.color.slice(i,i+2),16)*.72).toString(16).padStart(2,'0')).join('');
+      for(let x=0;x<256;x+=12){
+        line([[x,0],[x,256]],shadow,2);
+        line([[x+3,0],[x+3,256]],highlight,1.5);
+      }
+      line([[0,190],[256,190]],shadow,3);
+      line([[0,192],[256,192]],highlight,2);
+    }
     return;
   }
   if(role==='upperSleeve'){
@@ -20,7 +29,13 @@ export function paintAppearance(ctx:CanvasRenderingContext2D,a:ResolvedAppearanc
     if(c.sleeves!=='long'){ctx.fillStyle='#16131a';ctx.fillRect(0,0,256,256);}else{ctx.fillStyle=c.accent;ctx.fillRect(0,232,256,8);}return;
   }
   if(role==='shin'&&a.trousers.style==='shorts'){ctx.fillStyle='#16131a';ctx.fillRect(0,0,256,256);return;}
-  if(role==='thigh'||role==='shin')return;
+  if(role==='thigh'){
+    if(a.trousers.style==='shorts'&&a.skin==='#171717'){
+      ctx.fillStyle='#ffffff';
+      for(const x of [56,66,184,194])ctx.fillRect(x,0,4,256);
+    }
+    return;
+  }
   if(role==='shoe'){
     if(a.shoes.style==='sneakers'){
       ctx.fillStyle='#ede7da';ctx.fillRect(0,204,256,52);line([[0,204],[256,204]],'#554e50',3);
