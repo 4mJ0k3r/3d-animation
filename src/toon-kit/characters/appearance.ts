@@ -13,6 +13,7 @@ export interface Appearance {
   readonly accessories?:readonly Accessory[];
 }
 export interface ResolvedAppearance {
+  readonly preset?:AppearancePreset;
   readonly skin:string;
   readonly hair:{readonly style:HairStyle;readonly color:string};
   readonly clothing:{readonly style:ClothingStyle;readonly color:string;readonly accent:string;readonly sleeves:'none'|'short'|'long'};
@@ -42,7 +43,7 @@ export function resolveAppearance(input:Appearance={}):ResolvedAppearance {
   const base=input.preset?presets[input.preset]:{};
   const style=input.clothing?.style??base.clothing?.style??'shirt';
   const styleColor={shirt:'#36a9b0',hoodie:'#249da4','lab-coat':'#fff9ed',jacket:'#344e80'}[style];
-  const result:ResolvedAppearance={skin:input.skin??base.skin??defaults.skin,
+  const result:ResolvedAppearance={...(input.preset?{preset:input.preset}:{}),skin:input.skin??base.skin??defaults.skin,
     hair:{...defaults.hair,...base.hair,...input.hair},clothing:{...defaults.clothing,color:styleColor,...base.clothing,...input.clothing,
       sleeves:input.clothing?.sleeves??(input.clothing?.style?style==='shirt'?'short':'long':base.clothing?.sleeves??(style==='shirt'?'short':'long'))},
     trousers:{...defaults.trousers,...base.trousers,...input.trousers},shoes:{...defaults.shoes,...base.shoes,...input.shoes},
@@ -58,4 +59,4 @@ export function appearancePreset(preset:AppearancePreset,overrides:Omit<Appearan
   // Return complete immutable appearance fields, allowing simple property spread/reuse.
   return resolveAppearance({...overrides,preset});
 }
-export const APPEARANCE_ATTACHMENTS=freezeData({hair:'head',glasses:'head',hood:'torso',badge:'torso',stethoscope:'neckBase'} as const);
+export const APPEARANCE_ATTACHMENTS=freezeData({hair:'head',glasses:'head',hood:'torso',cowl:'head',badge:'torso',stethoscope:'neckBase'} as const);

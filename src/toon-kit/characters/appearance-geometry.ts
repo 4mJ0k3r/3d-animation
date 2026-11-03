@@ -71,3 +71,29 @@ export function hoodGeometry(radius:number,length:number):THREE.BufferGeometry {
     points.push(new THREE.Vector3(x,length/2+Math.sqrt(radius*radius-x*x-z*z)+radius*.018,z));}
   return new THREE.TubeGeometry(new THREE.CatmullRomCurve3(points),24,radius*.11,6,false);
 }
+
+/** Oversized puffy hoodie cowl/collar wrapping the lower skull and neck. */
+export function cowlGeometry():THREE.BufferGeometry {
+  const positions:number[]=[],uvs:number[]=[],indices:number[]=[],w=32,h=10;
+  for(let j=0;j<=h;j++){
+    const v=j/h;
+    for(let i=0;i<=w;i++){
+      const yaw=i===w?0:(i/w)*Math.PI*2;
+      const back=(1-Math.cos(yaw))/2;
+      const r=(0.24+0.08*Math.sin(v*Math.PI))*(1+0.2*back);
+      const y=-0.88-v*0.35+0.03*back;
+      positions.push(r*Math.sin(yaw),y,r*Math.cos(yaw)-0.04*back);
+      uvs.push(i/w,v);
+    }
+  }
+  for(let j=0;j<h;j++)for(let i=0;i<w;i++){
+    const a=j*(w+1)+i;indices.push(a,a+1,a+w+2,a,a+w+2,a+w+1);
+  }
+  const g=new THREE.BufferGeometry();
+  g.setAttribute('position',new THREE.Float32BufferAttribute(positions,3));
+  g.setAttribute('uv',new THREE.Float32BufferAttribute(uvs,2));
+  g.setIndex(indices);
+  g.computeVertexNormals();
+  closeNormals(g,w,h);
+  return g;
+}

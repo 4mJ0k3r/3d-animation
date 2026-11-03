@@ -42,7 +42,7 @@ export function createCast<T extends Record<string,CastActorOptions>>(engine:Car
       const config={...options[name]};configs.set(name,config);
       if(config.appearance!==undefined)try{if(config.colors!==undefined)throw new Error('Use appearance or legacy colors, not both');config.appearance=resolveAppearance(config.appearance);}catch(error){castFail('APPEARANCE_INVALID',String(error),name);}
       if(config.face!==false){
-        const autoStyle=config.appearance?.skin==='#171717'?'highlight'as const:undefined;
+        const autoStyle=config.appearance?.preset==='yellow-mellow'?'highlight'as const:undefined;
         const faceObj={style:autoStyle,...config.face};
         try{validateFaceConfig(faceObj);}catch(error){castFail('FACE_INVALID',String(error),name);}
         config.face=freezeData({...faceObj,blink:faceObj.blink?{...faceObj.blink}:undefined});

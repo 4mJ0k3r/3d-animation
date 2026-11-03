@@ -72,7 +72,7 @@ export function createCharacterFactory(owner: CharacterResourceOwner) {
     const initialPose = createRestPose(definition, options.placement);
     if(options.appearance!==undefined&&options.colors!==undefined)throw new Error('Use appearance or legacy colors, not both');
     const appearance=options.appearance===undefined?undefined:resolveAppearance(options.appearance);
-    const faceConfig=options.face?{style:options.face.style??(appearance?.skin==='#171717'?'highlight'as const:undefined),...options.face}:options.face;
+    const faceConfig=options.face?{style:options.face.style??(appearance?.preset==='yellow-mellow'?'highlight'as const:undefined),...options.face}:options.face;
     if(faceConfig!==undefined&&faceConfig!==false)validateFaceConfig(faceConfig);
     const colors = {skin: '#f2c69d', torso: '#36a9b0', limbs: '#16131a', shoes: '#16131a', ...options.colors};
     // Validate all palette values before allocating pooled meshes/materials.

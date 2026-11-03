@@ -1,0 +1,289 @@
+{
+  "version": 1,
+  "video": {
+    "width": 720,
+    "height": 1280
+  },
+  "font": "noto-sans-devanagari",
+  "layouts": {
+    "studio": {
+      "preset": "custom",
+      "composition": {
+        "ground": {
+          "width": 12,
+          "depth": 12,
+          "finish": "tile"
+        },
+        "items": {
+          "studioWall": {
+            "kind": "wall",
+            "size": {
+              "width": 10,
+              "height": 3.6
+            },
+            "finish": "slate",
+            "place": {
+              "relation": "alongBoundary",
+              "boundary": "back",
+              "gap": 0.4
+            }
+          }
+        }
+      }
+    }
+  },
+  "story": {
+    "version": 1,
+    "fps": 30,
+    "durationInFrames": 240,
+    "characters": {
+      "protagonist": {
+        "appearance": "yellow-mellow"
+      },
+      "observer": {
+        "appearance": "casual"
+      }
+    },
+    "scenes": [
+      {
+        "id": "showcase",
+        "setting": "studio",
+        "startFrame": 0,
+        "endFrame": 180,
+        "axis": [
+          "protagonist",
+          "observer"
+        ],
+        "characters": {
+          "protagonist": {
+            "stance": {
+              "type": "stand",
+              "at": "finish"
+            }
+          },
+          "observer": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "shots": [
+          {
+            "id": "shot1FrontNeutral",
+            "type": "medium",
+            "subject": "protagonist",
+            "view": "subjectFront",
+            "startFrame": 0,
+            "endFrame": 30
+          },
+          {
+            "id": "shot2Surprise",
+            "type": "reaction",
+            "subject": "protagonist",
+            "view": "threeQuarter",
+            "startFrame": 30,
+            "endFrame": 60
+          },
+          {
+            "id": "shot3SideProfile",
+            "type": "medium",
+            "subject": "protagonist",
+            "view": "front",
+            "startFrame": 60,
+            "endFrame": 90
+          },
+          {
+            "id": "shot4Point",
+            "type": "medium",
+            "subject": "protagonist",
+            "view": "subjectFront",
+            "startFrame": 90,
+            "endFrame": 120
+          },
+          {
+            "id": "shot5Happy",
+            "type": "medium",
+            "subject": "protagonist",
+            "view": "subjectFront",
+            "startFrame": 120,
+            "endFrame": 145
+          },
+          {
+            "id": "shot6Worried",
+            "type": "medium",
+            "subject": "protagonist",
+            "view": "subjectFront",
+            "startFrame": 145,
+            "endFrame": 165
+          },
+          {
+            "id": "shot7CloseUp",
+            "type": "closeUp",
+            "subject": "protagonist",
+            "view": "subjectFront",
+            "startFrame": 165,
+            "endFrame": 180
+          }
+        ],
+        "beats": [
+          {
+            "id": "beatNeutral",
+            "startFrame": 0,
+            "endFrame": 30,
+            "actions": [
+              {
+                "type": "expression",
+                "actor": "protagonist",
+                "name": "neutral"
+              }
+            ]
+          },
+          {
+            "id": "beatSurprise",
+            "startFrame": 30,
+            "endFrame": 60,
+            "actions": [
+              {
+                "type": "react",
+                "actor": "protagonist",
+                "name": "surprised",
+                "intensity": 1.0
+              }
+            ]
+          },
+          {
+            "id": "beatSideProfile",
+            "startFrame": 60,
+            "endFrame": 90,
+            "actions": [
+              {
+                "type": "look",
+                "actor": "protagonist",
+                "target": "right"
+              },
+              {
+                "type": "expression",
+                "actor": "protagonist",
+                "name": "neutral"
+              }
+            ]
+          },
+          {
+            "id": "beatPoint",
+            "startFrame": 90,
+            "endFrame": 120,
+            "actions": [
+              {
+                "type": "point",
+                "actor": "protagonist",
+                "target": "audience",
+                "hand": "auto"
+              }
+            ]
+          },
+          {
+            "id": "beatHappy",
+            "startFrame": 120,
+            "endFrame": 145,
+            "actions": [
+              {
+                "type": "expression",
+                "actor": "protagonist",
+                "name": "happy"
+              },
+              {
+                "type": "look",
+                "actor": "protagonist",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "beatWorried",
+            "startFrame": 145,
+            "endFrame": 165,
+            "actions": [
+              {
+                "type": "react",
+                "actor": "protagonist",
+                "name": "worried",
+                "intensity": 0.9
+              },
+              {
+                "type": "look",
+                "actor": "protagonist",
+                "target": "audience"
+              }
+            ]
+          },
+          {
+            "id": "beatCloseUp",
+            "startFrame": 165,
+            "endFrame": 180,
+            "actions": [
+              {
+                "type": "expression",
+                "actor": "protagonist",
+                "name": "neutral"
+              },
+              {
+                "type": "look",
+                "actor": "protagonist",
+                "target": "audience"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "walkingShowcase",
+        "setting": "studio",
+        "startFrame": 180,
+        "endFrame": 240,
+        "axis": [
+          "protagonist",
+          "observer"
+        ],
+        "characters": {
+          "protagonist": {
+            "stance": {
+              "type": "stand",
+              "at": "entry"
+            }
+          },
+          "observer": {
+            "stance": {
+              "type": "stand",
+              "at": "right"
+            }
+          }
+        },
+        "shots": [
+          {
+            "id": "shot8Walk",
+            "type": "fullBody",
+            "subject": "protagonist",
+            "view": "threeQuarter",
+            "startFrame": 180,
+            "endFrame": 240
+          }
+        ],
+        "beats": [
+          {
+            "id": "beatWalk",
+            "startFrame": 180,
+            "endFrame": 240,
+            "actions": [
+              {
+                "type": "walk",
+                "actor": "protagonist",
+                "path": "toMeeting"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

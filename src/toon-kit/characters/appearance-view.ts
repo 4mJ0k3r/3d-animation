@@ -4,7 +4,7 @@ import type {CharacterResourceOwner} from './rig';
 import type {CharacterDefinition,NodeName,PartName} from './types';
 import type {ResolvedAppearance} from './appearance';
 import {APPEARANCE_ATTACHMENTS} from './appearance';
-import {hairGeometry,tailGeometry,glassesGeometry,hoodGeometry} from './appearance-geometry';
+import {hairGeometry,tailGeometry,glassesGeometry,hoodGeometry,cowlGeometry} from './appearance-geometry';
 import {paintAppearance,sleeveColor} from './appearance-paint';
 import type {FabricRole} from './appearance-paint';
 
@@ -32,12 +32,13 @@ export function createAppearancePool(owner:CharacterResourceOwner){
     owner.track(Object.assign(new THREE.Object3D(),{material:value}));return value;
   }
   function partMaterial(part:PartName,a:ResolvedAppearance):THREE.Material {
-    const limb='#16131a',c=a.clothing;
+    const limb='#16131a',c=a.clothing,isYM=a.preset==='yellow-mellow';
     if(part==='torsoShape')return material(a,c.color,'torso');
-    if(part==='headShape'||part==='neckShape'||part.endsWith('Hand'))return material(a,a.skin);
-    if(part.endsWith('UpperArm'))return c.sleeves==='none'?material(a,limb):material(a,sleeveColor(c.color),c.sleeves==='short'?'upperSleeve':undefined);
-    if(part.endsWith('Forearm'))return c.sleeves==='long'?material(a,sleeveColor(c.color),'lowerSleeve'):material(a,limb);
-    if(part.endsWith('ElbowShape'))return material(a,c.sleeves==='long'?sleeveColor(c.color):limb);
+    if(part==='headShape'||part.endsWith('Hand'))return material(a,a.skin);
+    if(part==='neckShape')return isYM?material(a,c.color):material(a,a.skin);
+    if(part.endsWith('UpperArm'))return c.sleeves==='none'?material(a,limb):material(a,isYM?c.color:sleeveColor(c.color),c.sleeves==='short'?'upperSleeve':undefined);
+    if(part.endsWith('Forearm'))return c.sleeves==='long'?material(a,isYM?c.color:sleeveColor(c.color),'lowerSleeve'):material(a,limb);
+    if(part.endsWith('ElbowShape'))return material(a,c.sleeves==='long'?(isYM?c.color:sleeveColor(c.color)):limb);
     if(part.endsWith('Shoe'))return material(a,a.shoes.color,a.shoes.style==='sneakers'?'shoe':undefined);
     if(part.endsWith('Thigh')&&a.trousers.style==='shorts')return material(a,a.trousers.color,'thigh');
     return material(a,a.trousers.style==='shorts'&&(part.endsWith('Shin')||part.endsWith('KneeShape'))?limb:a.trousers.color);
@@ -59,6 +60,9 @@ export function createAppearancePool(owner:CharacterResourceOwner){
     if(a.accessories.includes('glasses'))add('glasses','head',r,'glasses',glassesGeometry,material(a,'#292532'));
     if(a.clothing.style==='hoodie'){
       const p=definition.proportions;add('hood','torso',1,`hood:${p.torsoRadius}:${p.torsoLength}`,()=>hoodGeometry(p.torsoRadius,p.torsoLength),material(a,a.clothing.color));
+    }
+    if((a.hair.style==='beanie'||a.preset==='yellow-mellow')&&a.clothing.style==='hoodie'){
+      add('cowl','head',r,'cowl',cowlGeometry,material(a,a.clothing.color));
     }
     const reset=()=>{for(const {mesh,scale}of controlled){mesh.position.set(0,0,0);mesh.quaternion.identity();mesh.scale.setScalar(scale);mesh.visible=true;mesh.matrixAutoUpdate=mesh.matrixWorldAutoUpdate=true;}};
     reset();return {reset};

@@ -67,8 +67,10 @@ function paintSingle(ctx:CanvasRenderingContext2D,state:ResolvedFace,size:number
     else if(mouth==='smile'||e==='happy'){ctx.moveTo(104,168);ctx.quadraticCurveTo(128,185,152,168);}
     else if(mouth==='open'||e==='explaining'){
       ctx.moveTo(108,168);ctx.quadraticCurveTo(128,162,148,168);ctx.quadraticCurveTo(145,188,128,186);ctx.quadraticCurveTo(111,188,108,168);
-    }else if(mouth==='frown'||e==='sad'||e==='worried'){ctx.moveTo(108,180);ctx.quadraticCurveTo(128,166,148,180);}
-    else{ctx.moveTo(112,176);ctx.quadraticCurveTo(128,179,144,176);}
+    }else if(mouth==='frown'||e==='sad'||e==='worried'){
+      if(e==='worried'){ctx.moveTo(106,177);ctx.quadraticCurveTo(117,169,128,175);ctx.quadraticCurveTo(139,169,150,177);}
+      else{ctx.moveTo(108,180);ctx.quadraticCurveTo(128,166,148,180);}
+    }else{ctx.moveTo(112,176);ctx.quadraticCurveTo(128,179,144,176);}
     ctx.stroke();
   }else if(mouth==='smile') {
     ctx.beginPath();ctx.moveTo(91,163);ctx.quadraticCurveTo(128,178,165,163);ctx.quadraticCurveTo(154,204,128,200);ctx.quadraticCurveTo(101,200,91,163);

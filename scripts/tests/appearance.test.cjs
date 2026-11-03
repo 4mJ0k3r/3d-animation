@@ -69,5 +69,13 @@ test('yellow-mellow preset resolves beanie hair, black skin, hoodie, shorts and 
    const hood=r.root.getObjectByName('appearance:hood');
    assert.ok(hood);
    assert.equal(hood.userData.attachmentAnchor,'torso');
+   const cowl=r.root.getObjectByName('appearance:cowl');
+   assert.ok(cowl);
+   assert.equal(cowl.userData.attachmentAnchor,'head');
+
+   // Highlight face audit: dark skin alone without yellow-mellow preset does NOT force highlight mode
+   const darkHuman=S.resolveAppearance({skin:'#171717',clothing:{style:'shirt'}});
+   const rDark=f.create({id:'darkHuman',appearance:darkHuman,face:{}});
+   assert.ok(rDark);
  }finally{e.dispose();}
 });

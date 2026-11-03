@@ -26,11 +26,11 @@ export function paintAppearance(ctx:CanvasRenderingContext2D,a:ResolvedAppearanc
     return;
   }
   if(role==='lowerSleeve'){
-    if(c.sleeves!=='long'){ctx.fillStyle='#16131a';ctx.fillRect(0,0,256,256);}else{ctx.fillStyle=c.accent;ctx.fillRect(0,232,256,8);}return;
+    if(c.sleeves!=='long'){ctx.fillStyle='#16131a';ctx.fillRect(0,0,256,256);}else if(a.preset!=='yellow-mellow'){ctx.fillStyle=c.accent;ctx.fillRect(0,232,256,8);}return;
   }
   if(role==='shin'&&a.trousers.style==='shorts'){ctx.fillStyle='#16131a';ctx.fillRect(0,0,256,256);return;}
   if(role==='thigh'){
-    if(a.trousers.style==='shorts'&&a.skin==='#171717'){
+    if(a.trousers.style==='shorts'&&(a.preset==='yellow-mellow'||(a.skin==='#171717'&&a.trousers.color==='#37474f'))){
       ctx.fillStyle='#ffffff';
       for(const x of [56,66,184,194])ctx.fillRect(x,0,4,256);
     }
